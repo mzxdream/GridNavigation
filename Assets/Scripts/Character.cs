@@ -23,6 +23,6 @@ public class Character : MonoBehaviour
     }
     public void Clear()
     {
-        factory.Reclaim(this);
+        //factory.Reclaim(this);
     }
 }
