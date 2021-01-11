@@ -60,12 +60,19 @@ public class GameBoard : MonoBehaviour
         }
         return null;
     }
-    public bool ChangeTileContent(float x, float z, GameTileContentType type)
+    public bool ToggleTileContent(float x, float z, GameTileContentType type)
     {
         var tile = GetTile(x, z);
         if (tile)
         {
-            tile.Content = tileContentFactory.Get(type);
+            if (tile.Content.Type != type)
+            {
+                tile.Content = tileContentFactory.Get(type);
+            }
+            else
+            {
+                tile.Content = tileContentFactory.Get(GameTileContentType.Empty);
+            }
             return true;
         }
         return false;

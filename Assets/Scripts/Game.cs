@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public enum OperatorType { AddCharacter, SetEmpty, SetWall, SetDestination }
+public enum OperatorType { AddCharacter, SetWall, SetDestination }
 public class Game : MonoBehaviour
 {
     [SerializeField]
@@ -25,7 +25,6 @@ public class Game : MonoBehaviour
         }
         else if (Input.GetKeyDown(KeyCode.Alpha2))
         {
-            operatorType = OperatorType.SetEmpty;
         }
         else if (Input.GetKeyDown(KeyCode.Alpha3))
         {
@@ -48,9 +47,8 @@ public class Game : MonoBehaviour
     {
         switch (operatorType)
         {
-            case OperatorType.SetEmpty: board.ChangeTileContent(pos.x, pos.z, GameTileContentType.Empty); break;
-            case OperatorType.SetWall: board.ChangeTileContent(pos.x, pos.z, GameTileContentType.Wall); break;
-            case OperatorType.SetDestination: board.ChangeTileContent(pos.x, pos.z, GameTileContentType.Destination); break;
+            case OperatorType.SetWall: board.ToggleTileContent(pos.x, pos.z, GameTileContentType.Wall); break;
+            case OperatorType.SetDestination: board.ToggleTileContent(pos.x, pos.z, GameTileContentType.Destination); break;
         }
     }
 }
