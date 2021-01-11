@@ -1,10 +1,12 @@
 ﻿using UnityEngine;
 
-public enum OperatorType { AddCharacter, SetWall, SetDestination }
+public enum OperatorType { AddRed, AddBlue, SetWall, SetDestination }
 public class Game : MonoBehaviour
 {
     [SerializeField]
     GameBoard board = default;
+    [SerializeField]
+    CharacterCollection characterCollection = default;
     static Game instance;
     public static Game Instance => instance;
     OperatorType operatorType;
@@ -12,6 +14,7 @@ public class Game : MonoBehaviour
     void Awake()
     {
         board.Init();
+        characterCollection.Init();
     }
     void OnEnable()
     {
@@ -21,10 +24,11 @@ public class Game : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            operatorType = OperatorType.AddCharacter;
+            operatorType = OperatorType.AddRed;
         }
         else if (Input.GetKeyDown(KeyCode.Alpha2))
         {
+            operatorType = OperatorType.AddBlue;
         }
         else if (Input.GetKeyDown(KeyCode.Alpha3))
         {
@@ -47,6 +51,8 @@ public class Game : MonoBehaviour
     {
         switch (operatorType)
         {
+            case OperatorType.AddRed: characterCollection.AddCharacter(pos.x, pos.z, CharacterType.Red); break;
+            case OperatorType.AddBlue: characterCollection.AddCharacter(pos.x, pos.z, CharacterType.Blue); break;
             case OperatorType.SetWall: board.ToggleTileContent(pos.x, pos.z, GameTileContentType.Wall); break;
             case OperatorType.SetDestination: board.ToggleTileContent(pos.x, pos.z, GameTileContentType.Destination); break;
         }

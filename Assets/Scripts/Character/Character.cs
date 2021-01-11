@@ -1,28 +1,28 @@
 ﻿using UnityEngine;
 
+public enum CharacterType { Red, Blue }
+
 public class Character : MonoBehaviour
 {
     [SerializeField]
     Transform model = default;
-    CharacterFactory factory;
-    float speed;
-
-    public CharacterFactory Factory
+    CharacterFactory originFactory;
+    public CharacterFactory OriginFactory
     {
-        get => factory;
+        get => originFactory;
         set
         {
-            Debug.Assert(factory == null, "redifined factory!");
-            factory = value;
+            Debug.Assert(originFactory == null, "redifined factory!");
+            originFactory = value;
         }
     }
+    float speed;
 
-    public void Init(float speed)
+    public void Init()
     {
-        this.speed = speed;
     }
     public void Clear()
     {
-        //factory.Reclaim(this);
+        originFactory.Reclaim(this);
     }
 }
