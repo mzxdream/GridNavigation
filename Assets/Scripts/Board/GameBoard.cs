@@ -30,7 +30,7 @@ public class GameBoard : MonoBehaviour
                 var tile = Instantiate(tilePrefab);
                 tile.transform.SetParent(transform, false);
                 tile.transform.localPosition = new Vector3(x - offset.x, 0, y - offset.y);
-                tile.Content = tileContentFactory.Get(GameTileContentType.Wall);
+                tile.Content = tileContentFactory.Get(GameTileContentType.Empty);
                 tiles[x + y * size.x] = tile;
             }
         }
@@ -39,7 +39,6 @@ public class GameBoard : MonoBehaviour
     public void Clear()
     {
     }
-
     void OnValidate()
     {
         if (size.x < 2)
@@ -50,5 +49,25 @@ public class GameBoard : MonoBehaviour
         {
             size.y = 2;
         }
+    }
+    public GameTile GetTile(float x, float z)
+    {
+        var tx = (int)(x + size.x * 0.5f);
+        var ty = (int)(z + size.y * 0.5f);
+        if (tx >= 0 && tx < size.x && ty >= 0 && ty < size.y)
+        {
+            return tiles[tx + ty * size.y];
+        }
+        return null;
+    }
+    public bool ChangeTileContent(float x, float z, GameTileContentType type)
+    {
+        var tile = GetTile(x, z);
+        if (tile)
+        {
+            tile.Content = tileContentFactory.Get(type);
+            return true;
+        }
+        return false;
     }
 }
