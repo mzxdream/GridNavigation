@@ -8,8 +8,6 @@ public class GameBoard : MonoBehaviour
     Transform ground = default;
     [SerializeField]
     Vector2Int size;
-    [SerializeField]
-    
     public void Init()
     {
     }
