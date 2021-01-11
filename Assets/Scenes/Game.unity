@@ -209,7 +209,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a47c31775b5d6c541bc6bbb25f582710, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  size: {x: 11, y: 11}
   ground: {fileID: 978600935}
   gridTexture: {fileID: 2800000, guid: 1847a973a20a9ad4e9d15d05965d1b1e, type: 3}
   tilePrefab: {fileID: 7477839241278289162, guid: e052b944854f0a34cb72f7a6956cb493,
@@ -384,7 +383,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 10, z: 0}
+  m_LocalPosition: {x: 0, y: 15, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -527,5 +526,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 228bace5d1114154d868745b603bd07a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  boardSize: {x: 16, y: 16}
+  scale: 2
   board: {fileID: 434151929}
   characterCollection: {fileID: 332094705}

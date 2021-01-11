@@ -1,9 +1,8 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 public class GameBoard : MonoBehaviour
 {
-    [SerializeField]
-    Vector2Int size = new Vector2Int(11, 11);
     [SerializeField]
     Transform ground = default;
     [SerializeField]
@@ -12,28 +11,20 @@ public class GameBoard : MonoBehaviour
     GameTile tilePrefab = default;
     [SerializeField]
     GameTileContentFactory tileContentFactory = default;
-    GameTile[] tiles;
+    Vector2Int size;
+    int scale;
+    Dictionary<int, GameTile> tiles;
 
-    public bool Init()
+    public bool Init(Vector2Int size, int scale)
     {
+        tiles = new Dictionary<int, GameTile>();
+        this.size = size;
+        this.scale = scale;
+
         ground.localScale = new Vector3(size.x, size.y, 1f);
         var material = ground.GetComponent<MeshRenderer>().material;
         material.mainTexture = gridTexture;
-        material.SetTextureScale("_MainTex", size);
-
-        var offset = new Vector2((size.x - 1) * 0.5f, (size.y - 1) * 0.5f);
-        tiles = new GameTile[size.x * size.y];
-        for (int y = 0; y < size.y; y++)
-        {
-            for (int x = 0; x < size.x; x++)
-            {
-                var tile = Instantiate(tilePrefab);
-                tile.transform.SetParent(transform, false);
-                tile.transform.localPosition = new Vector3(x - offset.x, 0, y - offset.y);
-                tile.Content = tileContentFactory.Get(GameTileContentType.Empty);
-                tiles[x + y * size.x] = tile;
-            }
-        }
+        material.SetTextureScale("_MainTex", size * scale);
         return true;
     }
     public void Clear()
@@ -50,30 +41,54 @@ public class GameBoard : MonoBehaviour
             size.y = 2;
         }
     }
-    public GameTile GetTile(float x, float z)
+    public int GetTileKey(float x, float z)
     {
-        var tx = (int)(x + size.x * 0.5f);
-        var ty = (int)(z + size.y * 0.5f);
-        if (tx >= 0 && tx < size.x && ty >= 0 && ty < size.y)
+        int tx = (int)((x + size.x * 0.5) * scale);
+        int tz = (int)((z + size.y * 0.5) * scale);
+        if (tx < 0 || tx >= size.x * scale || tz < 0 || tz >= size.y * scale)
         {
-            return tiles[tx + ty * size.y];
+            return -1;
         }
-        return null;
+        return tx + tz * size.x * scale;
+    }
+    public Vector3 GetTilePos(int key)
+    {
+        int tx = key % (size.x * scale);
+        int tz = key / (size.x * scale);
+
+        float x = tx * 1.0f / scale - size.x * 0.5f + 0.5f / scale;
+        float z = tz * 1.0f / scale - size.y * 0.5f + 0.5f / scale;
+        return new Vector3(x, 0, z);
     }
     public bool ToggleTileContent(float x, float z, GameTileContentType type)
     {
-        var tile = GetTile(x, z);
-        if (tile)
+        var key = GetTileKey(x, z);
+        if (key < 0)
+        {
+            return false;
+        }
+        if (tiles.TryGetValue(key, out var tile))
         {
             if (tile.Content.Type != type)
             {
                 tile.Content = tileContentFactory.Get(type);
+                tile.Content.transform.localScale = new Vector3(1.0f / scale, 1.0f / scale, 1.0f / scale);
             }
             else
             {
-                tile.Content = tileContentFactory.Get(GameTileContentType.Empty);
+                tile.Content.Recycle();
+                tiles.Remove(key);
             }
             return true;
+        }
+        else
+        {
+            tile = Instantiate(tilePrefab);
+            tile.transform.SetParent(transform, false);
+            tile.transform.localPosition = GetTilePos(key);
+            tile.Content = tileContentFactory.Get(type);
+            tile.Content.transform.localScale = new Vector3(1.0f / scale, 1.0f / scale, 1.0f / scale);
+            tiles.Add(key, tile);
         }
         return false;
     }

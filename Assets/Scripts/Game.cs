@@ -4,6 +4,10 @@ public enum OperatorType { AddRed, AddBlue, SetWall, SetDestination }
 public class Game : MonoBehaviour
 {
     [SerializeField]
+    Vector2Int boardSize = new Vector2Int(16, 16);
+    [SerializeField, Range(1, 10)]
+    int scale = 4;
+    [SerializeField]
     GameBoard board = default;
     [SerializeField]
     CharacterCollection characterCollection = default;
@@ -13,7 +17,7 @@ public class Game : MonoBehaviour
 
     void Awake()
     {
-        board.Init();
+        board.Init(boardSize, scale);
         characterCollection.Init();
     }
     void OnEnable()
