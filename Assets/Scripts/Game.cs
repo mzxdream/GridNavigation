@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 public enum OperatorType { AddRed, AddBlue, SetWall, SetDestination }
 public class Game : MonoBehaviour
@@ -10,15 +11,15 @@ public class Game : MonoBehaviour
     [SerializeField]
     GameBoard board = default;
     [SerializeField]
-    CharacterCollection characterCollection = default;
+    CharacterFactory characterFactory = default;
     static Game instance;
     public static Game Instance => instance;
     OperatorType operatorType;
+    List<Character> characters = new List<Character>();
 
     void Awake()
     {
         board.Init(boardSize, scale);
-        characterCollection.Init();
     }
     void OnEnable()
     {
@@ -51,14 +52,20 @@ public class Game : MonoBehaviour
             }
         }
     }
+    void AddCharacter(CharacterType type, Vector3 pos)
+    {
+        var character = characterFactory.Get(type);
+        character.transform.position = pos;
+        characters.Add(character);
+    }
     void OnMouseLeftDown(Vector3 pos)
     {
         switch (operatorType)
         {
-            case OperatorType.AddRed: characterCollection.AddCharacter(pos.x, pos.z, CharacterType.Red); break;
-            case OperatorType.AddBlue: characterCollection.AddCharacter(pos.x, pos.z, CharacterType.Blue); break;
-            case OperatorType.SetWall: board.ToggleTileContent(pos.x, pos.z, GameTileContentType.Wall); break;
-            case OperatorType.SetDestination: board.ToggleTileContent(pos.x, pos.z, GameTileContentType.Destination); break;
+            case OperatorType.AddRed: AddCharacter(CharacterType.RedMedium, pos); break;
+            case OperatorType.AddBlue: AddCharacter(CharacterType.BlueMedium, pos); break;
+            case OperatorType.SetWall: board.ToggleTileContent(GameTileContentType.Wall, pos); break;
+            case OperatorType.SetDestination: board.ToggleTileContent(GameTileContentType.Destination, pos); break;
         }
     }
 }

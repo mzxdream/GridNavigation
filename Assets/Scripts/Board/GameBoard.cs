@@ -60,9 +60,9 @@ public class GameBoard : MonoBehaviour
         float z = tz * 1.0f / scale - size.y * 0.5f + 0.5f / scale;
         return new Vector3(x, 0, z);
     }
-    public bool ToggleTileContent(float x, float z, GameTileContentType type)
+    public bool ToggleTileContent(GameTileContentType type, Vector3 pos)
     {
-        var key = GetTileKey(x, z);
+        var key = GetTileKey(pos.x, pos.z);
         if (key < 0)
         {
             return false;

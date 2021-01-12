@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public enum CharacterType { Red, Blue }
+public enum CharacterType { RedSmall, RedMedium, RedLarge, BlueSmall, BlueMedium, BlueLarge }
 
 public class Character : MonoBehaviour
 {
@@ -18,8 +18,9 @@ public class Character : MonoBehaviour
     }
     float speed;
 
-    public void Init()
+    public void Init(float Speed, float radius)
     {
+        model.localScale = new Vector3(radius, radius, radius);
     }
     public void Clear()
     {

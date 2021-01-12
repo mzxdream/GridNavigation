@@ -1,29 +1,42 @@
 ﻿using UnityEngine;
 
+[System.Serializable]
+class CharacterConfig
+{
+    public Character prefab = default;
+    public float radius = 0.5f;
+    public float speed = 0.1f;
+}
+
 [CreateAssetMenu(menuName = "ScriptableObject/CharacterFactory")]
 public class CharacterFactory : GameObjectFactory
 {
     [SerializeField]
-    Character redPrefab = default;
+    CharacterConfig redSmall = default, redMedium = default, redLarge = default;
     [SerializeField]
-    Character bluePrefab = default;
+    CharacterConfig blueSmall = default, blueMedium = default, blueLarge = default;
 
-    T Get<T>(T prefab) where T : Character
-    {
-        T instance = CreateGameObjectInstance(prefab);
-        instance.OriginFactory = this;
-        instance.Init();
-        return instance;
-    }
-    public Character Get(CharacterType type)
+    CharacterConfig GetConfig(CharacterType type)
     {
         switch (type)
         {
-            case CharacterType.Red: return Get(redPrefab);
-            case CharacterType.Blue: return Get(bluePrefab);
+            case CharacterType.RedSmall: return redSmall;
+            case CharacterType.RedMedium: return redMedium;
+            case CharacterType.RedLarge: return redLarge;
+            case CharacterType.BlueSmall: return blueSmall;
+            case CharacterType.BlueMedium: return blueMedium;
+            case CharacterType.BlueLarge: return blueLarge;
         }
-        Debug.Assert(false, "Unsupported type:" + type);
+        Debug.Assert(false, "Unsupported character type");
         return null;
+    }
+    public Character Get(CharacterType type)
+    {
+        var config = GetConfig(type);
+        var instance = CreateGameObjectInstance(config.prefab);
+        instance.OriginFactory = this;
+        instance.Init(config.speed, config.radius);
+        return instance;
     }
     public void Reclaim(Character character)
     {
