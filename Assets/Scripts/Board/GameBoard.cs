@@ -30,7 +30,9 @@ public class GameBoard : MonoBehaviour
     {
         foreach (var tile in tiles)
         {
+            tile.Value.Clear();
         }
+        tiles.Clear();
     }
     public bool GetTileGrid(Vector3 pos, out int tx, out int tz)
     {
