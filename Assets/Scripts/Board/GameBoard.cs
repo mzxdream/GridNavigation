@@ -62,7 +62,6 @@ public class GameBoard : MonoBehaviour
         if (!isOnlyRemove)
         {
             tile = tileFactory.Get(type);
-            //tile.transform.SetParent(transform, false);
             tile.transform.localPosition = GetTilePos(tx, tz);
             tile.transform.localScale = new Vector3(gridSize, gridSize, gridSize);
             tiles.Add(key, tile);
