@@ -1,20 +1,28 @@
 using UnityEngine;
 
+public enum GameTileType { Wall, RedDestination, BlueDestination }
+
 public class GameTile : MonoBehaviour
 {
-    GameTileContent content;
-    public GameTileContent Content
+    [SerializeField]
+    GameTileType type = default;
+    public GameTileType Type { get => type; }
+    GameTileFactory originFactory;
+    public GameTileFactory OriginFactory
     {
-        get => content;
+        get => originFactory;
         set
         {
-            Debug.Assert(value != null, "Null assigned to content!");
-            if (content != null)
-            {
-                content.Recycle();
-            }
-            content = value;
-            content.transform.localPosition = transform.localPosition;
+            Debug.Assert(originFactory == null, "Redefined origin factory");
+            originFactory = value;
         }
+    }
+
+    public void Init()
+    {
+    }
+    public void Clear()
+    {
+        originFactory.Reclaim(this);
     }
 }

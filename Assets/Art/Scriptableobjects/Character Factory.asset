@@ -12,33 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89711528c26d49844a7363c54e16b5e5, type: 3}
   m_Name: Character Factory
   m_EditorClassIdentifier: 
-  redSmall:
-    prefab: {fileID: 4430799067832463753, guid: 3a3fd16e941f311448dcaa7f9297e3f5,
-      type: 3}
-    radius: 0.5
-    speed: 0.1
-  redMedium:
-    prefab: {fileID: 4430799067832463753, guid: 3a3fd16e941f311448dcaa7f9297e3f5,
-      type: 3}
-    radius: 0.5
-    speed: 0.1
-  redLarge:
-    prefab: {fileID: 4430799067832463753, guid: 3a3fd16e941f311448dcaa7f9297e3f5,
-      type: 3}
-    radius: 0.5
-    speed: 0.1
-  blueSmall:
-    prefab: {fileID: 4430799067832463753, guid: 27afe6d2f6d618942b6d5f6b3b84bf2a,
-      type: 3}
-    radius: 0.5
-    speed: 0.1
-  blueMedium:
-    prefab: {fileID: 4430799067832463753, guid: 27afe6d2f6d618942b6d5f6b3b84bf2a,
-      type: 3}
-    radius: 0.5
-    speed: 0.1
-  blueLarge:
-    prefab: {fileID: 4430799067832463753, guid: 27afe6d2f6d618942b6d5f6b3b84bf2a,
-      type: 3}
-    radius: 0.5
-    speed: 0.1
+  redSmall: {fileID: 4430799067832463753, guid: 3a3fd16e941f311448dcaa7f9297e3f5,
+    type: 3}
+  redMedium: {fileID: 4430799067832463753, guid: 3a3fd16e941f311448dcaa7f9297e3f5,
+    type: 3}
+  redLarge: {fileID: 4430799067832463753, guid: 3a3fd16e941f311448dcaa7f9297e3f5,
+    type: 3}
+  blueSmall: {fileID: 4430799067832463753, guid: 27afe6d2f6d618942b6d5f6b3b84bf2a,
+    type: 3}
+  blueMedium: {fileID: 4430799067832463753, guid: 27afe6d2f6d618942b6d5f6b3b84bf2a,
+    type: 3}
+  blueLarge: {fileID: 4430799067832463753, guid: 27afe6d2f6d618942b6d5f6b3b84bf2a,
+    type: 3}

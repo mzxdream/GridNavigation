@@ -66,8 +66,8 @@ public class Game : MonoBehaviour
         {
             case OperatorType.AddRed: AddCharacter(CharacterType.RedMedium, pos); break;
             case OperatorType.AddBlue: AddCharacter(CharacterType.BlueMedium, pos); break;
-            case OperatorType.SetWall: board.ToggleTileContent(GameTileContentType.Wall, pos); break;
-            case OperatorType.SetDestination: board.ToggleTileContent(GameTileContentType.Destination, pos); break;
+            case OperatorType.SetWall: board.ToggleTile(GameTileType.Wall, pos); break;
+            case OperatorType.SetDestination: board.ToggleTile(GameTileType.RedDestination, pos); break;
         }
     }
 }

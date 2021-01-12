@@ -8,9 +8,7 @@ public class GameBoard : MonoBehaviour
     [SerializeField]
     Texture2D gridTexture = default;
     [SerializeField]
-    GameTile tilePrefab = default;
-    [SerializeField]
-    GameTileContentFactory tileContentFactory = default;
+    GameTileFactory tileFactory = default;
     int gridX;
     int gridZ;
     float gridSize;
@@ -30,6 +28,9 @@ public class GameBoard : MonoBehaviour
     }
     public void Clear()
     {
+        foreach (var tile in tiles)
+        {
+        }
     }
     public bool GetTileGrid(Vector3 pos, out int tx, out int tz)
     {
@@ -44,34 +45,26 @@ public class GameBoard : MonoBehaviour
         float z = (tz + 0.5f - gridZ * 0.5f) * gridSize;
         return new Vector3(x, 0, z);
     }
-    public bool ToggleTileContent(GameTileContentType type, Vector3 pos)
+    public bool ToggleTile(GameTileType type, Vector3 pos)
     {
         if (!GetTileGrid(pos, out var tx, out var tz))
         {
             return false;
         }
         int key = tx + tz * gridX;
+        bool isOnlyRemove = false;
         if (tiles.TryGetValue(key, out var tile))
         {
-            if (tile.Content.Type != type)
-            {
-                tile.Content = tileContentFactory.Get(type);
-                tile.Content.transform.localScale = new Vector3(gridSize, gridSize, gridSize);
-            }
-            else
-            {
-                tile.Content.Recycle();
-                tiles.Remove(key);
-            }
-            return true;
+            isOnlyRemove = tile.Type == type;
+            tile.Clear();
+            tiles.Remove(key);
         }
-        else
+        if (!isOnlyRemove)
         {
-            tile = Instantiate(tilePrefab);
-            tile.transform.SetParent(transform, false);
+            tile = tileFactory.Get(type);
+            //tile.transform.SetParent(transform, false);
             tile.transform.localPosition = GetTilePos(tx, tz);
-            tile.Content = tileContentFactory.Get(type);
-            tile.Content.transform.localScale = new Vector3(gridSize, gridSize, gridSize);
+            tile.transform.localScale = new Vector3(gridSize, gridSize, gridSize);
             tiles.Add(key, tile);
         }
         return false;

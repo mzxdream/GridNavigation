@@ -167,9 +167,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ground: {fileID: 978600935}
   gridTexture: {fileID: 2800000, guid: 1847a973a20a9ad4e9d15d05965d1b1e, type: 3}
-  tilePrefab: {fileID: 7477839241278289162, guid: e052b944854f0a34cb72f7a6956cb493,
-    type: 3}
-  tileContentFactory: {fileID: 11400000, guid: 0366f86eee18f9b42b9a83366d949b85, type: 2}
+  tileFactory: {fileID: 11400000, guid: bd4a0eee66dd16c4dbd2e2c7a57b5b7a, type: 2}
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -483,7 +481,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 228bace5d1114154d868745b603bd07a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  boardSize: {x: 16, y: 16}
-  scale: 2
+  gridX: 33
+  gridZ: 33
+  gridSize: 0.5
   board: {fileID: 434151929}
   characterFactory: {fileID: 11400000, guid: 49c7cfe99538f2142b8341702e43c511, type: 2}
