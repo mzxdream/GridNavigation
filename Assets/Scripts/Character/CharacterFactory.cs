@@ -1,22 +1,14 @@
 ﻿using UnityEngine;
 
-[System.Serializable]
-class CharacterConfig
-{
-    public Character prefab = default;
-    public float radius = 0.5f;
-    public float speed = 0.1f;
-}
-
 [CreateAssetMenu(menuName = "ScriptableObject/CharacterFactory")]
 public class CharacterFactory : GameObjectFactory
 {
     [SerializeField]
-    CharacterConfig redSmall = default, redMedium = default, redLarge = default;
+    Character redSmall = default, redMedium = default, redLarge = default;
     [SerializeField]
-    CharacterConfig blueSmall = default, blueMedium = default, blueLarge = default;
+    Character blueSmall = default, blueMedium = default, blueLarge = default;
 
-    CharacterConfig GetConfig(CharacterType type)
+    Character GetPrefab(CharacterType type)
     {
         switch (type)
         {
@@ -32,10 +24,10 @@ public class CharacterFactory : GameObjectFactory
     }
     public Character Get(CharacterType type)
     {
-        var config = GetConfig(type);
-        var instance = CreateGameObjectInstance(config.prefab);
+        var prefab = GetPrefab(type);
+        var instance = CreateGameObjectInstance(prefab);
         instance.OriginFactory = this;
-        instance.Init(config.speed, config.radius);
+        instance.Init();
         return instance;
     }
     public void Reclaim(Character character)

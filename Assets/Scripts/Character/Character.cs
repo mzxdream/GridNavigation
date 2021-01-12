@@ -6,6 +6,12 @@ public class Character : MonoBehaviour
 {
     [SerializeField]
     Transform model = default;
+    [SerializeField]
+    float radius = 0.5f;
+    public float Radius { get => radius; }
+    [SerializeField]
+    float maxSpeed = 1.0f;
+    public float MaxSpeed { get => maxSpeed; }
     CharacterFactory originFactory;
     public CharacterFactory OriginFactory
     {
@@ -16,9 +22,7 @@ public class Character : MonoBehaviour
             originFactory = value;
         }
     }
-    float speed;
-
-    public void Init(float Speed, float radius)
+    public void Init()
     {
         model.localScale = new Vector3(radius, radius, radius);
     }
