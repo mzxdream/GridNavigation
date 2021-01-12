@@ -481,8 +481,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 228bace5d1114154d868745b603bd07a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gridX: 33
-  gridZ: 33
+  gridX: 51
+  gridZ: 31
   gridSize: 0.5
   board: {fileID: 434151929}
   characterFactory: {fileID: 11400000, guid: 49c7cfe99538f2142b8341702e43c511, type: 2}

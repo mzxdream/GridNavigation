@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-public enum OperatorType { AddRed, AddBlue, SetWall, SetDestination }
 public class Game : MonoBehaviour
 {
     [SerializeField, Range(2, 128)]
@@ -16,7 +15,6 @@ public class Game : MonoBehaviour
     CharacterFactory characterFactory = default;
     static Game instance;
     public static Game Instance => instance;
-    OperatorType operatorType;
     List<Character> characters = new List<Character>();
 
     void Awake()
@@ -31,43 +29,44 @@ public class Game : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            operatorType = OperatorType.AddRed;
+            AddCharacter(CharacterType.RedMedium);
         }
-        else if (Input.GetKeyDown(KeyCode.Alpha2))
+        if (Input.GetKeyDown(KeyCode.Alpha2))
         {
-            operatorType = OperatorType.AddBlue;
-        }
-        else if (Input.GetKeyDown(KeyCode.Alpha3))
-        {
-            operatorType = OperatorType.SetWall;
-        }
-        else if (Input.GetKeyDown(KeyCode.Alpha4))
-        {
-            operatorType = OperatorType.SetDestination;
+            AddCharacter(CharacterType.BlueMedium);
         }
         if (Input.GetMouseButtonDown(0))
         {
-            var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            if (Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
+            ToggleTile(GameTileType.Wall);
+        }
+        if (Input.GetMouseButtonDown(1))
+        {
+            if (Input.GetKey(KeyCode.LeftShift))
             {
-                OnMouseLeftDown(hit.point);
+                ToggleTile(GameTileType.BlueDestination);
+            }
+            else
+            {
+                ToggleTile(GameTileType.RedDestination);
             }
         }
     }
-    void AddCharacter(CharacterType type, Vector3 pos)
+    void AddCharacter(CharacterType type)
     {
-        var character = characterFactory.Get(type);
-        character.transform.position = pos;
-        characters.Add(character);
-    }
-    void OnMouseLeftDown(Vector3 pos)
-    {
-        switch (operatorType)
+        var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
         {
-            case OperatorType.AddRed: AddCharacter(CharacterType.RedMedium, pos); break;
-            case OperatorType.AddBlue: AddCharacter(CharacterType.BlueMedium, pos); break;
-            case OperatorType.SetWall: board.ToggleTile(GameTileType.Wall, pos); break;
-            case OperatorType.SetDestination: board.ToggleTile(GameTileType.RedDestination, pos); break;
+            var character = characterFactory.Get(type);
+            character.transform.position = hit.point;
+            characters.Add(character);
+        }
+    }
+    void ToggleTile(GameTileType type)
+    {
+        var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
+        {
+            board.ToggleTile(type, hit.point);
         }
     }
 }
