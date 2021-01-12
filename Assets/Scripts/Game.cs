@@ -4,10 +4,12 @@ using UnityEngine;
 public enum OperatorType { AddRed, AddBlue, SetWall, SetDestination }
 public class Game : MonoBehaviour
 {
-    [SerializeField]
-    Vector2Int boardSize = new Vector2Int(16, 16);
-    [SerializeField, Range(1, 10)]
-    int scale = 4;
+    [SerializeField, Range(2, 128)]
+    int gridX = 33;
+    [SerializeField, Range(2, 128)]
+    int gridZ = 33;
+    [SerializeField, Range(0.1f, 1.0f)]
+    float gridSize = 0.5f;
     [SerializeField]
     GameBoard board = default;
     [SerializeField]
@@ -19,7 +21,7 @@ public class Game : MonoBehaviour
 
     void Awake()
     {
-        board.Init(boardSize, scale);
+        board.Init(gridX, gridZ, gridSize);
     }
     void OnEnable()
     {

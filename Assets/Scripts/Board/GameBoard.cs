@@ -11,68 +11,52 @@ public class GameBoard : MonoBehaviour
     GameTile tilePrefab = default;
     [SerializeField]
     GameTileContentFactory tileContentFactory = default;
-    Vector2Int size;
-    int scale;
-    Dictionary<int, GameTile> tiles;
+    int gridX;
+    int gridZ;
+    float gridSize;
+    Dictionary<int, GameTile> tiles = new Dictionary<int, GameTile>();
 
-    public bool Init(Vector2Int size, int scale)
+    public bool Init(int gridX, int gridZ, float gridSize)
     {
-        tiles = new Dictionary<int, GameTile>();
-        this.size = size;
-        this.scale = scale;
+        this.gridX = gridX;
+        this.gridZ = gridZ;
+        this.gridSize = gridSize;
 
-        ground.localScale = new Vector3(size.x, size.y, 1f);
+        ground.localScale = new Vector3(gridX * gridSize, gridZ * gridSize, 1f);
         var material = ground.GetComponent<MeshRenderer>().material;
         material.mainTexture = gridTexture;
-        material.SetTextureScale("_MainTex", size * scale);
+        material.SetTextureScale("_MainTex", new Vector2(gridX, gridZ));
         return true;
     }
     public void Clear()
     {
     }
-    void OnValidate()
+    public bool GetTileGrid(Vector3 pos, out int tx, out int tz)
     {
-        if (size.x < 2)
-        {
-            size.x = 2;
-        }
-        if (size.y < 2)
-        {
-            size.y = 2;
-        }
+        tx = (int)((pos.x + gridX * gridSize / 2) / gridSize);
+        tz = (int)((pos.z + gridZ * gridSize / 2) / gridSize);
+        return tx >= 0 && tx < gridX && tz >= 0 && tz < gridZ;
     }
-    public int GetTileKey(float x, float z)
+    public Vector3 GetTilePos(int tx, int tz)
     {
-        int tx = (int)((x + size.x * 0.5) * scale);
-        int tz = (int)((z + size.y * 0.5) * scale);
-        if (tx < 0 || tx >= size.x * scale || tz < 0 || tz >= size.y * scale)
-        {
-            return -1;
-        }
-        return tx + tz * size.x * scale;
-    }
-    public Vector3 GetTilePos(int key)
-    {
-        int tx = key % (size.x * scale);
-        int tz = key / (size.x * scale);
-
-        float x = tx * 1.0f / scale - size.x * 0.5f + 0.5f / scale;
-        float z = tz * 1.0f / scale - size.y * 0.5f + 0.5f / scale;
+        Debug.Assert(tx >= 0 && tx < gridX && tz >= 0 && tz < gridZ);
+        float x = (tx + 0.5f - gridX * 0.5f) * gridSize;
+        float z = (tz + 0.5f - gridZ * 0.5f) * gridSize;
         return new Vector3(x, 0, z);
     }
     public bool ToggleTileContent(GameTileContentType type, Vector3 pos)
     {
-        var key = GetTileKey(pos.x, pos.z);
-        if (key < 0)
+        if (!GetTileGrid(pos, out var tx, out var tz))
         {
             return false;
         }
+        int key = tx + tz * gridX;
         if (tiles.TryGetValue(key, out var tile))
         {
             if (tile.Content.Type != type)
             {
                 tile.Content = tileContentFactory.Get(type);
-                tile.Content.transform.localScale = new Vector3(1.0f / scale, 1.0f / scale, 1.0f / scale);
+                tile.Content.transform.localScale = new Vector3(gridSize, gridSize, gridSize);
             }
             else
             {
@@ -85,9 +69,9 @@ public class GameBoard : MonoBehaviour
         {
             tile = Instantiate(tilePrefab);
             tile.transform.SetParent(transform, false);
-            tile.transform.localPosition = GetTilePos(key);
+            tile.transform.localPosition = GetTilePos(tx, tz);
             tile.Content = tileContentFactory.Get(type);
-            tile.Content.transform.localScale = new Vector3(1.0f / scale, 1.0f / scale, 1.0f / scale);
+            tile.Content.transform.localScale = new Vector3(gridSize, gridSize, gridSize);
             tiles.Add(key, tile);
         }
         return false;
