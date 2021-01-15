@@ -18,6 +18,12 @@ public class Unit
     float wantedSpeed = 0f;
     Vector3 currWayPoint;
     Vector3 nextWayPoint;
+    float currWayPointDist = 0f;
+    float prevWayPointDist = 0f;
+    int numIdlingUpdates = 0;
+    int numIdlingSlowUpdates = 0;
+    float accRate = 100f;
+    float decRate = 100f;
 
     public Unit()
     {
@@ -83,10 +89,29 @@ public class Unit
 
         atGoal = MathUtils.SqrDistance2D(pos, goalPos) <= (goalRadius * goalRadius);
         atEndOfPath = false;
+        progressState = ProgressState.Active;
+        currWayPointDist = 0f;
+        prevWayPointDist = 0f;
         if (atGoal)
         {
             return;
         }
+        ReRequestPath(true);
+    }
+    public Vector3 Here()
+    {
+        float time = currentSpeed / Mathf.Max(0.01f, decRate);
+        float dist = decRate * time * time / 2.0f;
+        return pos + forward * dist;
+    }
+    public void StopMoving(bool hardStop)
+    {
+        if (!atGoal)
+        {
+            goalPos = (currWayPoint = Here());
+        }
+        StopEngine(hardStop);
+        progressState = ProgressState.Done;
     }
     public void Update()
     {
