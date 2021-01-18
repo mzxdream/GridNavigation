@@ -25,8 +25,17 @@ public class Unit
     float accRate = 100f;
     float decRate = 100f;
 
+    Vector3 oldSlowUpdatePos;
+    int mapSquare;
+    int xsize;
+    public int XSize { get => xsize; }
+    int zsize;
+    public int ZSize { get => zsize; }
+
     public Unit()
     {
+        oldSlowUpdatePos = pos = Vector3.zero;
+        mapSquare = Ground.Instance.GetSquare(oldSlowUpdatePos);
     }
     int GetNewPath()
     {
@@ -115,5 +124,35 @@ public class Unit
     }
     public void Update()
     {
+    }
+    public void LateUpdate()
+    {
+        if (progressState == ProgressState.Active)
+        {
+            if (pathID != 0)
+            {
+
+            }
+            else
+            {
+                Debug.LogWarning("unit has no path");
+                ReRequestPath(true);
+            }
+            if (wantRepath)
+            {
+                ReRequestPath(true);
+            }
+        }
+        //TOOD move into map
+        if (pos != oldSlowUpdatePos)
+        {
+            oldSlowUpdatePos = pos;
+            int newMapSquare = Ground.Instance.GetSquare(oldSlowUpdatePos);
+            if (newMapSquare != mapSquare)
+            {
+                Ground.Instance.BlockingObjChange(this, mapSquare, newMapSquare);
+                mapSquare = newMapSquare;
+            }
+        }
     }
 }

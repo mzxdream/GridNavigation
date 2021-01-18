@@ -16,4 +16,8 @@ public class PathManager : Singleton<PathManager>
     {
         return Vector3.zero;
     }
+    public void TerrainChange(int xmin, int zmin, int xmax, int zmax)
+    {
+        
+    }
 }
