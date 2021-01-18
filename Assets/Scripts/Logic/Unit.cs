@@ -7,6 +7,7 @@ public class Unit
     Vector3 waypointDir;
     Vector3 pos = Vector3.zero;
     Vector3 speed = Vector3.zero;
+    float maxSpeed;
     float maxWantedSpeed;
     float radius = 0.5f;
     ProgressState progressState;
@@ -135,8 +136,43 @@ public class Unit
         //TODO
         forward = newForward;
     }
+    float GetDeltaSpeed(float targetSpeed, float curSpeed, float maxAccRate, float maxDecRate)
+    {
+        //float rawSpeedDiff = targetSpeed - curSpeed;
+        //TODO
+        return targetSpeed - curSpeed;
+    }
     void ChangeSpeed(float newWantedSpeed)
     {
+        wantedSpeed = newWantedSpeed;
+        if (wantedSpeed <= 0.0f && currentSpeed < 0.01f)
+        {
+            currentSpeed = 0f;
+            deltaSpeed = 0f;
+            return;
+        }
+        var targetSpeed = maxSpeed;
+        if (currWayPoint.y == -1.0f && nextWayPoint.y == -1.0f)//wait for new path
+        {
+            targetSpeed = 0f;
+        }
+        else
+        {
+            if (wantedSpeed > 0f)
+            {
+                //TODO check turn rate speed
+                if (pathID == 0 && atEndOfPath) //wantToStop
+                {
+                    targetSpeed = 0f;
+                }
+                targetSpeed = Mathf.Min(targetSpeed, wantedSpeed);
+            }
+            else
+            {
+                targetSpeed = 0f;
+            }
+        }
+        deltaSpeed = GetDeltaSpeed(targetSpeed, currentSpeed, accRate, decRate);
     }
     void SetNextWayPoint()
     {
