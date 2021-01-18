@@ -20,8 +20,7 @@ public class Unit
     Vector3 nextWayPoint;
     float currWayPointDist = 0f;
     float prevWayPointDist = 0f;
-    int numIdlingUpdates = 0;
-    int numIdlingSlowUpdates = 0;
+    float turnRate = 10.0f;
     float accRate = 100f;
     float decRate = 100f;
 
@@ -31,6 +30,10 @@ public class Unit
     public int XSize { get => xsize; }
     int zsize;
     public int ZSize { get => zsize; }
+
+    bool idling = false;
+    int numIdlingUpdates = 0;
+    int numIdlingSlowUpdates = 0;
 
     public Unit()
     {
@@ -131,6 +134,27 @@ public class Unit
         {
             if (pathID != 0)
             {
+                if (idling)
+                {
+                    numIdlingSlowUpdates = Mathf.Min(16, numIdlingSlowUpdates + 1);
+                }
+                else
+                {
+                    numIdlingSlowUpdates = Mathf.Max(0, numIdlingSlowUpdates - 1);
+                }
+                if (numIdlingUpdates > 360.0f / turnRate)
+                {
+                    Debug.LogWarning("has path but failed");
+                    if (numIdlingSlowUpdates < 16)
+                    {
+                        ReRequestPath(true);
+                    }
+                    else
+                    {
+                        StopEngine(false);
+                        progressState = ProgressState.Failed;
+                    }
+                }
             }
             else
             {
