@@ -4,8 +4,10 @@ public class Unit
 {
     enum ProgressState { Done, Active, Failed };
     Vector3 forward = Vector3.forward;
+    Vector3 waypointDir;
     Vector3 pos = Vector3.zero;
     Vector3 speed = Vector3.zero;
+    float maxWantedSpeed;
     float radius = 0.5f;
     ProgressState progressState;
     bool wantRepath = false;
@@ -23,7 +25,10 @@ public class Unit
     float turnRate = 10.0f;
     float accRate = 100f;
     float decRate = 100f;
+    bool reversing = false;
+    float deltaSpeed;
 
+    Vector3 oldPos;
     Vector3 oldSlowUpdatePos;
     int mapSquare;
     int xsize;
@@ -125,8 +130,129 @@ public class Unit
         StopEngine(hardStop);
         progressState = ProgressState.Done;
     }
+    void ChangeHeading(Vector3 newForward)
+    {
+        //TODO
+        forward = newForward;
+    }
+    void ChangeSpeed(float newWantedSpeed)
+    {
+    }
+    void SetNextWayPoint()
+    {
+    }
+    Vector3 GetObstacleAvoidanceDir(Vector3 desireDir)
+    {
+        return Vector3.zero;
+    }
+    void UpdateOwnerAccelAndHeading()
+    {
+        if (pathID == 0 && atEndOfPath)
+        {
+            currWayPoint.y = -1.0f;
+            nextWayPoint.y = -1.0f;
+            ChangeSpeed(0.0f);
+        }
+        else
+        {
+            Vector3 opos = pos;
+            Vector3 ovel = speed;
+            Vector3 ffd = forward;
+            Vector3 cwp = currWayPoint;
+
+            prevWayPointDist = currWayPointDist;
+            currWayPointDist = MathUtils.Distance2D(currWayPoint, opos);
+
+            float curGoalDistSq = MathUtils.SqrDistance2D(opos, goalPos);
+            float minGoalDistSq = goalRadius * goalRadius;
+            float spdGoalDistSq = (currentSpeed * 1.05f) * (currentSpeed * 1.05f);
+
+            atGoal |= (curGoalDistSq <= minGoalDistSq);
+            if (!reversing)
+            {
+                atGoal |= (curGoalDistSq <= spdGoalDistSq) && Vector3.Dot(ffd, goalPos - opos) > 0f && Vector3.Dot(ffd, goalPos - (opos + ovel)) <= 0f;
+            }
+            else
+            {
+                atGoal |= (curGoalDistSq <= spdGoalDistSq) && Vector3.Dot(ffd, goalPos - opos) < 0f && Vector3.Dot(ffd, goalPos - (opos + ovel)) > 0f;
+            }
+            if (!atGoal)
+            {
+                if (idling)
+                {
+                    numIdlingUpdates = Mathf.Max(360, numIdlingUpdates + 1);
+                }
+                else
+                {
+                    numIdlingUpdates = Mathf.Max(0, numIdlingUpdates - 1);
+                }
+            }
+            if (!atEndOfPath)
+            {
+                SetNextWayPoint();
+            }
+            else
+            {
+                if (atGoal)
+                {
+                    if (progressState == ProgressState.Active)
+                    {
+                        StopEngine(false);
+                        progressState = ProgressState.Done;
+                    }
+                }
+                else
+                {
+                    ReRequestPath(false);
+                }
+            }
+            Vector3 waypointVec;
+            if (MathUtils.SqrDistance2D(cwp, opos) > 1e-4f)
+            {
+                waypointVec = new Vector3(cwp.x - opos.x, 0, cwp.z = opos.z);
+                waypointDir = waypointVec.normalized;
+            }
+            Vector3 modWantedDir = GetObstacleAvoidanceDir(atGoal ? ffd : waypointDir);
+            ChangeHeading(modWantedDir);
+            ChangeSpeed(maxWantedSpeed);
+        }
+    }
+    void UpdateOwnerPos(Vector3 oldSpeed, Vector3 newSpeed)
+    {
+
+    }
+    void HandleObjectCollisions()
+    {
+    }
+    void AdjustPosToWaterLine()
+    {
+        pos.y = 0f;
+    }
+    void OwnerMoved(Vector3 oldForward, Vector3 posDiff)
+    {
+        if (posDiff.sqrMagnitude < 1e-4f)
+        {
+            speed = Vector3.zero;
+            idling = true;
+            idling &= (currWayPoint.y != -1.0f && nextWayPoint.y != -1.0f);
+            idling &= Vector3.SqrMagnitude(oldForward - forward) < 1e-4f; //TODO
+            return;
+        }
+        oldPos = pos;
+        Vector3 ffd = forward * posDiff.sqrMagnitude / 2.0f;
+        Vector3 wpd = waypointDir;
+        idling = true;
+        idling &= (currWayPointDist - prevWayPointDist) * (currWayPointDist - prevWayPointDist) < Vector3.Dot(ffd, wpd);
+        idling &= (posDiff.sqrMagnitude < speed.sqrMagnitude / 4.0f);
+    }
     public void Update()
     {
+        Vector3 oldForward = forward;
+        UpdateOwnerAccelAndHeading();
+        UpdateOwnerPos(speed, forward * (speed.magnitude + deltaSpeed));
+        HandleObjectCollisions();
+        AdjustPosToWaterLine();
+        OwnerMoved(oldForward, pos - oldPos);
     }
     public void LateUpdate()
     {

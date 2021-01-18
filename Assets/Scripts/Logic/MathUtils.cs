@@ -2,6 +2,10 @@ using UnityEngine;
 
 public class MathUtils
 {
+    public static float Distance2D(Vector3 a, Vector3 b)
+    {
+        return Mathf.Sqrt(SqrDistance2D(a, b));
+    }
     public static float SqrDistance2D(Vector3 a, Vector3 b)
     {
         return (b.x - a.x) * (b.x - a.x) + (b.z - a.z) * (b.z - a.z);
