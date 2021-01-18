@@ -131,7 +131,6 @@ public class Unit
         {
             if (pathID != 0)
             {
-
             }
             else
             {
@@ -143,7 +142,11 @@ public class Unit
                 ReRequestPath(true);
             }
         }
-        //TOOD move into map
+        if (Ground.Instance.ClampInBounds(pos, out var newPos))
+        {
+            Debug.LogWarning("pos is clamp in bounds");
+            pos = newPos;
+        }
         if (pos != oldSlowUpdatePos)
         {
             oldSlowUpdatePos = pos;
