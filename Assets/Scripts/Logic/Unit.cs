@@ -174,6 +174,34 @@ public class Unit
         }
         deltaSpeed = GetDeltaSpeed(targetSpeed, currentSpeed, accRate, decRate);
     }
+    bool CanSetNextWayPoint()
+    {
+        if (pathID == 0)
+        {
+            return false;
+        }
+        if (currWayPoint.y != -1.0f && nextWayPoint.y != -1.0f)
+        {
+            float waypointDot = Vector3.Dot(forward, waypointDir);
+            if (waypointDot >= 0.995f && currWayPointDist > Mathf.Max(Ground.Instance.GridSize, currentSpeed * 1.05f))
+            {
+                return false;
+            }
+            bool rangeTest = Ground.Instance.TestMoveSquareRange(this, Vector3.Min(currWayPoint, pos), Vector3.Max(currWayPoint, pos), speed, true, true, true);
+            bool allowSkip = (currWayPoint - pos).sqrMagnitude <= Ground.Instance.GridSize;
+            if (!allowSkip && !rangeTest)
+            {
+                return false;
+            }
+            atEndOfPath |= (currWayPoint - goalPos).sqrMagnitude <= goalRadius * goalRadius;
+            if (atEndOfPath)
+            {
+                currWayPoint = goalPos;
+                nextWayPoint = goalPos;
+            }
+        }
+        return true;
+    }
     void SetNextWayPoint()
     {
     }

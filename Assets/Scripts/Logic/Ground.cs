@@ -6,6 +6,7 @@ public class Ground : Singleton<Ground>
     int gridX;
     int gridZ;
     float gridSize;
+    public float GridSize { get => gridSize; }
     Vector3 bmin;
     Vector3 bmax;
     Dictionary<int, List<Unit>> blockingObjs = new Dictionary<int, List<Unit>>();
@@ -87,5 +88,9 @@ public class Ground : Singleton<Ground>
             }
         }
         PathManager.Instance.TerrainChange(xmin, xmax, zmin, zmax);
+    }
+    public bool TestMoveSquareRange(Unit collider, Vector3 rangeMins, Vector3 rangeMax, Vector3 testMoveDir, bool testTerrain, bool testObjs, bool centerOnly)
+    {
+        return true;
     }
 }
