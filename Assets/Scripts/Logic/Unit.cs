@@ -187,23 +187,47 @@ public class Unit
             {
                 return false;
             }
-            bool rangeTest = Ground.Instance.TestMoveSquareRange(this, Vector3.Min(currWayPoint, pos), Vector3.Max(currWayPoint, pos), speed, true, true, true);
-            bool allowSkip = (currWayPoint - pos).sqrMagnitude <= Ground.Instance.GridSize;
-            if (!allowSkip && !rangeTest)
+            bool allowSkip = (currWayPoint - pos).sqrMagnitude <= Ground.Instance.GridSize * Ground.Instance.GridSize;
+            if (!allowSkip)
             {
-                return false;
+                bool rangeTest = Ground.Instance.TestMoveSquareRange(this, Vector3.Min(currWayPoint, pos), Vector3.Max(currWayPoint, pos), speed, true, true, true);
+                if (!rangeTest)
+                {
+                    return false;
+                }
             }
             atEndOfPath |= (currWayPoint - goalPos).sqrMagnitude <= goalRadius * goalRadius;
             if (atEndOfPath)
             {
                 currWayPoint = goalPos;
                 nextWayPoint = goalPos;
+                return false;
             }
         }
         return true;
     }
+    void Fail()
+    {
+        StopEngine(false);
+        progressState = ProgressState.Failed;
+    }
     void SetNextWayPoint()
     {
+        if (CanSetNextWayPoint())
+        {
+            currWayPoint = nextWayPoint;
+            nextWayPoint = PathManager.Instance.NextWayPoint(this, pathID, currWayPoint, Mathf.Max(0.5f, currentSpeed * 1.05f));
+        }
+        if (nextWayPoint.x == -1.0f && nextWayPoint.z == -1.0f)
+        {
+            Fail();
+            return;
+        }
+        if (!Ground.Instance.SquareIsBlocked(this, currWayPoint) && !Ground.Instance.SquareIsBlocked(this, nextWayPoint))
+        {
+            return;
+        }
+        ReRequestPath(false);
     }
     Vector3 GetObstacleAvoidanceDir(Vector3 desireDir)
     {

@@ -93,4 +93,8 @@ public class Ground : Singleton<Ground>
     {
         return true;
     }
+    public bool SquareIsBlocked(Unit collider, Vector3 pos)
+    {
+        return false;
+    }
 }
