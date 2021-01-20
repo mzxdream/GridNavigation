@@ -40,6 +40,10 @@ public class Unit
     bool idling = false;
     int numIdlingUpdates = 0;
     int numIdlingSlowUpdates = 0;
+    bool isPushResistant = false;
+    float mass = 1.0f;
+    int allyteam;
+    bool isMoving = false;
 
     public Unit()
     {
@@ -229,9 +233,95 @@ public class Unit
         }
         ReRequestPath(false);
     }
+    bool WantToStop()
+    {
+        return pathID == 0 && atEndOfPath;
+    }
+    float CalcFootPrintMinExteriorRadius()
+    {
+        return Mathf.Sqrt(xsize * xsize + zsize * zsize) / 2.0f;
+    }
+    bool IsMoving()
+    {
+        return isMoving;
+    }
+    static int CalcTurnSign(Unit a, Unit b)
+    {
+        //TODO
+        return -1;
+    }
+    Vector3 GetRightDir()
+    {
+        return Vector3.Cross(forward, Vector3.up);
+    }
     Vector3 GetObstacleAvoidanceDir(Vector3 desireDir)
     {
-        return Vector3.zero;
+        if (WantToStop())
+        {
+            return forward;
+        }
+        var avoidanceVec = Vector3.zero;
+        var avoidanceDir = desireDir;
+        var lastAvoidanceDir = desireDir;
+        var avoider = this;
+        if (Vector3.Dot(avoider.forward, desireDir) < 0.0f)
+        {
+            return lastAvoidanceDir;
+        }
+        float avoidanceRadius = Mathf.Max(currentSpeed, 1.0f) * (avoider.radius * 2.0f);
+        float avoiderRadius = avoider.CalcFootPrintMinExteriorRadius();
+        foreach (var avoidee in Ground.Instance.GetSolids(avoider.pos, avoidanceRadius))
+        {
+            if (avoidee == avoider)
+            {
+                continue;
+            }
+            if (Ground.Instance.IsNonBlocking(avoider, avoidee))
+            {
+                continue;
+            }
+            bool avoideeMovable = !avoidee.isPushResistant;
+            Vector3 avoideeVector = (avoider.pos + avoider.speed) - (avoidee.pos + avoidee.speed);
+            float avoideeRadius = avoidee.CalcFootPrintMinExteriorRadius();
+            float avoidanceRadiusSum = avoiderRadius + avoideeRadius;
+            float avoidanceMassSum = avoider.mass + avoidee.mass;
+            float avoideeMassScale = avoidee.mass / avoidanceMassSum;
+            float avoideeDistSq = avoideeVector.sqrMagnitude;
+            float avoideeDist = Mathf.Sqrt(avoideeDistSq) + 0.01f;
+            if (avoideeMovable)
+            {
+                if (!avoidee.isMoving && avoidee.allyteam == avoider.allyteam)
+                {
+                    continue;
+                }
+            }
+            float MAX_AVOIDEE_COSING = Mathf.Cos(120.0f * Mathf.Deg2Rad);
+            if (Vector3.Dot(avoider.forward, -(avoideeVector / avoideeDist)) < MAX_AVOIDEE_COSING)
+            {
+                continue;
+            }
+            if (avoideeDistSq >= Mathf.Pow(Mathf.Max(currentSpeed, 1.0f) + avoidanceRadiusSum, 2))
+            {
+                continue;
+            }
+            if (avoideeDistSq >= (avoider.pos - goalPos).sqrMagnitude)
+            {
+                continue;
+            }
+            float avoiderTurnSign = -CalcTurnSign(avoider, avoidee);
+            float avoideeTurnSign = -CalcTurnSign(avoidee, avoider);
+            float avoidanceCosAngle = Mathf.Clamp(Vector3.Dot(avoider.forward, avoidee.forward), -1.0f, 1.0f);
+            float avoidanceResponse = (1.0f - avoidanceCosAngle) + 0.1f;
+            float avoidanceFallOff = (1.0f - Mathf.Min(1.0f, avoideeDist / (5.0f * avoidanceRadiusSum)));
+            if (avoidanceCosAngle < 0.0f)
+            {
+                avoiderTurnSign = Mathf.Max(avoiderTurnSign, avoideeTurnSign);
+            }
+            avoidanceDir = avoider.GetRightDir() * avoiderTurnSign;
+            avoidanceVec += (avoidanceDir * avoidanceResponse * avoidanceFallOff * avoideeMassScale);
+        }
+        //TODO
+        return avoidanceDir;
     }
     void UpdateOwnerAccelAndHeading()
     {

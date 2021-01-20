@@ -97,4 +97,12 @@ public class Ground : Singleton<Ground>
     {
         return false;
     }
+    public List<Unit> GetSolids(Vector3 pos, float radius)
+    {
+        return null;
+    }
+    public bool IsNonBlocking(Unit avoider, Unit avoidee)
+    {
+        return true;
+    }
 }
