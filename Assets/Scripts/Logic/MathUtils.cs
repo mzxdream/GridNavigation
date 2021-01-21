@@ -18,4 +18,8 @@ public class MathUtils
     {
         return Mathf.Abs(a - b) < 1e-06f ? 0 : (a < b ? -1 : 1);
     }
+    public static int Sign(float v)
+    {
+        return v > 0.0f ? 1 : -1;
+    }
 }

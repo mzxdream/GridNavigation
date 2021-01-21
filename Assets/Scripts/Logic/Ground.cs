@@ -101,6 +101,10 @@ public class Ground : Singleton<Ground>
     {
         return false;
     }
+    public bool SquareIsBlocked(Unit collider, int xSquare, int zSquare)
+    {
+        return false;
+    }
     public List<Unit> GetSolids(Vector3 pos, float radius)
     {
         return null;
