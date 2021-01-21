@@ -320,7 +320,8 @@ public class Unit
             avoidanceDir = avoider.GetRightDir() * avoiderTurnSign;
             avoidanceVec += (avoidanceDir * avoidanceResponse * avoidanceFallOff * avoideeMassScale);
         }
-        //TODO
+        avoidanceDir = Vector3.Lerp(desireDir, avoidanceVec, 0.5f).normalized;
+        avoidanceDir = Vector3.Lerp(avoidanceDir, lastAvoidanceDir, 0.7f).normalized;
         return avoidanceDir;
     }
     void UpdateOwnerAccelAndHeading()
