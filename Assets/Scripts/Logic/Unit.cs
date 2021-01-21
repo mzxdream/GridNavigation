@@ -239,7 +239,15 @@ public class Unit
     }
     float CalcFootPrintMinExteriorRadius()
     {
-        return Mathf.Sqrt(xsize * xsize + zsize * zsize) / 2.0f;
+        return Mathf.Sqrt(xsize * xsize + zsize * zsize) * 0.5f * SQUARE_SIZE;
+    }
+    float CalcFootPrintMaxExteriorRadius()
+    {
+        return Mathf.Max(xsize, zsize) * 0.5f * SQUARE_SIZE;
+    }
+    float CalcFootPrintAxisStretchFactor()
+    {
+        return Mathf.Abs(xsize - zsize) * 1.0f / (xsize + zsize);
     }
     bool IsMoving()
     {
@@ -455,8 +463,29 @@ public class Unit
         deltaSpeed = 0.0f;
         return newSpeedRawLTZ;
     }
+    static void HandleUnitCollisions(Unit collider, float speed, float raidus, float fpstretch)
+    {
+    }
+    static bool HandleStaticObjectCollision(Unit collider, Unit collidee, float colliderRadius, float collideeRadius, Vector3 separationVector, bool canRequestPath, bool checkYardMap, bool checkTerrain)
+    {
+        return true;
+    }
     void HandleObjectCollisions()
     {
+        var collider = this;
+        float colliderFootPrintRadius = collider.CalcFootPrintMaxExteriorRadius();
+        float colliderAxisStretchFact = collider.CalcFootPrintAxisStretchFactor();
+        HandleUnitCollisions(collider, collider.speed.magnitude, colliderFootPrintRadius, colliderAxisStretchFact);
+        bool squareChange = Ground.Instance.GetSquare(collider.pos + collider.speed) != Ground.Instance.GetSquare(collider.pos);
+        if (!squareChange)
+        {
+            return;
+        }
+        if (!HandleStaticObjectCollision(collider, collider, colliderFootPrintRadius, 0.0f, Vector3.zero, true, false, true))
+        {
+            return;
+        }
+        ReRequestPath(false);
     }
     void AdjustPosToWaterLine()
     {
