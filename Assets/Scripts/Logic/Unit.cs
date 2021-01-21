@@ -396,9 +396,64 @@ public class Unit
             ChangeSpeed(maxWantedSpeed);
         }
     }
-    void UpdateOwnerPos(Vector3 oldSpeed, Vector3 newSpeed)
+    void SetVelocityAndSpeed(Vector3 speed)
     {
-
+    }
+    void Move(Vector3 speed, bool relative)
+    {
+    }
+    const int SQUARE_SIZE = 8;
+    void UpdateOwnerPos(Vector3 oldSpeedVector, Vector3 newSpeedVector)
+    {
+        float oldSpeed = Vector3.Dot(oldSpeedVector, forward);
+        float newSpeed = Vector3.Dot(newSpeedVector, forward);
+        if (newSpeedVector != Vector3.zero)
+        {
+            SetVelocityAndSpeed(newSpeedVector);
+            Move(speed, true);
+            if (!Ground.Instance.TestMoveSquare(this, this.pos, this.speed, true, false, true))
+            {
+                bool updatePos = false;
+                for (int n = 1; n <= 8; n++)
+                {
+                    updatePos = Ground.Instance.TestMoveSquare(this, this.pos + this.GetRightDir() * n, this.speed, true, false, true);
+                    if (updatePos)
+                    {
+                        Move(pos + GetRightDir() * n, false);
+                        break;
+                    }
+                    updatePos = Ground.Instance.TestMoveSquare(this, pos - GetRightDir() * n, speed, true, false, true);
+                    if (updatePos)
+                    {
+                        Move(pos - GetRightDir() * n, false);
+                        break;
+                    }
+                }
+                if (!updatePos)
+                {
+                    Move(pos - newSpeedVector, false);
+                }
+            }
+        }
+        reversing = UpdateOwnerSpeed(Mathf.Abs(oldSpeed), Mathf.Abs(newSpeed), newSpeed);
+    }
+    bool UpdateOwnerSpeed(float oldSpeedAbs, float newSpeedAbs, float newSpeedRaw)
+    {
+        bool oldSpeedAbsGTZ = oldSpeedAbs > 0.01f;
+        bool newSpeedAbsGTZ = newSpeedAbs > 0.01f;
+        bool newSpeedRawLTZ = newSpeedRaw < 0.0f;
+        isMoving = true;
+        if (!oldSpeedAbsGTZ && newSpeedAbsGTZ)
+        {
+            //start moving callback
+        }
+        if (oldSpeedAbsGTZ && !newSpeedAbsGTZ)
+        {
+            //stop moving callback
+        }
+        currentSpeed = newSpeedAbs;
+        deltaSpeed = 0.0f;
+        return newSpeedRawLTZ;
     }
     void HandleObjectCollisions()
     {

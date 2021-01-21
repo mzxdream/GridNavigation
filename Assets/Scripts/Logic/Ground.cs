@@ -93,6 +93,10 @@ public class Ground : Singleton<Ground>
     {
         return true;
     }
+    public bool TestMoveSquare(Unit collider, Vector3 testMovePos, Vector3 testMoveDir, bool testTerrain, bool testObjectes, bool centerOnly)
+    {
+        return true;
+    }
     public bool SquareIsBlocked(Unit collider, Vector3 pos)
     {
         return false;
