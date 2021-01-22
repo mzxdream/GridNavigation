@@ -31,6 +31,7 @@ public class GridMoveAgent
     float turnAccel = 0.0f;
 
     ProgressState progressState = ProgressState.Done;
+    int pathID = 0;
     Vector3 goalPos = Vector3.zero;
     Vector3 oldPos = Vector3.zero;
     Vector3 oldLaterUpdatePos = Vector3.zero;
@@ -61,6 +62,7 @@ public class GridMoveAgent
         turnAccel = turnRate * 0.333f;
 
         progressState = ProgressState.Done;
+        pathID = 0;
         goalPos = pos;
         oldPos = pos;
         oldLaterUpdatePos = pos;
@@ -74,5 +76,10 @@ public class GridMoveAgent
     }
     public void Clear()
     {
+        if (pathID != 0)
+        {
+            manager.DeletaPath(pathID);
+            pathID = 0;
+        }
     }
 }

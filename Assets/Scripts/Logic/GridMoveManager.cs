@@ -29,4 +29,18 @@ public class GridMoveManager
     public void Update()
     {
     }
+    public int RequestPath(GridMoveAgent agent, Vector3 startPos, Vector3 goalPos, float goalRadius)
+    {
+        return 0;
+    }
+    public void DeletaPath(int pathID)
+    {
+    }
+    public Vector3 NextWayPoint(GridMoveAgent agent, int pathID, Vector3 callerPos, float radius)
+    {
+        return Vector3.zero;
+    }
+    public void TerrainChange(int xmin, int zmin, int xmax, int zmax)
+    {
+    }
 }
