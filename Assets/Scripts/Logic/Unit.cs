@@ -2,7 +2,6 @@ using UnityEngine;
 
 public class Unit
 {
-    enum ProgressState { Done, Active, Failed };
     Vector3 forward = Vector3.forward;
     Vector3 waypointDir;
     Vector3 pos = Vector3.zero;
