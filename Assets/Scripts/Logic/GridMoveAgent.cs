@@ -17,8 +17,6 @@ public class GridMoveAgent
     const int CIRCLE_DIVS = (MAX_HEADING << 1);
 
     GridMoveManager manager;
-    Vector3 pos = Vector3.zero;
-    Vector3 flatFrontDir = Vector3.forward;
     int xsize = 0;
     int zsize = 0;
     float minExteriorRadius = 0.0f;
@@ -30,17 +28,28 @@ public class GridMoveAgent
     float turnRate = 0.0f;
     float turnAccel = 0.0f;
 
+    Vector3 pos = Vector3.zero;
+    Vector3 flatFrontDir = Vector3.forward;
+    int heading = 0;
     ProgressState progressState = ProgressState.Done;
     int pathID = 0;
     Vector3 goalPos = Vector3.zero;
     Vector3 oldPos = Vector3.zero;
     Vector3 oldLaterUpdatePos = Vector3.zero;
+    Vector3 curVelocity = Vector3.zero;
+    float curSpeed = 0.0f;
+    float deltaSpeed = 0.0f;
     float maxSpeed = 0.0f;
     float maxWantedSpeed = 0.0f;
     Vector3 currWayPoint = Vector3.zero;
     Vector3 nextWayPoint = Vector3.zero;
     Vector3 lastAvoidanceDir = Vector3.zero;
     int wantedHeading = 0;
+    bool idling = false;
+    bool reversing = false;
+    Vector3 waypointDir = Vector3.zero;
+    float currWayPointDist = 0.0f;
+    float prevWayPointDist = 0.0f;
 
     public GridMoveAgent(GridMoveManager manager)
     {
@@ -66,12 +75,15 @@ public class GridMoveAgent
         goalPos = pos;
         oldPos = pos;
         oldLaterUpdatePos = pos;
+        curVelocity = Vector3.zero;
+        curSpeed = 0.0f;
         maxSpeed = maxSpeedDef;
         maxWantedSpeed = maxSpeedDef;
         currWayPoint = Vector3.zero;
         nextWayPoint = Vector3.zero;
         lastAvoidanceDir = Vector3.zero;
         wantedHeading = 0;
+        idling = false;
         return true;
     }
     public void Clear()
@@ -81,5 +93,39 @@ public class GridMoveAgent
             manager.DeletaPath(pathID);
             pathID = 0;
         }
+    }
+    bool OwnerMoved(int oldHeading, Vector3 posDiff)
+    {
+        if (posDiff.sqrMagnitude < 1e-5f)
+        {
+            curVelocity = Vector3.zero;
+            curSpeed = 0.0f;
+            idling = true;
+            idling &= (currWayPoint.y != -1.0f && nextWayPoint.y != -1.0f);
+            idling &= (Mathf.Abs(heading - oldHeading) < turnRate);
+            return false;
+        }
+        oldPos = pos;
+        Vector3 ffd = flatFrontDir * posDiff.sqrMagnitude * 0.5f;
+        Vector3 wpd = !reversing ? waypointDir : -waypointDir;
+        idling = true;
+        idling &= (Mathf.Abs(posDiff.y) < 1e-5f);
+        idling &= ((currWayPointDist - prevWayPointDist) * (currWayPointDist - prevWayPointDist) < Vector3.Dot(ffd, wpd));
+        idling &= (posDiff.sqrMagnitude < (curSpeed * curSpeed * 0.25f));
+        return true;
+    }
+    bool Update()
+    {
+        int h = heading;
+        UpdateOwnerAccelAndHeading();
+        Vector3 newVelocity = !reversing ? flatFrontDir * (curSpeed + deltaSpeed) : flatFrontDir * (-curSpeed + deltaSpeed);
+        UpdateOwnerPos(curVelocity, newVelocity);
+        return OwnerMoved(h, pos - oldPos);
+    }
+    void UpdateOwnerAccelAndHeading()
+    {
+    }
+    void UpdateOwnerPos(Vector3 oldSpeedVector, Vector3 newSpeedVector)
+    {
     }
 }
