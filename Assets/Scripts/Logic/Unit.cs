@@ -593,15 +593,31 @@ public class Unit
             }
             return canRequestPath && summedVec != Vector3.zero;
         }
-        float colRadiusSum = colliderRadius + collideeRadius;
-        float sepDistance = separationVector.magnitude + 0.1f;
-        float penDistance = Mathf.Min(0.0f, sepDistance - colRadiusSum);
-        float colSlideSign = -MathUtils.Sign(Vector3.Dot(collidee.pos, rgt) - Vector3.Dot(pos, rgt));
+        {
+            float colRadiusSum = colliderRadius + collideeRadius;
+            float sepDistance = separationVector.magnitude + 0.1f;
+            float penDistance = Mathf.Min(0.0f, sepDistance - colRadiusSum);
+            float colSlideSign = -MathUtils.Sign(Vector3.Dot(collidee.pos, rgt) - Vector3.Dot(pos, rgt));
 
-        float strafeScale = Mathf.Min(collider.currentSpeed, Mathf.Max(0.0f, -penDistance * 0.5f));
-        float bounceScale = Mathf.Min(collider.currentSpeed, Mathf.Max(0.0f, -penDistance)) * (1 - (checkYardMap ? 1 : 0));
+            float strafeScale = Mathf.Min(collider.currentSpeed, Mathf.Max(0.0f, -penDistance * 0.5f));
+            float bounceScale = Mathf.Min(collider.currentSpeed, Mathf.Max(0.0f, -penDistance));
 
-        return true;
+            strafeVec = rgt * colSlideSign * strafeScale;
+            bounceVec = (separationVector / sepDistance) * bounceScale;
+            summedVec = strafeVec + bounceVec;
+
+            if (Ground.Instance.TestMoveSquare(collider, pos + summedVec, vel, true, true, true))
+            {
+                collider.Move(summedVec, true);
+                collider.currWayPoint += summedVec;
+                collider.nextWayPoint += summedVec;
+            }
+            else
+            {
+                collider.Move((collider.oldPos - pos) + summedVec * 0.25f * (Vector3.Dot(collider.forward, separationVector) < 0.25f ? 1 : 0), true);
+            }
+            return canRequestPath && penDistance < 0.0f;
+        }
     }
     void HandleObjectCollisions()
     {
