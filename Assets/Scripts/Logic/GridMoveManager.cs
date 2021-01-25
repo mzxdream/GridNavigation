@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class GridMoveManager
@@ -58,5 +59,12 @@ public class GridMoveManager
     public void OnSquareChange(GridMoveAgent agent, int oldMapSquare, int newMapSquare)
     {
         //todo
+    }
+    public List<GridMoveAgent> GetSolidsExact(Vector3 pos, float radius)
+    {
+        return null;
+    }
+    public bool IsNonBlocking()
+    {
     }
 }
