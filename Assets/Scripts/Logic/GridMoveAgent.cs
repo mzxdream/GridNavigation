@@ -34,11 +34,13 @@ public class GridMoveAgent
     ProgressState progressState = ProgressState.Done;
     int pathID = 0;
     Vector3 goalPos = Vector3.zero;
+    float goalRadius = 0.0f;
     Vector3 oldPos = Vector3.zero;
     Vector3 oldLaterUpdatePos = Vector3.zero;
     Vector3 curVelocity = Vector3.zero;
     float curSpeed = 0.0f;
     float deltaSpeed = 0.0f;
+    float wantedSpeed = 0.0f;
     float maxSpeed = 0.0f;
     float maxWantedSpeed = 0.0f;
     Vector3 currWayPoint = Vector3.zero;
@@ -50,6 +52,9 @@ public class GridMoveAgent
     Vector3 waypointDir = Vector3.zero;
     float currWayPointDist = 0.0f;
     float prevWayPointDist = 0.0f;
+    bool atEndOfPath = false;
+    bool atGoal = false;
+    int numIdlingUpdates = 0;
 
     public GridMoveAgent(GridMoveManager manager)
     {
@@ -94,6 +99,10 @@ public class GridMoveAgent
             pathID = 0;
         }
     }
+    bool WantToStop()
+    {
+        return pathID == 0 && atEndOfPath;
+    }
     bool OwnerMoved(int oldHeading, Vector3 posDiff)
     {
         if (posDiff.sqrMagnitude < 1e-5f)
@@ -120,12 +129,88 @@ public class GridMoveAgent
         UpdateOwnerAccelAndHeading();
         Vector3 newVelocity = !reversing ? flatFrontDir * (curSpeed + deltaSpeed) : flatFrontDir * (-curSpeed + deltaSpeed);
         UpdateOwnerPos(curVelocity, newVelocity);
+        HandleObjectCollisions();
+        AdjustPosToWaterLine();
         return OwnerMoved(h, pos - oldPos);
     }
     void UpdateOwnerAccelAndHeading()
     {
+        if (WantToStop())
+        {
+            currWayPoint.y = -1.0f;
+            nextWayPoint.y = -1.0f;
+            ChangeHeading(heading);
+            ChangeSpeed(0.0f);
+        }
+        else
+        {
+            Vector3 opos = pos;
+            Vector3 ovel = curVelocity;
+            Vector3 ffd = flatFrontDir;
+            Vector3 cwp = currWayPoint;
+
+            prevWayPointDist = currWayPointDist;
+            currWayPointDist = MathUtils.Distance2D(currWayPoint, opos);
+            {
+                float curGoalDistSq = MathUtils.SqrDistance2D(opos, goalPos);
+                float minGoalDistSq = goalRadius * goalRadius;
+                float spdGoalDistSq = (curSpeed * 1.05f) * (curSpeed * 1.05f);
+
+                atGoal |= (curGoalDistSq <= minGoalDistSq);
+                if (!reversing)
+                {
+                    atGoal |= (curGoalDistSq <= spdGoalDistSq) && Vector3.Dot(ffd, goalPos - opos) > 0f && Vector3.Dot(ffd, goalPos - (opos + ovel)) <= 0f;
+                }
+                else
+                {
+                    atGoal |= (curGoalDistSq <= spdGoalDistSq) && Vector3.Dot(ffd, goalPos - opos) < 0f && Vector3.Dot(ffd, goalPos - (opos + ovel)) >= 0f;
+                }
+            }
+            if (!atGoal)
+            {
+                if (!idling)
+                {
+                    numIdlingUpdates = Mathf.Max(0, numIdlingUpdates - 1);
+                }
+                else
+                {
+                    numIdlingUpdates = Mathf.Max(MAX_HEADING, numIdlingUpdates + 1);
+                }
+            }
+            if (!atEndOfPath)
+            {
+                SetNextWayPoint();
+            }
+            else
+            {
+                if (atGoal)
+                {
+                    Arrived(false);
+                }
+                else
+                {
+                    ReRequestPath(false);
+                }
+            }
+            Vector3 waypointVec;
+            if (MathUtils.SqrDistance2D(cwp, opos) > 1e-4f)
+            {
+                waypointVec = new Vector3(cwp.x - opos.x, 0, cwp.z = opos.z);
+                waypointDir = waypointVec.normalized;
+            }
+            Vector3 modWantedDir = GetObstacleAvoidanceDir(atGoal ? ffd : waypointDir);
+            ChangeHeading(GetHeadingFromVector(modWantedDir));
+            ChangeSpeed(maxWantedSpeed);
+        }
+        return false;
     }
     void UpdateOwnerPos(Vector3 oldSpeedVector, Vector3 newSpeedVector)
+    {
+    }
+    void HandleObjectCollisions()
+    {
+    }
+    void AdjustPosToWaterLine()
     {
     }
 }
