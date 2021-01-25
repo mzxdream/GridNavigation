@@ -200,10 +200,9 @@ public class GridMoveAgent
                 waypointDir = waypointVec.normalized;
             }
             Vector3 modWantedDir = GetObstacleAvoidanceDir(atGoal ? ffd : waypointDir);
-            ChangeHeading(GetHeadingFromVector(modWantedDir));
+            ChangeHeading(MathUtils.GetHeadingFromVector(modWantedDir));
             ChangeSpeed(maxWantedSpeed);
         }
-        return false;
     }
     void UpdateOwnerPos(Vector3 oldSpeedVector, Vector3 newSpeedVector)
     {
@@ -239,7 +238,7 @@ public class GridMoveAgent
                 Vector3 waypointDifFwd = waypointDir;
                 Vector3 waypointDfRev = -waypointDifFwd;
                 Vector3 waypointDif = !reversing ? waypointDifFwd : waypointDfRev;
-                int turnDeltaHeading = (heading - GetHeadingFromVector(waypointDif));
+                int turnDeltaHeading = (heading - MathUtils.GetHeadingFromVector(waypointDif));
 
                 bool startBraking = curGoalDistSq <= minGoalDist;
                 if (turnDeltaHeading != 0)
