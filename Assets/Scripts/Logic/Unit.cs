@@ -146,38 +146,7 @@ public class Unit
         //TODO
         return targetSpeed - curSpeed;
     }
-    void ChangeSpeed(float newWantedSpeed)
-    {
-        wantedSpeed = newWantedSpeed;
-        if (wantedSpeed <= 0.0f && currentSpeed < 0.01f)
-        {
-            currentSpeed = 0f;
-            deltaSpeed = 0f;
-            return;
-        }
-        var targetSpeed = maxSpeed;
-        if (currWayPoint.y == -1.0f && nextWayPoint.y == -1.0f)//wait for new path
-        {
-            targetSpeed = 0f;
-        }
-        else
-        {
-            if (wantedSpeed > 0f)
-            {
-                //TODO check turn rate speed
-                if (pathID == 0 && atEndOfPath) //wantToStop
-                {
-                    targetSpeed = 0f;
-                }
-                targetSpeed = Mathf.Min(targetSpeed, wantedSpeed);
-            }
-            else
-            {
-                targetSpeed = 0f;
-            }
-        }
-        deltaSpeed = GetDeltaSpeed(targetSpeed, currentSpeed, accRate, decRate);
-    }
+
     bool CanSetNextWayPoint()
     {
         if (pathID == 0)
@@ -334,75 +303,7 @@ public class Unit
     }
     void UpdateOwnerAccelAndHeading()
     {
-        if (pathID == 0 && atEndOfPath)
-        {
-            currWayPoint.y = -1.0f;
-            nextWayPoint.y = -1.0f;
-            ChangeSpeed(0.0f);
-        }
-        else
-        {
-            Vector3 opos = pos;
-            Vector3 ovel = speed;
-            Vector3 ffd = forward;
-            Vector3 cwp = currWayPoint;
-
-            prevWayPointDist = currWayPointDist;
-            currWayPointDist = MathUtils.Distance2D(currWayPoint, opos);
-
-            float curGoalDistSq = MathUtils.SqrDistance2D(opos, goalPos);
-            float minGoalDistSq = goalRadius * goalRadius;
-            float spdGoalDistSq = (currentSpeed * 1.05f) * (currentSpeed * 1.05f);
-
-            atGoal |= (curGoalDistSq <= minGoalDistSq);
-            if (!reversing)
-            {
-                atGoal |= (curGoalDistSq <= spdGoalDistSq) && Vector3.Dot(ffd, goalPos - opos) > 0f && Vector3.Dot(ffd, goalPos - (opos + ovel)) <= 0f;
-            }
-            else
-            {
-                atGoal |= (curGoalDistSq <= spdGoalDistSq) && Vector3.Dot(ffd, goalPos - opos) < 0f && Vector3.Dot(ffd, goalPos - (opos + ovel)) > 0f;
-            }
-            if (!atGoal)
-            {
-                if (idling)
-                {
-                    numIdlingUpdates = Mathf.Max(360, numIdlingUpdates + 1);
-                }
-                else
-                {
-                    numIdlingUpdates = Mathf.Max(0, numIdlingUpdates - 1);
-                }
-            }
-            if (!atEndOfPath)
-            {
-                SetNextWayPoint();
-            }
-            else
-            {
-                if (atGoal)
-                {
-                    if (progressState == ProgressState.Active)
-                    {
-                        StopEngine(false);
-                        progressState = ProgressState.Done;
-                    }
-                }
-                else
-                {
-                    ReRequestPath(false);
-                }
-            }
-            Vector3 waypointVec;
-            if (MathUtils.SqrDistance2D(cwp, opos) > 1e-4f)
-            {
-                waypointVec = new Vector3(cwp.x - opos.x, 0, cwp.z = opos.z);
-                waypointDir = waypointVec.normalized;
-            }
-            Vector3 modWantedDir = GetObstacleAvoidanceDir(atGoal ? ffd : waypointDir);
-            ChangeHeading(modWantedDir);
-            ChangeSpeed(maxWantedSpeed);
-        }
+       
     }
     void SetVelocityAndSpeed(Vector3 speed)
     {

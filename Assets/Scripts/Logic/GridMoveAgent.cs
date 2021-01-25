@@ -38,7 +38,7 @@ public class GridMoveAgent
     Vector3 oldPos = Vector3.zero;
     Vector3 oldLaterUpdatePos = Vector3.zero;
     Vector3 curVelocity = Vector3.zero;
-    float curSpeed = 0.0f;
+    float currentSpeed = 0.0f;
     float deltaSpeed = 0.0f;
     float wantedSpeed = 0.0f;
     float maxSpeed = 0.0f;
@@ -81,7 +81,7 @@ public class GridMoveAgent
         oldPos = pos;
         oldLaterUpdatePos = pos;
         curVelocity = Vector3.zero;
-        curSpeed = 0.0f;
+        currentSpeed = 0.0f;
         maxSpeed = maxSpeedDef;
         maxWantedSpeed = maxSpeedDef;
         currWayPoint = Vector3.zero;
@@ -108,7 +108,7 @@ public class GridMoveAgent
         if (posDiff.sqrMagnitude < 1e-5f)
         {
             curVelocity = Vector3.zero;
-            curSpeed = 0.0f;
+            currentSpeed = 0.0f;
             idling = true;
             idling &= (currWayPoint.y != -1.0f && nextWayPoint.y != -1.0f);
             idling &= (Mathf.Abs(heading - oldHeading) < turnRate);
@@ -120,14 +120,14 @@ public class GridMoveAgent
         idling = true;
         idling &= (Mathf.Abs(posDiff.y) < 1e-5f);
         idling &= ((currWayPointDist - prevWayPointDist) * (currWayPointDist - prevWayPointDist) < Vector3.Dot(ffd, wpd));
-        idling &= (posDiff.sqrMagnitude < (curSpeed * curSpeed * 0.25f));
+        idling &= (posDiff.sqrMagnitude < (currentSpeed * currentSpeed * 0.25f));
         return true;
     }
     bool Update()
     {
         int h = heading;
         UpdateOwnerAccelAndHeading();
-        Vector3 newVelocity = !reversing ? flatFrontDir * (curSpeed + deltaSpeed) : flatFrontDir * (-curSpeed + deltaSpeed);
+        Vector3 newVelocity = !reversing ? flatFrontDir * (currentSpeed + deltaSpeed) : flatFrontDir * (-currentSpeed + deltaSpeed);
         UpdateOwnerPos(curVelocity, newVelocity);
         HandleObjectCollisions();
         AdjustPosToWaterLine();
@@ -154,7 +154,7 @@ public class GridMoveAgent
             {
                 float curGoalDistSq = MathUtils.SqrDistance2D(opos, goalPos);
                 float minGoalDistSq = goalRadius * goalRadius;
-                float spdGoalDistSq = (curSpeed * 1.05f) * (curSpeed * 1.05f);
+                float spdGoalDistSq = (currentSpeed * 1.05f) * (currentSpeed * 1.05f);
 
                 atGoal |= (curGoalDistSq <= minGoalDistSq);
                 if (!reversing)
@@ -211,6 +211,71 @@ public class GridMoveAgent
     {
     }
     void AdjustPosToWaterLine()
+    {
+    }
+    void ChangeSpeed(float newWantedSpeed)
+    {
+        wantedSpeed = newWantedSpeed;
+        if (wantedSpeed <= 0.0f && currentSpeed < 0.01f)
+        {
+            currentSpeed = 0f;
+            deltaSpeed = 0f;
+            return;
+        }
+        var targetSpeed = maxSpeed;
+        if (currWayPoint.y == -1.0f && nextWayPoint.y == -1.0f)//wait for new path
+        {
+            targetSpeed = 0f;
+        }
+        else
+        {
+            if (wantedSpeed > 0f)
+            {
+                float curGoalDistSq = (pos - goalPos).sqrMagnitude;
+                float minGoalTime = currentSpeed / Mathf.Max(0.001f, decRate);
+                float minGoalDist = 0.5f * decRate * minGoalTime * minGoalTime;//1/2at^2
+                float minGoalDistSq = minGoalDist * minGoalDist;
+                Vector3 waypointDifFwd = waypointDir;
+                Vector3 waypointDfRev = -waypointDifFwd;
+                Vector3 waypointDif = !reversing ? waypointDifFwd : waypointDfRev;
+                int turnDeltaHeading = (heading - GetHeadingFromVector(waypointDif));
+
+                bool startBraking = curGoalDistSq <= minGoalDist;
+                if (turnDeltaHeading != 0)
+                {
+                    float reqTurnAngle = Mathf.Abs(180.0f * (heading - wantedHeading) / MAX_HEADING);
+                    float maxTurnAngle = (turnRate / CIRCLE_DIVS) * 360.0f;
+                    float turnMaxSpeed = !reversing ? maxSpeed : 0.0f;
+                    float turnModSpeed = turnMaxSpeed;
+                    
+                    if (reqTurnAngle != 0.0f)
+                    {
+                        turnModSpeed *= Mathf.Clamp(maxTurnAngle / reqTurnAngle, 0.1f, 1.0f);
+                    }
+                    if (waypointDir.sqrMagnitude > 0.1f)
+                    {
+                        //targetSpeed = targetSpeed;
+                    }
+                    if (atEndOfPath)
+                    {
+                        float absTurnSpeed = turnRate;
+                        float framesToTurn = CIRCLE_DIVS / absTurnSpeed;
+                        targetSpeed = Mathf.Min(targetSpeed, (currWayPointDist * Mathf.PI) / framesToTurn);
+                    }
+                }
+                wantedSpeed *= 1.0f;
+                targetSpeed *= (!startBraking ? 1 : 0);
+                targetSpeed *= (!WantToStop() ? 1 : 0);
+                targetSpeed = Mathf.Min(targetSpeed, wantedSpeed);
+            }
+            else
+            {
+                targetSpeed = 0f;
+            }
+        }
+        deltaSpeed = GetDeltaSpeed(targetSpeed, currentSpeed, accRate, decRate, reversing);
+    }
+    void ChangeHeading(int newHeading)
     {
     }
 }
