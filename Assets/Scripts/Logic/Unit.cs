@@ -9,7 +9,7 @@ public class Unit
     float maxSpeed;
     float maxWantedSpeed;
     float radius = 0.5f;
-    ProgressState progressState;
+    //ProgressState progressState;
     bool wantRepath = false;
     Vector3 goalPos;
     float goalRadius;
@@ -50,6 +50,7 @@ public class Unit
         oldSlowUpdatePos = pos = Vector3.zero;
         mapSquare = Ground.Instance.GetSquare(oldSlowUpdatePos);
     }
+    /*
     int GetNewPath()
     {
         if (MathUtils.SqrDistance2D(pos, goalPos) <= goalRadius * goalRadius)
@@ -620,4 +621,5 @@ public class Unit
             }
         }
     }
+    */
 }

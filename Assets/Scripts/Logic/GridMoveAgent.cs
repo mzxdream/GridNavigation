@@ -15,6 +15,7 @@ public class GridMoveAgent
     enum ProgressState { Done, Active, Failed };
     const int MAX_HEADING = 32768;
     const int CIRCLE_DIVS = (MAX_HEADING << 1);
+    const int NUM_HEADINGS = 4096;
 
     GridMoveManager manager;
     int xsize = 0;
@@ -281,6 +282,6 @@ public class GridMoveAgent
         int rawDeltaHeading = GetDeltaHeading(wantedHeading, heading, turnRate);
         //TODO callback
         heading += rawDeltaHeading;
-        flatFrontDir = GetHeadingFromVector(heading);
+        flatFrontDir = MathUtils.GetVectorFromHeading(heading);
     }
 }
