@@ -191,7 +191,38 @@ public class GridMoveAgent
             }
         }
     }
-    void UpdateOwnerAccelAndHeading()
+    void StartMoving(Vector3 moveGoalPos, float moveGoalRadius)
+    {
+        goalPos = new Vector3(moveGoalPos.x, 0, moveGoalPos.z);
+        goalRadius = moveGoalRadius;
+
+        atGoal = MathUtils.SqrDistance2D(pos, goalPos) <= (goalRadius * goalRadius);
+        atEndOfPath = false;
+
+        progressState = ProgressState.Active;
+
+        numIdlingUpdates = 0;
+        numIdlingSlowUpdates = 0;
+
+        currWayPointDist = 0f;
+        prevWayPointDist = 0f;
+
+        if (atGoal)
+        {
+            return;
+        }
+        ReRequestPath(true);
+    }
+    void StopMoving(bool callScript, bool hardStop)
+    {
+        if (!atGoal)
+        {
+            goalPos = currWayPoint = Here();
+        }
+        StopEngine(callScript, hardStop);
+        progressState = ProgressState.Done;
+    }
+    bool UpdateOwnerAccelAndHeading() //FollowPath
     {
         if (WantToStop())
         {
@@ -260,15 +291,7 @@ public class GridMoveAgent
             ChangeHeading(MathUtils.GetHeadingFromVector(modWantedDir));
             ChangeSpeed(maxWantedSpeed);
         }
-    }
-    void UpdateOwnerPos(Vector3 oldSpeedVector, Vector3 newSpeedVector)
-    {
-    }
-    void HandleObjectCollisions()
-    {
-    }
-    void AdjustPosToWaterLine()
-    {
+        return false;
     }
     void ChangeSpeed(float newWantedSpeed)
     {
@@ -320,7 +343,7 @@ public class GridMoveAgent
                         targetSpeed = Mathf.Min(targetSpeed, (currWayPointDist * Mathf.PI) / framesToTurn);
                     }
                 }
-                wantedSpeed *= 1.0f;
+                //wantedSpeed *= 1.0f;
                 targetSpeed *= (!startBraking ? 1 : 0);
                 targetSpeed *= (!WantToStop() ? 1 : 0);
                 targetSpeed = Mathf.Min(targetSpeed, wantedSpeed);
@@ -339,5 +362,14 @@ public class GridMoveAgent
         //TODO callback
         heading += rawDeltaHeading;
         flatFrontDir = MathUtils.GetVectorFromHeading(heading);
+    }
+    void HandleObjectCollisions()
+    {
+    }
+    void AdjustPosToWaterLine()
+    {
+    }
+    void UpdateOwnerPos(Vector3 oldSpeedVector, Vector3 newSpeedVector)
+    {
     }
 }
