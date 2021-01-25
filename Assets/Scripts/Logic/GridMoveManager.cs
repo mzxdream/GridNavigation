@@ -43,4 +43,20 @@ public class GridMoveManager
     public void TerrainChange(int xmin, int zmin, int xmax, int zmax)
     {
     }
+    public bool IsInBounds(Vector3 pos)
+    {
+        return true;
+    }
+    public Vector3 ClampInBounds(Vector3 pos)
+    {
+        return pos;
+    }
+    public int GetSquare(Vector3 pos)
+    {
+        return 0;
+    }
+    public void OnSquareChange(GridMoveAgent agent, int oldMapSquare, int newMapSquare)
+    {
+        //todo
+    }
 }

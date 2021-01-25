@@ -16,6 +16,7 @@ public class GridMoveAgent
     const int MAX_HEADING = 32768;
     const int CIRCLE_DIVS = (MAX_HEADING << 1);
     const int NUM_HEADINGS = 4096;
+    const int MAX_IDLING_SLOWUPDATES = 16;
 
     GridMoveManager manager;
     int xsize = 0;
@@ -56,6 +57,9 @@ public class GridMoveAgent
     bool atEndOfPath = false;
     bool atGoal = false;
     int numIdlingUpdates = 0;
+    int numIdlingSlowUpdates = 0;
+    Vector3 oldSlowUpdatePos;
+    int mapSquare;
 
     public GridMoveAgent(GridMoveManager manager)
     {
@@ -133,6 +137,59 @@ public class GridMoveAgent
         HandleObjectCollisions();
         AdjustPosToWaterLine();
         return OwnerMoved(h, pos - oldPos);
+    }
+    void SlowUpdate()
+    {
+        if (progressState == ProgressState.Active)
+        {
+            if (pathID != 0)
+            {
+                if (idling)
+                {
+                    numIdlingSlowUpdates = Mathf.Min(MAX_IDLING_SLOWUPDATES, numIdlingSlowUpdates + 1);
+                }
+                else
+                {
+                    numIdlingSlowUpdates = Mathf.Max(0, numIdlingSlowUpdates - 1);
+                }
+                if (numIdlingUpdates > MAX_HEADING / turnRate)
+                {
+                    Debug.LogWarning("has path but failed");
+                    if (numIdlingSlowUpdates < MAX_IDLING_SLOWUPDATES)
+                    {
+                        ReRequestPath(true);
+                    }
+                    else
+                    {
+                        Fail(false);
+                    }
+                }
+            }
+            else
+            {
+                Debug.LogWarning("unit has no path");
+                ReRequestPath(true);
+            }
+            if (wantRepath)
+            {
+                ReRequestPath(true);
+            }
+        }
+        if (!manager.IsInBounds(pos))
+        {
+            oldPos = pos = manager.ClampInBounds(pos);
+            Move(pos, false);
+        }
+        if (pos != oldSlowUpdatePos)
+        {
+            oldSlowUpdatePos = pos;
+            int newMapSquare = manager.GetSquare(oldSlowUpdatePos);
+            if (newMapSquare != mapSquare)
+            {
+                manager.OnSquareChange(this, mapSquare, newMapSquare);
+                mapSquare = newMapSquare;
+            }
+        }
     }
     void UpdateOwnerAccelAndHeading()
     {

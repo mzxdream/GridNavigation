@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class Ground : Singleton<Ground>
 {
+    /*
     int gridX;
     int gridZ;
     float gridSize;
@@ -113,4 +114,5 @@ public class Ground : Singleton<Ground>
     {
         return true;
     }
+    */
 }

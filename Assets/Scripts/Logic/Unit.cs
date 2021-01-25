@@ -45,12 +45,12 @@ public class Unit
     bool isMoving = false;
     float maxSpeedDef;
 
+    /*
     public Unit()
     {
         oldSlowUpdatePos = pos = Vector3.zero;
         mapSquare = Ground.Instance.GetSquare(oldSlowUpdatePos);
     }
-    /*
     int GetNewPath()
     {
         if (MathUtils.SqrDistance2D(pos, goalPos) <= goalRadius * goalRadius)
