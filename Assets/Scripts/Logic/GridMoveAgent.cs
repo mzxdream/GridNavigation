@@ -277,5 +277,10 @@ public class GridMoveAgent
     }
     void ChangeHeading(int newHeading)
     {
+        wantedHeading = newHeading;
+        int rawDeltaHeading = GetDeltaHeading(wantedHeading, heading, turnRate);
+        //TODO callback
+        heading += rawDeltaHeading;
+        flatFrontDir = GetHeadingFromVector(heading);
     }
 }
