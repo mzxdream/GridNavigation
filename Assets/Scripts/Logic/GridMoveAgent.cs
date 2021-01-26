@@ -64,6 +64,7 @@ public class GridMoveAgent
     bool isMoving = false;
     bool wantRepath = false;
     //float turnSpeed = 0.0f;
+    int nextObstacleAvoidanceFrame = 0;
 
     public GridMoveAgent(GridMoveManager manager)
     {
@@ -111,6 +112,10 @@ public class GridMoveAgent
     Vector3 GetRightDir()
     {
         return Vector3.Cross(flatFrontDir, Vector3.up);
+    }
+    float CalcFootPrintAxisStretchFactor()
+    {
+        return Mathf.Abs(xsize - zsize) * 1.0f / (xsize + zsize);
     }
     bool WantToStop()
     {
@@ -526,11 +531,223 @@ public class GridMoveAgent
         }
         return true;
     }
+    void SetNextWayPoint()
+    {
+        if (CanSetNextWayPoint())
+        {
+            currWayPoint = nextWayPoint;
+            nextWayPoint = manager.NextWayPoint(this, pathID, currWayPoint, Mathf.Max(manager.WaypointRadius, currentSpeed * 1.05f));
+        }
+        if (nextWayPoint.x == -1.0f && nextWayPoint.z == -1.0f)
+        {
+            Fail(false);
+            return;
+        }
+        if (!manager.SquareIsBlocked(this, currWayPoint) && !manager.SquareIsBlocked(this, nextWayPoint))
+        {
+            return;
+        }
+        ReRequestPath(false);
+    }
+    Vector3 Here()
+    {
+        float time = currentSpeed / Mathf.Max(0.01f, decRate);
+        float dist = 0.5f * decRate * time * time;
+        int sign = !reversing ? 1 : -1;
+
+        Vector3 pos2D = new Vector3(pos.x, 0, pos.z);
+        Vector3 dir2D = flatFrontDir * dist * sign;
+        return pos + dir2D;
+    }
+    void StartEngine(bool callScript)
+    {
+        if (pathID == 0)
+        {
+            pathID = GetNewPath();
+        }
+        if (pathID != 0)
+        {
+            if (callScript)
+            {
+                //TODO
+            }
+        }
+        nextObstacleAvoidanceFrame = manager.FrameNum;
+    }
+    void StopEngine(bool callScript, bool hardStop)
+    {
+        if (pathID != 0)
+        {
+            manager.DeletaPath(pathID);
+            pathID = 0;
+            if (callScript)
+            {
+                //TODO
+            }
+        }
+        if (hardStop)
+        {
+            SetVelocityAndSpeed(Vector3.zero);
+            currentSpeed = 0f;
+        }
+        wantedSpeed = 0f;
+    }
+    void Arrived(bool callScript)
+    {
+        if (progressState == ProgressState.Active)
+        {
+            StopEngine(callScript, false);
+            progressState = ProgressState.Done;
+        }
+    }
+    void Fail(bool callScript)
+    {
+        StopEngine(callScript, false);
+        progressState = ProgressState.Failed;
+    }
     void HandleObjectCollisions()
     {
+        var collider = this;
+        float colliderFootPrintRadius = collider.maxInteriorRadius;
+        float colliderAxisStretchFact = collider.CalcFootPrintAxisStretchFactor();
+        HandleUnitCollisions(collider, collider.currentSpeed, colliderFootPrintRadius, colliderAxisStretchFact);
+
+        bool squareChange = manager.GetSquare(collider.pos + collider.curVelocity) != manager.GetSquare(collider.pos);
+        if (!squareChange)
+        {
+            return;
+        }
+        if (!HandleStaticObjectCollision(collider, collider, colliderFootPrintRadius, 0.0f, Vector3.zero, true, false, true))
+        {
+            return;
+        }
+        ReRequestPath(false);
+    }
+    static bool HandleStaticObjectCollision(GridMoveAgent collider, GridMoveAgent collidee, float colliderRadius, float collideeRadius
+        , Vector3 separationVector, bool canRequestPath, bool checkYardMap, bool checkTerrain)
+    {
+        if (checkTerrain && !collider.isMoving)
+        {
+            return false;
+        }
+
+        var manager = collider.manager;
+
+        Vector3 pos = collider.pos;
+        Vector3 vel = collider.curVelocity;
+        Vector3 rgt = collider.GetRightDir();
+
+        Vector3 strafeVec = Vector3.zero;
+        Vector3 bounceVec = Vector3.zero;
+        Vector3 summedVec = Vector3.zero;
+
+        if (checkYardMap || checkTerrain)
+        {
+            Vector3 sqrSumPosition = Vector3.zero;
+            float sqrPenDistanceSum = 0.0f;
+            float sqrPenDistanceCount = 0.0f;
+
+            Vector3 rightDir2D = new Vector3(rgt.x, 0, rgt.z).normalized;
+            Vector3 speedDir2D = new Vector3(vel.x, 0, vel.z).normalized;
+
+            int xmid = (int)((pos.x + vel.x) / manager.SquareSize);
+            int zmid = (int)((pos.z + vel.z) / manager.SquareSize);
+
+            int xsh = collider.xsize / 2;
+            int zsh = collider.zsize / 2;
+
+            int xmin = Mathf.Min(-1, -xsh), xmax = Mathf.Max(1, xsh);
+            int zmin = Mathf.Min(-1, -zsh), zmax = Mathf.Max(1, zsh);
+
+            for (int z = zmin; z <= zmax; z++)
+            {
+                for (int x = xmin; x <= xmax; x++)
+                {
+                    int xabs = xmid + x;
+                    int zabs = zmid + z;
+
+                    if (checkTerrain)
+                    {
+                        //TODO check pos speed mod
+                        continue;
+                    }
+                    if (!checkTerrain && !manager.SquareIsBlocked(collider, xabs, zabs))
+                    {
+                        continue;
+                    }
+                    Vector3 squarePos = new Vector3(xabs * manager.SquareSize + (manager.SquareSize / 2), pos.y, zabs * manager.SquareSize + (manager.SquareSize / 2));
+                    Vector3 squareVec = pos - squarePos;
+                    if (Vector3.Dot(squareVec, vel) > 0f)
+                    {
+                        continue;
+                    }
+                    float squareColRadiusSum = colliderRadius + Mathf.Sqrt(2 * (manager.SquareSize / 2) * (manager.SquareSize / 2));
+                    float squareSepDistance = squareVec.magnitude + 0.1f;
+                    float squarePenDistance = Mathf.Min(0.0f, squareSepDistance - squareColRadiusSum);
+
+                    bounceVec += (rightDir2D * (Vector3.Dot(rightDir2D, squareVec / squareSepDistance)));
+
+                    sqrPenDistanceSum += squarePenDistance;
+                    sqrPenDistanceCount += 1.0f;
+                    sqrSumPosition += new Vector3(squarePos.x, 0, squarePos.z);
+                }
+            }
+            if (sqrPenDistanceCount > 0.0f)
+            {
+                sqrSumPosition *= (1.0f / sqrPenDistanceCount);
+                sqrPenDistanceSum *= (1.0f / sqrPenDistanceCount);
+                sqrPenDistanceCount *= (1.0f / sqrPenDistanceCount);
+
+                float strafeSign = -MathUtils.Sign(Vector3.Dot(sqrSumPosition, rightDir2D) - Vector3.Dot(pos, rightDir2D));
+                float bounceSign = MathUtils.Sign(Vector3.Dot(rightDir2D, bounceVec));
+                float strafeScale = Mathf.Min(collider.maxSpeedDef, Mathf.Max(0.1f, -sqrPenDistanceSum * 0.5f));
+                float bounceScale = Mathf.Min(collider.maxSpeedDef, Mathf.Max(0.1f, -sqrPenDistanceSum * 0.5f));
+
+                strafeVec = rightDir2D * strafeSign * strafeScale;
+                bounceVec = rightDir2D * bounceSign * bounceScale;
+                summedVec = strafeVec + bounceVec;
+                if (manager.TestMoveSquare(collider, pos + summedVec, vel, checkTerrain, checkYardMap, checkTerrain))
+                {
+                    collider.Move(summedVec, true);
+                    collider.currWayPoint += summedVec;
+                    collider.nextWayPoint += summedVec;
+                }
+                else
+                {
+                    collider.Move((collider.oldPos - pos) + summedVec * 0.25f * (checkYardMap ? 1 : 0), true);
+                }
+            }
+            return canRequestPath && summedVec != Vector3.zero;
+        }
+        {
+            float colRadiusSum = colliderRadius + collideeRadius;
+            float sepDistance = separationVector.magnitude + 0.1f;
+            float penDistance = Mathf.Min(0.0f, sepDistance - colRadiusSum);
+            float colSlideSign = -MathUtils.Sign(Vector3.Dot(collidee.pos, rgt) - Vector3.Dot(pos, rgt));
+
+            float strafeScale = Mathf.Min(collider.currentSpeed, Mathf.Max(0.0f, -penDistance * 0.5f));
+            float bounceScale = Mathf.Min(collider.currentSpeed, Mathf.Max(0.0f, -penDistance));
+
+            strafeVec = rgt * colSlideSign * strafeScale;
+            bounceVec = (separationVector / sepDistance) * bounceScale;
+            summedVec = strafeVec + bounceVec;
+
+            if (manager.TestMoveSquare(collider, pos + summedVec, vel, true, true, true))
+            {
+                collider.Move(summedVec, true);
+                collider.currWayPoint += summedVec;
+                collider.nextWayPoint += summedVec;
+            }
+            else
+            {
+                collider.Move((collider.oldPos - pos) + summedVec * 0.25f * (Vector3.Dot(collider.flatFrontDir, separationVector) < 0.25f ? 1 : 0), true);
+            }
+            return canRequestPath && penDistance < 0.0f;
+        }
     }
     void AdjustPosToWaterLine()
     {
+        pos.y = 0.0f;
     }
     void UpdateOwnerPos(Vector3 oldSpeedVector, Vector3 newSpeedVector)
     {

@@ -8,6 +8,8 @@ public class GridMoveManager
     float squareSize = 8.0f;
     public float SquareSize { get => squareSize; }
     public float WaypointRadius { get => squareSize * 1.25f; }
+    int frameNum = 0;
+    public int FrameNum { get => frameNum; }
 
     public bool Init()
     {
@@ -66,6 +68,18 @@ public class GridMoveManager
         return null;
     }
     public bool TestMoveSquareRange(GridMoveAgent collider, Vector3 rangeMins, Vector3 rangeMaxs, Vector3 testMoveDir, bool testTerrain, bool testObjects, bool centerOnly)
+    {
+        return true;
+    }
+    public bool TestMoveSquare(GridMoveAgent collider, Vector3 testMovePos, Vector3 testMoveDir, bool testTerrain, bool testObjectes, bool centerOnly)
+    {
+        return true;
+    }
+    public bool SquareIsBlocked(GridMoveAgent collider, int xSquare, int zSquare)
+    {
+        return true;
+    }
+    public bool SquareIsBlocked(GridMoveAgent collider, Vector3 pos)
     {
         return true;
     }
