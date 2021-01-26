@@ -909,4 +909,46 @@ public class GridMoveAgent
         deltaSpeed = 0.0f;
         return newSpeedRawLTZ;
     }
+    void Move(Vector3 v, bool relative)
+    {
+        Vector3 dv = relative ? v : (v - pos);
+        pos += dv;
+    }
+    static int GetDeltaHeading(int newHeading, int oldHeading, float maxTurnRate)
+    {
+        int deltaHeading = newHeading - oldHeading;
+        if (deltaHeading > 0)
+        {
+            deltaHeading = Mathf.Min(deltaHeading, (int)maxTurnRate);
+        }
+        else
+        {
+            deltaHeading = Mathf.Max(deltaHeading, (int)-maxTurnRate);
+        }
+        return deltaHeading;
+    }
+    static float GetDeltaSpeed(float targetSpeed, float currentSpeed, float maxAccRate, float maxDecRate, bool isReversing)
+    {
+        int targetSpeedSign = 1;
+        int currentSpeedSign = !isReversing ? 1 : -1;
+
+        float tgtSpeed = targetSpeed * targetSpeedSign;
+        float curSpeed = currentSpeed * currentSpeedSign;
+
+        float rawSpeedDiff = 0.0f;
+        if (!isReversing)
+        {
+            rawSpeedDiff = tgtSpeed - curSpeed;
+        }
+        else
+        {
+            rawSpeedDiff = curSpeed - tgtSpeed;
+        }
+        float absSpeedDiff = Mathf.Abs(rawSpeedDiff);
+        float modAccRate = Mathf.Min(absSpeedDiff, maxAccRate);
+        float modDecRate = Mathf.Min(absSpeedDiff, maxDecRate);
+        float deltaSpeed = rawSpeedDiff >= 0.0f ? modAccRate : -modDecRate;
+
+        return deltaSpeed * currentSpeedSign;
+    }
 }
