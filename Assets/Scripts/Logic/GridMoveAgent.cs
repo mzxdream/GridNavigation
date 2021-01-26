@@ -951,4 +951,17 @@ public class GridMoveAgent
 
         return deltaSpeed * currentSpeedSign;
     }
+    void SetVelocityAndSpeed(Vector3 v)
+    {
+        curVelocity = v;
+        currentSpeed = v.magnitude;
+    }
+    void HandleUnitCollisionsAux(GridMoveAgent collider, GridMoveAgent collidee)
+    {
+        if (!collider.isMoving || collider.progressState != ProgressState.Active)
+        {
+            return;
+        }
+        //TODO
+    }
 }
