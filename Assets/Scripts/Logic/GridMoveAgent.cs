@@ -854,5 +854,59 @@ public class GridMoveAgent
     }
     void UpdateOwnerPos(Vector3 oldSpeedVector, Vector3 newSpeedVector)
     {
+        float oldSpeed = Vector3.Dot(oldSpeedVector, flatFrontDir);
+        float newSpeed = Vector3.Dot(newSpeedVector, flatFrontDir);
+
+        if (newSpeedVector != Vector3.zero)
+        {
+            SetVelocityAndSpeed(newSpeedVector);
+            Move(curVelocity, true);
+
+            if (!manager.TestMoveSquare(this, pos, curVelocity, true, false, true))
+            {
+                bool updatePos = false;
+                for (int n = 1; n <= 8; n++)
+                {
+                    float t = manager.SquareSize * n / 8;
+                    updatePos = manager.TestMoveSquare(this, pos + GetRightDir() * t, curVelocity, true, false, true);
+                    if (updatePos)
+                    {
+                        Move(pos + GetRightDir() * t, false);
+                        break;
+                    }
+                    updatePos = manager.TestMoveSquare(this, pos - GetRightDir() * t, curVelocity, true, false, true);
+                    if (updatePos)
+                    {
+                        Move(pos - GetRightDir() * t, false);
+                        break;
+                    }
+                }
+                if (!updatePos)
+                {
+                    Move(pos - newSpeedVector, false);
+                }
+            }
+        }
+        reversing = UpdateOwnerSpeed(Mathf.Abs(oldSpeed), Mathf.Abs(newSpeed), newSpeed);
+    }
+    bool UpdateOwnerSpeed(float oldSpeedAbs, float newSpeedAbs, float newSpeedRaw)
+    {
+        bool oldSpeedAbsGTZ = oldSpeedAbs > 0.01f;
+        bool newSpeedAbsGTZ = newSpeedAbs > 0.01f;
+        bool newSpeedRawLTZ = newSpeedRaw < 0.0f;
+
+        isMoving = newSpeedAbsGTZ;
+
+        if (!oldSpeedAbsGTZ && newSpeedAbsGTZ)
+        {
+            //TODO start moving callback
+        }
+        if (oldSpeedAbsGTZ && !newSpeedAbsGTZ)
+        {
+            //TODO stop moving callback
+        }
+        currentSpeed = newSpeedAbs;
+        deltaSpeed = 0.0f;
+        return newSpeedRawLTZ;
     }
 }
