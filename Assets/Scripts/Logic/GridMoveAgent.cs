@@ -745,7 +745,7 @@ public class GridMoveAgent
             return canRequestPath && penDistance < 0.0f;
         }
     }
-    static void HandleUnitCollisions(GridMoveAgent collider, float speed, float radius, float fpstretch)
+    static void HandleUnitCollisions(GridMoveAgent collider, float colliderSpeed, float colliderRadius, float fpstretch)
     {
         var manager = collider.manager;
 
@@ -755,7 +755,7 @@ public class GridMoveAgent
         bool allowSepAxisCollisionTest = false;
         bool forceSepAxisCollisionTest = (fpstretch > 0.1f);
 
-        foreach (var collidee in manager.GetSolidsExact(collider.pos, speed + radius * 2.0f))
+        foreach (var collidee in manager.GetSolidsExact(collider.pos, colliderSpeed + colliderRadius * 2.0f))
         {
             if (collidee == collider)
             {
@@ -769,7 +769,7 @@ public class GridMoveAgent
             float collideeRadius = collidee.maxInteriorRadius;
 
             Vector3 separationVec = collider.pos - collidee.pos;
-            float separationRadius = (radius + collideeRadius) * (radius + collideeRadius);
+            float separationRadius = (colliderRadius + collideeRadius) * (colliderRadius + collideeRadius);
 
             if (separationVec.sqrMagnitude - separationRadius > 0.01f)
             {
@@ -790,13 +790,62 @@ public class GridMoveAgent
             {
                 bool allowNewPath = !collider.atEndOfPath && !collider.atGoal;
                 bool checkYardMap = pushCollider || pushCollidee;
-                if (HandleStaticObjectCollision(collider, collidee, radius, collideeRadius, separationVec, allowNewPath, checkYardMap, false))
+                if (HandleStaticObjectCollision(collider, collidee, colliderRadius, collideeRadius, separationVec, allowNewPath, checkYardMap, false))
                 {
                     collider.ReRequestPath(false);
                 }
                 continue;
             }
-            //TODO
+
+            //float colliderRelRadius = radius / (radius + collideeRadius);
+            //float collideeRelRadius = collideeRadius / (radius + collideeRadius);
+            float collisionRadiusSum = colliderRadius + collideeRadius;
+
+            float sepDistance = separationVec.magnitude + 0.1f;
+            float penDistance = Mathf.Max(collisionRadiusSum - sepDistance, 1.0f);
+            float sepResponse = Mathf.Min(manager.SquareSize * 2.0f, penDistance * 0.5f);
+
+            Vector3 sepDirection = separationVec / sepDistance;
+            Vector3 colResponseVec = new Vector3(sepDirection.x, 0, sepDirection.z) * sepResponse;
+
+            float m1 = collider.mass;
+            float m2 = collidee.mass;
+            float v1 = Mathf.Max(1.0f, colliderSpeed);
+            float v2 = Mathf.Max(1.0f, collideeSpeed);
+            float c1 = 1.0f + (1.0f - Mathf.Abs(Vector3.Dot(collider.flatFrontDir, -sepDirection))) * 5.0f;
+            float c2 = 1.0f + (1.0f - Mathf.Abs(Vector3.Dot(collidee.flatFrontDir, sepDirection))) * 5.0f;
+
+            float s1 = m1 * v1 * c1;
+            float s2 = m2 * v2 * c2;
+
+            float r1 = s1 / (s1 + s2 + 1.0f);
+            float r2 = s2 / (s1 + s2 + 1.0f);
+
+            // far from a realistic treatment, but works
+            float colliderMassScale = Mathf.Clamp(1.0f - r1, 0.01f, 0.99f);
+            float collideeMassScale = Mathf.Clamp(1.0f - r2, 0.01f, 0.99f);
+
+            float colliderSlideSign = Mathf.Sign(Vector3.Dot(separationVec, collider.GetRightDir()));
+            float collideeSlideSign = Mathf.Sign(Vector3.Dot(-separationVec, collidee.GetRightDir()));
+
+            Vector3 colliderPushVec = colResponseVec * colliderMassScale * (!ignoreCollidee ? 1 : 0);
+            Vector3 collideePushVec = -colResponseVec * collideeMassScale;
+            Vector3 colliderSlideVec = collider.GetRightDir() * colliderSlideSign * (1.0f / penDistance) * r2;
+            Vector3 collideeSlideVec = collidee.GetRightDir() * collideeSlideSign * (1.0f / penDistance) * r1;
+            Vector3 colliderMoveVec = colliderPushVec + colliderSlideVec;
+            Vector3 collideeMoveVec = collideePushVec + collideeSlideVec;
+
+            bool moveCollider = pushCollider || !pushCollidee;
+            bool moveCollidee = pushCollidee || !pushCollider;
+
+            if (moveCollider && manager.TestMoveSquare(collider, collider.pos + colliderMoveVec, colliderMoveVec, true, true, false))
+            {
+                collider.Move(colliderMoveVec, true);
+            }
+            if (moveCollidee && manager.TestMoveSquare(collidee, collidee.pos + collideeMoveVec, collideeMoveVec, true, true, false))
+            {
+                collidee.Move(collideeMoveVec, true);
+            }
         }
     }
     void AdjustPosToWaterLine()
