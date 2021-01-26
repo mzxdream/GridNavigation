@@ -83,4 +83,8 @@ public class GridMoveManager
     {
         return true;
     }
+    public bool IsNonBlocking(GridMoveAgent collider, GridMoveAgent collidee)
+    {
+        return false;
+    }
 }

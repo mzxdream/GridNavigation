@@ -745,6 +745,60 @@ public class GridMoveAgent
             return canRequestPath && penDistance < 0.0f;
         }
     }
+    static void HandleUnitCollisions(GridMoveAgent collider, float speed, float radius, float fpstretch)
+    {
+        var manager = collider.manager;
+
+        bool allowUnitCollisionOverlap = true;
+        bool allowCrushingAlliedUnits = false;
+        bool allowPushingEnemyUnits = false;
+        bool allowSepAxisCollisionTest = false;
+        bool forceSepAxisCollisionTest = (fpstretch > 0.1f);
+
+        foreach (var collidee in manager.GetSolidsExact(collider.pos, speed + radius * 2.0f))
+        {
+            if (collidee == collider)
+            {
+                continue;
+            }
+            if (manager.IsNonBlocking(collider, collidee))
+            {
+                continue;
+            }
+            float collideeSpeed = collidee.currentSpeed;
+            float collideeRadius = collidee.maxInteriorRadius;
+
+            Vector3 separationVec = collider.pos - collidee.pos;
+            float separationRadius = (radius + collideeRadius) * (radius + collideeRadius);
+
+            if (separationVec.sqrMagnitude - separationRadius > 0.01f)
+            {
+                continue;
+            }
+            bool pushCollider = true;
+            bool pushCollidee = true;
+            bool alliedCollision = false; //TODO
+            bool collideeYields = collider.isMoving && !collidee.isMoving;
+            bool ignoreCollidee = collideeYields && alliedCollision;
+
+            HandleUnitCollisionsAux(collider, collidee);
+
+            pushCollider = pushCollider && alliedCollision && !collider.isPushResistant;
+            pushCollidee = pushCollidee && alliedCollision && !collidee.isPushResistant;
+
+            if (!pushCollider && !pushCollidee)
+            {
+                bool allowNewPath = !collider.atEndOfPath && !collider.atGoal;
+                bool checkYardMap = pushCollider || pushCollidee;
+                if (HandleStaticObjectCollision(collider, collidee, radius, collideeRadius, separationVec, allowNewPath, checkYardMap, false))
+                {
+                    collider.ReRequestPath(false);
+                }
+                continue;
+            }
+            //TODO
+        }
+    }
     void AdjustPosToWaterLine()
     {
         pos.y = 0.0f;
