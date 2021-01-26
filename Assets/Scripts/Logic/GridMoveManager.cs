@@ -7,6 +7,7 @@ public class GridMoveManager
     public int GameSpeed { get => gameSpeed; }
     float squareSize = 8.0f;
     public float SquareSize { get => squareSize; }
+    public float WaypointRadius { get => squareSize * 1.25f; }
 
     public bool Init()
     {
@@ -64,7 +65,8 @@ public class GridMoveManager
     {
         return null;
     }
-    public bool IsNonBlocking()
+    public bool TestMoveSquareRange(GridMoveAgent collider, Vector3 rangeMins, Vector3 rangeMaxs, Vector3 testMoveDir, bool testTerrain, bool testObjects, bool centerOnly)
     {
+        return true;
     }
 }

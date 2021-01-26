@@ -51,28 +51,7 @@ public class Unit
         oldSlowUpdatePos = pos = Vector3.zero;
         mapSquare = Ground.Instance.GetSquare(oldSlowUpdatePos);
     }
-    int GetNewPath()
-    {
-        if (MathUtils.SqrDistance2D(pos, goalPos) <= goalRadius * goalRadius)
-        {
-            return 0;
-        }
-        int newPathID = PathManager.Instance.RequestPath(this, pos, goalPos, goalRadius);
-        if (newPathID != 0)
-        {
-            atGoal = false;
-            atEndOfPath = false;
 
-            currWayPoint = PathManager.Instance.NextWayPoint(this, newPathID, pos, Mathf.Max(0.5f, currentSpeed * 1.05f));
-            nextWayPoint = PathManager.Instance.NextWayPoint(this, newPathID, currWayPoint, Mathf.Max(0.5f, currentSpeed * 1.05f));
-        }
-        else
-        {
-            StopEngine(false);
-            progressState = ProgressState.Failed;
-        }
-        return newPathID;
-    }
     void StopEngine(bool hardStop)
     {
         if (pathID != 0)
@@ -86,24 +65,6 @@ public class Unit
             currentSpeed = 0f;
         }
         wantedSpeed = 0f;
-    }
-    public void ReRequestPath(bool forceRequest)
-    {
-        if (forceRequest)
-        {
-            StopEngine(false);
-            if (pathID == 0)
-            {
-                pathID = GetNewPath();
-            }
-            if (pathID != 0)
-            {
-                PathManager.Instance.UpdatePath(this, pathID);
-            }
-            wantRepath = false;
-            return;
-        }
-        wantRepath = true;
     }
     public void StartMoving(Vector3 moveGoalPos, float moveGoalRadius = 0.001f)
     {
@@ -148,38 +109,7 @@ public class Unit
         return targetSpeed - curSpeed;
     }
 
-    bool CanSetNextWayPoint()
-    {
-        if (pathID == 0)
-        {
-            return false;
-        }
-        if (currWayPoint.y != -1.0f && nextWayPoint.y != -1.0f)
-        {
-            float waypointDot = Vector3.Dot(forward, waypointDir);
-            if (waypointDot >= 0.995f && currWayPointDist > Mathf.Max(Ground.Instance.GridSize, currentSpeed * 1.05f))
-            {
-                return false;
-            }
-            bool allowSkip = (currWayPoint - pos).sqrMagnitude <= Ground.Instance.GridSize * Ground.Instance.GridSize;
-            if (!allowSkip)
-            {
-                bool rangeTest = Ground.Instance.TestMoveSquareRange(this, Vector3.Min(currWayPoint, pos), Vector3.Max(currWayPoint, pos), speed, true, true, true);
-                if (!rangeTest)
-                {
-                    return false;
-                }
-            }
-            atEndOfPath |= (currWayPoint - goalPos).sqrMagnitude <= goalRadius * goalRadius;
-            if (atEndOfPath)
-            {
-                currWayPoint = goalPos;
-                nextWayPoint = goalPos;
-                return false;
-            }
-        }
-        return true;
-    }
+ 
     void Fail()
     {
         StopEngine(false);

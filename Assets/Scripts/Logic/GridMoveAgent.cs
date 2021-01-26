@@ -62,6 +62,8 @@ public class GridMoveAgent
     Vector3 oldSlowUpdatePos;
     int mapSquare;
     bool isMoving = false;
+    bool wantRepath = false;
+    //float turnSpeed = 0.0f;
 
     public GridMoveAgent(GridMoveManager manager)
     {
@@ -447,6 +449,82 @@ public class GridMoveAgent
         avoidanceDir = Vector3.Lerp(desireDir, avoidanceVec, 0.5f).normalized;
         avoidanceDir = Vector3.Lerp(avoidanceDir, lastAvoidanceDir, 0.7f).normalized;
         return avoidanceDir;
+    }
+    int GetNewPath()
+    {
+        if (MathUtils.SqrDistance2D(pos, goalPos) <= goalRadius * goalRadius)
+        {
+            return 0;
+        }
+        int newPathID = manager.RequestPath(this, pos, goalPos, goalRadius);
+        if (newPathID != 0)
+        {
+            atGoal = false;
+            atEndOfPath = false;
+
+            currWayPoint = manager.NextWayPoint(this, newPathID, pos, Mathf.Max(manager.WaypointRadius, currentSpeed * 1.05f));
+            nextWayPoint = manager.NextWayPoint(this, newPathID, currWayPoint, Mathf.Max(manager.WaypointRadius, currentSpeed * 1.05f));
+        }
+        else
+        {
+            Fail(false);
+        }
+        return newPathID;
+    }
+    void ReRequestPath(bool forceRequest)
+    {
+        if (forceRequest)
+        {
+            StopEngine(false, false);
+            StartEngine(false);
+            wantRepath = false;
+            return;
+        }
+        wantRepath = true;
+    }
+    bool CanSetNextWayPoint()
+    {
+        if (pathID == 0)
+        {
+            return false;
+        }
+        if (currWayPoint.y != -1.0f && nextWayPoint.y != -1.0f)
+        {
+            int dirSign = !reversing ? 1 : -1;
+            //float absTurnSpeed = Mathf.Max(0.0001f, Mathf.Abs(turnSpeed));
+            float absTurnSpeed = turnRate;
+            float framesToTurn = CIRCLE_DIVS / absTurnSpeed;
+
+            float turnRadius = Mathf.Max((currentSpeed * framesToTurn) / (2.0f * Mathf.PI), currentSpeed * 1.05f);
+            float waypointDot = Mathf.Clamp(Vector3.Dot(waypointDir, flatFrontDir * dirSign), -1.0f, 1.0f);
+
+            if (currWayPointDist > turnRadius * 2.0f)
+            {
+                return false;
+            }
+            if (currWayPointDist > Mathf.Max(manager.SquareSize * 1.0f, currentSpeed * 1.05f) && waypointDot >= 0.995f)
+            {
+                return false;
+            }
+            {
+                bool rangeTest = manager.TestMoveSquareRange(this, Vector3.Min(currWayPoint, pos), Vector3.Max(currWayPoint, pos), curVelocity, true, true, true);
+                bool allowSkip = (currWayPoint - pos).sqrMagnitude <= manager.SquareSize * manager.SquareSize;
+                if (!allowSkip && !rangeTest)
+                {
+                    return false;
+                }
+            }
+            {
+                atEndOfPath |= (currWayPoint - goalPos).sqrMagnitude <= goalRadius * goalRadius;
+            }
+            if (atEndOfPath)
+            {
+                currWayPoint = goalPos;
+                nextWayPoint = goalPos;
+                return false;
+            }
+        }
+        return true;
     }
     void HandleObjectCollisions()
     {
