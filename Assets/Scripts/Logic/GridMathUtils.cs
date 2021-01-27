@@ -1,12 +1,13 @@
 using UnityEngine;
 
-public class GridMathUtils
+public static class GridMathUtils
 {
     public const int NUM_HEADINGS = 4096;
     public const int MAX_HEADING = 32768;
     public const int CIRCLE_DIVS = (MAX_HEADING << 1);
-    public static Vector3[] headingToVectorTable;
-    public static void Init()
+    static Vector3[] headingToVectorTable;
+
+    static GridMathUtils()
     {
         headingToVectorTable = new Vector3[NUM_HEADINGS];
         for (int a = 0; a < NUM_HEADINGS; ++a)
@@ -24,17 +25,9 @@ public class GridMathUtils
     {
         return (b.x - a.x) * (b.x - a.x) + (b.z - a.z) * (b.z - a.z);
     }
-    public static bool CompareApproximately(Vector3 a, Vector3 b)
+    public static int Sign<T>(T v) where T : System.IComparable
     {
-        return SqrDistance2D(a, b) < 1e-06f;
-    }
-    public static int CompareApproximately(float a, float b)
-    {
-        return Mathf.Abs(a - b) < 1e-06f ? 0 : (a < b ? -1 : 1);
-    }
-    public static int Sign(float v)
-    {
-        return v > 0.0f ? 1 : -1;
+        return v.CompareTo(0) > 0 ? 1 : -1;
     }
     public static int GetHeadingFromVector(Vector3 vec3)
     {
