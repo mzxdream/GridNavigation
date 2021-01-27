@@ -209,7 +209,7 @@ public class GridMoveAgent
         goalPos = new Vector3(moveGoalPos.x, 0, moveGoalPos.z);
         goalRadius = moveGoalRadius;
 
-        atGoal = MathUtils.SqrDistance2D(pos, goalPos) <= (goalRadius * goalRadius);
+        atGoal = GridMathUtils.SqrDistance2D(pos, goalPos) <= (goalRadius * goalRadius);
         atEndOfPath = false;
 
         progressState = ProgressState.Active;
@@ -252,9 +252,9 @@ public class GridMoveAgent
             Vector3 cwp = currWayPoint;
 
             prevWayPointDist = currWayPointDist;
-            currWayPointDist = MathUtils.Distance2D(currWayPoint, opos);
+            currWayPointDist = GridMathUtils.Distance2D(currWayPoint, opos);
             {
-                float curGoalDistSq = MathUtils.SqrDistance2D(opos, goalPos);
+                float curGoalDistSq = GridMathUtils.SqrDistance2D(opos, goalPos);
                 float minGoalDistSq = goalRadius * goalRadius;
                 float spdGoalDistSq = (currentSpeed * 1.05f) * (currentSpeed * 1.05f);
 
@@ -295,13 +295,13 @@ public class GridMoveAgent
                 }
             }
             Vector3 waypointVec;
-            if (MathUtils.SqrDistance2D(cwp, opos) > 1e-4f)
+            if (GridMathUtils.SqrDistance2D(cwp, opos) > 1e-4f)
             {
                 waypointVec = new Vector3(cwp.x - opos.x, 0, cwp.z = opos.z);
                 waypointDir = waypointVec.normalized;
             }
             Vector3 modWantedDir = GetObstacleAvoidanceDir(atGoal ? ffd : waypointDir);
-            ChangeHeading(MathUtils.GetHeadingFromVector(modWantedDir));
+            ChangeHeading(GridMathUtils.GetHeadingFromVector(modWantedDir));
             ChangeSpeed(maxWantedSpeed);
         }
         return false;
@@ -331,7 +331,7 @@ public class GridMoveAgent
                 Vector3 waypointDifFwd = waypointDir;
                 Vector3 waypointDfRev = -waypointDifFwd;
                 Vector3 waypointDif = !reversing ? waypointDifFwd : waypointDfRev;
-                int turnDeltaHeading = (heading - MathUtils.GetHeadingFromVector(waypointDif));
+                int turnDeltaHeading = (heading - GridMathUtils.GetHeadingFromVector(waypointDif));
 
                 bool startBraking = curGoalDistSq <= minGoalDist;
                 if (turnDeltaHeading != 0)
@@ -374,7 +374,7 @@ public class GridMoveAgent
         int rawDeltaHeading = GetDeltaHeading(wantedHeading, heading, turnRate);
         //TODO callback
         heading += rawDeltaHeading;
-        flatFrontDir = MathUtils.GetVectorFromHeading(heading);
+        flatFrontDir = GridMathUtils.GetVectorFromHeading(heading);
     }
     Vector3 GetObstacleAvoidanceDir(Vector3 desireDir)
     {
@@ -431,13 +431,13 @@ public class GridMoveAgent
             {
                 continue;
             }
-            if (avoideeDistSq >= MathUtils.SqrDistance2D(avoider.pos, goalPos))
+            if (avoideeDistSq >= GridMathUtils.SqrDistance2D(avoider.pos, goalPos))
             {
                 continue;
             }
 
-            float avoiderTurnSign = -MathUtils.Sign(Vector3.Dot(avoidee.pos, avoider.GetRightDir()) - Vector3.Dot(avoider.pos, avoider.GetRightDir()));
-            float avoideeTurnSign = -MathUtils.Sign(Vector3.Dot(avoider.pos, avoidee.GetRightDir()) - Vector3.Dot(avoidee.pos, avoidee.GetRightDir()));
+            float avoiderTurnSign = -GridMathUtils.Sign(Vector3.Dot(avoidee.pos, avoider.GetRightDir()) - Vector3.Dot(avoider.pos, avoider.GetRightDir()));
+            float avoideeTurnSign = -GridMathUtils.Sign(Vector3.Dot(avoider.pos, avoidee.GetRightDir()) - Vector3.Dot(avoidee.pos, avoidee.GetRightDir()));
 
             float avoidanceCosAngle = Mathf.Clamp(Vector3.Dot(avoider.flatFrontDir, avoidee.flatFrontDir), -1.0f, 1.0f);
             float avoidanceResponse = (1.0f - avoidanceCosAngle) + 0.1f;
@@ -457,7 +457,7 @@ public class GridMoveAgent
     }
     int GetNewPath()
     {
-        if (MathUtils.SqrDistance2D(pos, goalPos) <= goalRadius * goalRadius)
+        if (GridMathUtils.SqrDistance2D(pos, goalPos) <= goalRadius * goalRadius)
         {
             return 0;
         }
@@ -698,8 +698,8 @@ public class GridMoveAgent
                 sqrPenDistanceSum *= (1.0f / sqrPenDistanceCount);
                 sqrPenDistanceCount *= (1.0f / sqrPenDistanceCount);
 
-                float strafeSign = -MathUtils.Sign(Vector3.Dot(sqrSumPosition, rightDir2D) - Vector3.Dot(pos, rightDir2D));
-                float bounceSign = MathUtils.Sign(Vector3.Dot(rightDir2D, bounceVec));
+                float strafeSign = -GridMathUtils.Sign(Vector3.Dot(sqrSumPosition, rightDir2D) - Vector3.Dot(pos, rightDir2D));
+                float bounceSign = GridMathUtils.Sign(Vector3.Dot(rightDir2D, bounceVec));
                 float strafeScale = Mathf.Min(collider.maxSpeedDef, Mathf.Max(0.1f, -sqrPenDistanceSum * 0.5f));
                 float bounceScale = Mathf.Min(collider.maxSpeedDef, Mathf.Max(0.1f, -sqrPenDistanceSum * 0.5f));
 
@@ -723,7 +723,7 @@ public class GridMoveAgent
             float colRadiusSum = colliderRadius + collideeRadius;
             float sepDistance = separationVector.magnitude + 0.1f;
             float penDistance = Mathf.Min(0.0f, sepDistance - colRadiusSum);
-            float colSlideSign = -MathUtils.Sign(Vector3.Dot(collidee.pos, rgt) - Vector3.Dot(pos, rgt));
+            float colSlideSign = -GridMathUtils.Sign(Vector3.Dot(collidee.pos, rgt) - Vector3.Dot(pos, rgt));
 
             float strafeScale = Mathf.Min(collider.currentSpeed, Mathf.Max(0.0f, -penDistance * 0.5f));
             float bounceScale = Mathf.Min(collider.currentSpeed, Mathf.Max(0.0f, -penDistance));
@@ -971,7 +971,7 @@ public class GridMoveAgent
         {
             return;
         }
-        if (MathUtils.SqrDistance2D(collider.goalPos, collidee.goalPos) > Mathf.PI * Mathf.PI)
+        if (GridMathUtils.SqrDistance2D(collider.goalPos, collidee.goalPos) > Mathf.PI * Mathf.PI)
         {
             return;
         }
@@ -990,7 +990,7 @@ public class GridMoveAgent
                 collider.TriggerSkipWayPoint();
                 return;
             }
-            if (MathUtils.SqrDistance2D(collider.goalPos, collider.pos) > collider.minExteriorRadius * collider.minExteriorRadius)
+            if (GridMathUtils.SqrDistance2D(collider.goalPos, collider.pos) > collider.minExteriorRadius * collider.minExteriorRadius)
             {
                 return;
             }

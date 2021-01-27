@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class MathUtils
+public class GridMathUtils
 {
     public const int NUM_HEADINGS = 4096;
     public const int MAX_HEADING = 32768;
@@ -37,7 +37,6 @@ public class MathUtils
     }
     public static int GetHeadingFromVector(Vector3 vec3)
     {
-        //float s = MAX_HEADING / Mathf.PI;
         float h = 0.0f;
         if (vec3.z != 0.0f)
         {
@@ -74,6 +73,7 @@ public class MathUtils
         {
             h = vec3.x > 0.0f ? Mathf.PI * 0.5f : Mathf.PI * -0.5f;
         }
+        h *= (MAX_HEADING / Mathf.PI);
         int ih = (int)h;
         ih += (ih == -MAX_HEADING ? 1 : 0);
         ih %= MAX_HEADING;
