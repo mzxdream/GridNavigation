@@ -37,7 +37,7 @@ public class MathUtils
     }
     public static int GetHeadingFromVector(Vector3 vec3)
     {
-        float s = MAX_HEADING / Mathf.PI;
+        //float s = MAX_HEADING / Mathf.PI;
         float h = 0.0f;
         if (vec3.z != 0.0f)
         {

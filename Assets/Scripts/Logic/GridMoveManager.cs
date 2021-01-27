@@ -10,6 +10,7 @@ public class GridMoveManager
     public float WaypointRadius { get => squareSize * 1.25f; }
     int frameNum = 0;
     public int FrameNum { get => frameNum; }
+    List<GridMoveAgent> agents = new List<GridMoveAgent>();
 
     public bool Init()
     {
@@ -25,13 +26,25 @@ public class GridMoveManager
         {
             return null;
         }
+        agents.Add(agent);
         return agent;
     }
     public void RemoveAgent(GridMoveAgent agent)
     {
+        agent.Clear();
+        agents.Remove(agent);
     }
     public void Update()
     {
+        frameNum++;
+        foreach (var agent in agents)
+        {
+            agent.Update();
+        }
+        foreach (var agent in agents)
+        {
+            agent.SlowUpdate();
+        }
     }
     public int RequestPath(GridMoveAgent agent, Vector3 startPos, Vector3 goalPos, float goalRadius)
     {

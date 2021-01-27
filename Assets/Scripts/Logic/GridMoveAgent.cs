@@ -141,7 +141,7 @@ public class GridMoveAgent
         idling &= (posDiff.sqrMagnitude < (currentSpeed * currentSpeed * 0.25f));
         return true;
     }
-    bool Update()
+    public bool Update()
     {
         int h = heading;
         UpdateOwnerAccelAndHeading();
@@ -151,7 +151,7 @@ public class GridMoveAgent
         AdjustPosToWaterLine();
         return OwnerMoved(h, pos - oldPos);
     }
-    void SlowUpdate()
+    public void SlowUpdate()
     {
         if (progressState == ProgressState.Active)
         {
@@ -749,10 +749,10 @@ public class GridMoveAgent
     {
         var manager = collider.manager;
 
-        bool allowUnitCollisionOverlap = true;
-        bool allowCrushingAlliedUnits = false;
-        bool allowPushingEnemyUnits = false;
-        bool allowSepAxisCollisionTest = false;
+        //bool allowUnitCollisionOverlap = true;
+        //bool allowCrushingAlliedUnits = false;
+        //bool allowPushingEnemyUnits = false;
+        //bool allowSepAxisCollisionTest = false;
         bool forceSepAxisCollisionTest = (fpstretch > 0.1f);
 
         foreach (var collidee in manager.GetSolidsExact(collider.pos, colliderSpeed + colliderRadius * 2.0f))
