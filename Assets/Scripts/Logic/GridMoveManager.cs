@@ -11,6 +11,7 @@ public class GridMoveManager
     int frameNum = 0;
     public int FrameNum { get => frameNum; }
     List<GridMoveAgent> agents = new List<GridMoveAgent>();
+    int lastAgentID = 0;
 
     public bool Init()
     {
@@ -21,7 +22,7 @@ public class GridMoveManager
     }
     public GridMoveAgent AddAgent(Vector3 pos, Vector3 forward, GridMoveAgentParams agentParams)
     {
-        var agent = new GridMoveAgent(1, this);
+        var agent = new GridMoveAgent(++lastAgentID, this);
         if (!agent.Init(pos, forward, agentParams))
         {
             return null;
@@ -48,6 +49,10 @@ public class GridMoveManager
     }
     public int RequestPath(GridMoveAgent agent, Vector3 startPos, Vector3 goalPos, float goalRadius)
     {
+        startPos = ClampInBounds(startPos);
+        goalPos = ClampInBounds(goalPos);
+        goalRadius = Mathf.Max(goalRadius, SquareSize * 2);
+
         return 0;
     }
     public void DeletaPath(int pathID)
