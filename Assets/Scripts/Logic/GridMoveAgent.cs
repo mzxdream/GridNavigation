@@ -16,50 +16,55 @@ public class GridMoveAgent
     const int MAX_IDLING_SLOWUPDATES = 16;
 
     GridMoveManager manager;
-    float mass = 1.0f;
-    int xsize = 0;
-    int zsize = 0;
-    float minExteriorRadius = 0.0f;
-    float maxInteriorRadius = 0.0f;
-    bool isPushResistant = false;
-    float maxSpeedDef = 0.0f;
-    float accRate = 0.0f;
-    float decRate = 0.0f;
-    float turnRate = 0.0f;
-    float turnAccel = 0.0f;
+    int id;
+    int teamID;
+    float mass;
+    int xsize;
+    int zsize;
+    float minExteriorRadius;
+    float maxInteriorRadius;
+    bool isPushResistant;
+    float maxSpeedDef;
+    float accRate;
+    float decRate;
+    float turnRate;
+    //float turnAccel;
 
-    Vector3 pos = Vector3.zero;
-    Vector3 flatFrontDir = Vector3.forward;
-    int heading = 0;
-    ProgressState progressState = ProgressState.Done;
-    int pathID = 0;
-    Vector3 goalPos = Vector3.zero;
-    float goalRadius = 0.0f;
-    Vector3 oldPos = Vector3.zero;
-    Vector3 oldLaterUpdatePos = Vector3.zero;
-    Vector3 curVelocity = Vector3.zero;
-    float currentSpeed = 0.0f;
-    float deltaSpeed = 0.0f;
-    float wantedSpeed = 0.0f;
-    float maxSpeed = 0.0f;
-    float maxWantedSpeed = 0.0f;
-    Vector3 currWayPoint = Vector3.zero;
-    Vector3 nextWayPoint = Vector3.zero;
-    Vector3 lastAvoidanceDir = Vector3.zero;
-    int wantedHeading = 0;
-    bool idling = false;
-    bool reversing = false;
-    Vector3 waypointDir = Vector3.zero;
-    float currWayPointDist = 0.0f;
-    float prevWayPointDist = 0.0f;
-    bool atEndOfPath = false;
-    bool atGoal = false;
-    int numIdlingUpdates = 0;
-    int numIdlingSlowUpdates = 0;
+    Vector3 pos;
+    int heading;
+    //Vector3 frontDir;
+    //Vector3 rightDir;
+
+    ProgressState progressState;
+    Vector3 flatFrontDir;
+    int pathID;
+    Vector3 goalPos;
+    float goalRadius;
+    Vector3 oldPos;
     Vector3 oldSlowUpdatePos;
+
+    Vector3 currentVelocity;
+    float currentSpeed;
+    float deltaSpeed;
+    float wantedSpeed;
+    float maxSpeed;
+    float maxWantedSpeed;
+    Vector3 currWayPoint;
+    Vector3 nextWayPoint;
+    //Vector3 lastAvoidanceDir = Vector3.zero;
+    int wantedHeading;
+    bool idling;
+    bool reversing;
+    Vector3 waypointDir;
+    float currWayPointDist;
+    float prevWayPointDist;
+    bool atEndOfPath;
+    bool atGoal;
+    int numIdlingUpdates;
+    int numIdlingSlowUpdates;
     int mapSquare;
-    bool isMoving = false;
-    bool wantRepath = false;
+    bool isMoving;
+    bool wantRepath;
     //float turnSpeed = 0.0f;
     int nextObstacleAvoidanceFrame = 0;
 
@@ -80,20 +85,18 @@ public class GridMoveAgent
         accRate = Mathf.Max(0.01f, agentParams.maxAcc);
         decRate = Mathf.Max(0.01f, agentParams.maxDec);
         turnRate = Mathf.Clamp(agentParams.turnRate, 1.0f, GridMathUtils.CIRCLE_DIVS * 0.5f - 1.0f);
-        turnAccel = turnRate * 0.333f;
+        //turnAccel = turnRate * 0.333f;
 
         progressState = ProgressState.Done;
         pathID = 0;
         goalPos = pos;
         oldPos = pos;
-        oldLaterUpdatePos = pos;
-        curVelocity = Vector3.zero;
+        currentVelocity = Vector3.zero;
         currentSpeed = 0.0f;
         maxSpeed = maxSpeedDef;
         maxWantedSpeed = maxSpeedDef;
         currWayPoint = Vector3.zero;
         nextWayPoint = Vector3.zero;
-        lastAvoidanceDir = Vector3.zero;
         wantedHeading = 0;
         idling = false;
         return true;
@@ -122,7 +125,7 @@ public class GridMoveAgent
     {
         if (posDiff.sqrMagnitude < 1e-5f)
         {
-            curVelocity = Vector3.zero;
+            currentVelocity = Vector3.zero;
             currentSpeed = 0.0f;
             idling = true;
             idling &= (currWayPoint.y != -1.0f && nextWayPoint.y != -1.0f);
@@ -143,7 +146,7 @@ public class GridMoveAgent
         int h = heading;
         UpdateOwnerAccelAndHeading();
         Vector3 newVelocity = !reversing ? flatFrontDir * (currentSpeed + deltaSpeed) : flatFrontDir * (-currentSpeed + deltaSpeed);
-        UpdateOwnerPos(curVelocity, newVelocity);
+        UpdateOwnerPos(currentVelocity, newVelocity);
         HandleObjectCollisions();
         AdjustPosToWaterLine();
         return OwnerMoved(h, pos - oldPos);
@@ -244,7 +247,7 @@ public class GridMoveAgent
         else
         {
             Vector3 opos = pos;
-            Vector3 ovel = curVelocity;
+            Vector3 ovel = currentVelocity;
             Vector3 ffd = flatFrontDir;
             Vector3 cwp = currWayPoint;
 
@@ -401,7 +404,7 @@ public class GridMoveAgent
             }
             bool avoideeMovable = !avoidee.isPushResistant;
 
-            Vector3 avoideeVector = (avoider.pos + avoider.curVelocity) - (avoidee.pos + avoidee.curVelocity);
+            Vector3 avoideeVector = (avoider.pos + avoider.currentVelocity) - (avoidee.pos + avoidee.currentVelocity);
 
             float avoideeRadius = avoidee.minExteriorRadius;
             float avoidanceRadiusSum = avoiderRadius + avoideeRadius;
@@ -509,7 +512,7 @@ public class GridMoveAgent
                 return false;
             }
             {
-                bool rangeTest = manager.TestMoveSquareRange(this, Vector3.Min(currWayPoint, pos), Vector3.Max(currWayPoint, pos), curVelocity, true, true, true);
+                bool rangeTest = manager.TestMoveSquareRange(this, Vector3.Min(currWayPoint, pos), Vector3.Max(currWayPoint, pos), currentVelocity, true, true, true);
                 bool allowSkip = (currWayPoint - pos).sqrMagnitude <= manager.SquareSize * manager.SquareSize;
                 if (!allowSkip && !rangeTest)
                 {
@@ -609,7 +612,7 @@ public class GridMoveAgent
         float colliderAxisStretchFact = collider.CalcFootPrintAxisStretchFactor();
         HandleUnitCollisions(collider, collider.currentSpeed, colliderFootPrintRadius, colliderAxisStretchFact);
 
-        bool squareChange = manager.GetSquare(collider.pos + collider.curVelocity) != manager.GetSquare(collider.pos);
+        bool squareChange = manager.GetSquare(collider.pos + collider.currentVelocity) != manager.GetSquare(collider.pos);
         if (!squareChange)
         {
             return;
@@ -631,7 +634,7 @@ public class GridMoveAgent
         var manager = collider.manager;
 
         Vector3 pos = collider.pos;
-        Vector3 vel = collider.curVelocity;
+        Vector3 vel = collider.currentVelocity;
         Vector3 rgt = collider.GetRightDir();
 
         Vector3 strafeVec = Vector3.zero;
@@ -857,21 +860,21 @@ public class GridMoveAgent
         if (newSpeedVector != Vector3.zero)
         {
             SetVelocityAndSpeed(newSpeedVector);
-            Move(curVelocity, true);
+            Move(currentVelocity, true);
 
-            if (!manager.TestMoveSquare(this, pos, curVelocity, true, false, true))
+            if (!manager.TestMoveSquare(this, pos, currentVelocity, true, false, true))
             {
                 bool updatePos = false;
                 for (int n = 1; n <= 8; n++)
                 {
                     float t = manager.SquareSize * n / 8;
-                    updatePos = manager.TestMoveSquare(this, pos + GetRightDir() * t, curVelocity, true, false, true);
+                    updatePos = manager.TestMoveSquare(this, pos + GetRightDir() * t, currentVelocity, true, false, true);
                     if (updatePos)
                     {
                         Move(pos + GetRightDir() * t, false);
                         break;
                     }
-                    updatePos = manager.TestMoveSquare(this, pos - GetRightDir() * t, curVelocity, true, false, true);
+                    updatePos = manager.TestMoveSquare(this, pos - GetRightDir() * t, currentVelocity, true, false, true);
                     if (updatePos)
                     {
                         Move(pos - GetRightDir() * t, false);
@@ -950,7 +953,7 @@ public class GridMoveAgent
     }
     void SetVelocityAndSpeed(Vector3 v)
     {
-        curVelocity = v;
+        currentVelocity = v;
         currentSpeed = v.magnitude;
     }
     void TriggerCallArrived()
