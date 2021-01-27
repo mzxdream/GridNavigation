@@ -13,9 +13,6 @@ public class GridMoveAgentParams
 public class GridMoveAgent
 {
     enum ProgressState { Done, Active, Failed };
-    const int MAX_HEADING = 32768;
-    const int CIRCLE_DIVS = (MAX_HEADING << 1);
-    const int NUM_HEADINGS = 4096;
     const int MAX_IDLING_SLOWUPDATES = 16;
 
     GridMoveManager manager;
@@ -82,7 +79,7 @@ public class GridMoveAgent
         maxSpeedDef = agentParams.speed / manager.GameSpeed;
         accRate = Mathf.Max(0.01f, agentParams.maxAcc);
         decRate = Mathf.Max(0.01f, agentParams.maxDec);
-        turnRate = Mathf.Clamp(agentParams.turnRate, 1.0f, CIRCLE_DIVS * 0.5f - 1.0f);
+        turnRate = Mathf.Clamp(agentParams.turnRate, 1.0f, GridMathUtils.CIRCLE_DIVS * 0.5f - 1.0f);
         turnAccel = turnRate * 0.333f;
 
         progressState = ProgressState.Done;
@@ -165,7 +162,7 @@ public class GridMoveAgent
                 {
                     numIdlingSlowUpdates = Mathf.Max(0, numIdlingSlowUpdates - 1);
                 }
-                if (numIdlingUpdates > MAX_HEADING / turnRate)
+                if (numIdlingUpdates > GridMathUtils.MAX_HEADING / turnRate)
                 {
                     Debug.LogWarning("has path but failed");
                     if (numIdlingSlowUpdates < MAX_IDLING_SLOWUPDATES)
@@ -276,7 +273,7 @@ public class GridMoveAgent
                 }
                 else
                 {
-                    numIdlingUpdates = Mathf.Max(MAX_HEADING, numIdlingUpdates + 1);
+                    numIdlingUpdates = Mathf.Max(GridMathUtils.MAX_HEADING, numIdlingUpdates + 1);
                 }
             }
             if (!atEndOfPath)
@@ -336,8 +333,8 @@ public class GridMoveAgent
                 bool startBraking = curGoalDistSq <= minGoalDist;
                 if (turnDeltaHeading != 0)
                 {
-                    float reqTurnAngle = Mathf.Abs(180.0f * (heading - wantedHeading) / MAX_HEADING);
-                    float maxTurnAngle = (turnRate / CIRCLE_DIVS) * 360.0f;
+                    float reqTurnAngle = Mathf.Abs(180.0f * (heading - wantedHeading) / GridMathUtils.MAX_HEADING);
+                    float maxTurnAngle = (turnRate / GridMathUtils.CIRCLE_DIVS) * 360.0f;
                     float turnMaxSpeed = !reversing ? maxSpeed : 0.0f;
                     float turnModSpeed = turnMaxSpeed;
                     
@@ -352,7 +349,7 @@ public class GridMoveAgent
                     if (atEndOfPath)
                     {
                         float absTurnSpeed = turnRate;
-                        float framesToTurn = CIRCLE_DIVS / absTurnSpeed;
+                        float framesToTurn = GridMathUtils.CIRCLE_DIVS / absTurnSpeed;
                         targetSpeed = Mathf.Min(targetSpeed, (currWayPointDist * Mathf.PI) / framesToTurn);
                     }
                 }
@@ -498,7 +495,7 @@ public class GridMoveAgent
             int dirSign = !reversing ? 1 : -1;
             //float absTurnSpeed = Mathf.Max(0.0001f, Mathf.Abs(turnSpeed));
             float absTurnSpeed = turnRate;
-            float framesToTurn = CIRCLE_DIVS / absTurnSpeed;
+            float framesToTurn = GridMathUtils.CIRCLE_DIVS / absTurnSpeed;
 
             float turnRadius = Mathf.Max((currentSpeed * framesToTurn) / (2.0f * Mathf.PI), currentSpeed * 1.05f);
             float waypointDot = Mathf.Clamp(Vector3.Dot(waypointDir, flatFrontDir * dirSign), -1.0f, 1.0f);

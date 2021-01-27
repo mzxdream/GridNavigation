@@ -4,6 +4,7 @@ public class GridMathUtils
 {
     public const int NUM_HEADINGS = 4096;
     public const int MAX_HEADING = 32768;
+    public const int CIRCLE_DIVS = (MAX_HEADING << 1);
     public static Vector3[] headingToVectorTable;
     public static void Init()
     {
