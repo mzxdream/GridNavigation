@@ -956,12 +956,45 @@ public class GridMoveAgent
         curVelocity = v;
         currentSpeed = v.magnitude;
     }
-    void HandleUnitCollisionsAux(GridMoveAgent collider, GridMoveAgent collidee)
+    void TriggerCallArrived()
+    {
+        atEndOfPath = true;
+        atGoal = true;
+    }
+    void TriggerSkipWayPoint()
+    {
+        currWayPoint.y = -1.0f;
+    }
+    static void HandleUnitCollisionsAux(GridMoveAgent collider, GridMoveAgent collidee)
     {
         if (!collider.isMoving || collider.progressState != ProgressState.Active)
         {
             return;
         }
-        //TODO
+        if (MathUtils.SqrDistance2D(collider.goalPos, collidee.goalPos) > Mathf.PI * Mathf.PI)
+        {
+            return;
+        }
+        if (collidee.progressState == ProgressState.Done)
+        {
+            if(collidee.isMoving)
+            {
+                return;
+            }
+            collider.TriggerCallArrived();
+        }
+        else if (collidee.progressState == ProgressState.Active)
+        {
+            if (collidee.currWayPoint == collider.nextWayPoint)
+            {
+                collider.TriggerSkipWayPoint();
+                return;
+            }
+            if (MathUtils.SqrDistance2D(collider.goalPos, collider.pos) > collider.minExteriorRadius * collider.minExteriorRadius)
+            {
+                return;
+            }
+            collider.TriggerCallArrived();
+        }
     }
 }
