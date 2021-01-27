@@ -46,7 +46,10 @@ public class GridMoveAgent
     Vector3 oldPos;
     Vector3 oldSlowUpdatePos;
 
+    bool atGoal;
+    bool atEndOfPath;
     bool isMoving;
+    bool reversing;
     bool wantRepath;
     int wantedHeading;
     Vector3 waypointDir;
@@ -64,10 +67,7 @@ public class GridMoveAgent
     float prevWayPointDist;
     //Vector3 lastAvoidanceDir;
 
-    bool atGoal;
-    bool atEndOfPath;
     bool idling;
-    bool reversing;
     int numIdlingUpdates;
     int numIdlingSlowUpdates;
     int nextObstacleAvoidanceFrame;
