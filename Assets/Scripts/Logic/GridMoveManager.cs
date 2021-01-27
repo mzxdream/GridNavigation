@@ -21,7 +21,7 @@ public class GridMoveManager
     }
     public GridMoveAgent AddAgent(Vector3 pos, Vector3 forward, GridMoveAgentParams agentParams)
     {
-        var agent = new GridMoveAgent(this);
+        var agent = new GridMoveAgent(1, this);
         if (!agent.Init(pos, forward, agentParams))
         {
             return null;

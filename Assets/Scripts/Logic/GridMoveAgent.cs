@@ -33,9 +33,9 @@ public class GridMoveAgent
 
     Vector3 pos;
     int heading;
-    //Vector3 frontDir;
-    //Vector3 rightDir;
     Vector3 flatFrontDir;
+    Vector3 rightDir;
+    //Vector3 frontDir;
     int mapSquare;
 
     ProgressState progressState;
@@ -53,6 +53,7 @@ public class GridMoveAgent
     int wantedHeading;
     Vector3 waypointDir;
     Vector3 currentVelocity;
+
     float currentSpeed;
     float deltaSpeed;
     float wantedSpeed;
@@ -71,37 +72,62 @@ public class GridMoveAgent
     int numIdlingSlowUpdates;
     int nextObstacleAvoidanceFrame;
 
-    public GridMoveAgent(GridMoveManager manager)
+    public GridMoveAgent(int id, GridMoveManager manager)
     {
+        this.id = id;
         this.manager = manager;
     }
     public bool Init(Vector3 position, Vector3 forward, GridMoveAgentParams agentParams)
     {
-        pos = position;
-        flatFrontDir = forward;
+        allyID = agentParams.allyID;
+        mass = agentParams.mass;
         xsize = agentParams.xsize;
         zsize = agentParams.zsize;
         minExteriorRadius = Mathf.Sqrt(xsize * xsize + zsize * zsize) * 0.5f * manager.SquareSize;
         maxInteriorRadius = Mathf.Max(xsize, zsize) * 0.5f * manager.SquareSize;
-        isPushResistant = agentParams.isPushResistant;
         maxSpeedDef = agentParams.speed / manager.GameSpeed;
         accRate = Mathf.Max(0.01f, agentParams.maxAcc);
         decRate = Mathf.Max(0.01f, agentParams.maxDec);
         turnRate = Mathf.Clamp(agentParams.turnRate, 1.0f, GridMathUtils.CIRCLE_DIVS * 0.5f - 1.0f);
-        //turnAccel = turnRate * 0.333f;
+        isPushResistant = agentParams.isPushResistant;
+
+        pos = position;
+        heading = GridMathUtils.GetHeadingFromVector(forward);
+        flatFrontDir = forward;
+        rightDir = Vector3.Cross(flatFrontDir, Vector3.up);
+        mapSquare = manager.GetSquare(pos);
 
         progressState = ProgressState.Done;
         pathID = 0;
         goalPos = pos;
+        goalRadius = 0.0f;
         oldPos = pos;
+        oldSlowUpdatePos = pos;
+
+        atGoal = false;
+        atEndOfPath = false;
+        isMoving = false;
+        reversing = false;
+        wantRepath = false;
+        wantedHeading = 0;
+        waypointDir = Vector3.zero;
         currentVelocity = Vector3.zero;
+
         currentSpeed = 0.0f;
-        maxSpeed = maxSpeedDef;
-        maxWantedSpeed = maxSpeedDef;
+        deltaSpeed = 0.0f;
+        wantedSpeed = 0.0f;
+        maxSpeed = 0.0f;
+        maxWantedSpeed = 0.0f;
+
         currWayPoint = Vector3.zero;
         nextWayPoint = Vector3.zero;
-        wantedHeading = 0;
+        currWayPointDist = 0.0f;
+        prevWayPointDist = 0.0f;
+
         idling = false;
+        numIdlingUpdates = 0;
+        numIdlingSlowUpdates = 0;
+        nextObstacleAvoidanceFrame = 0;
         return true;
     }
     public void Clear()
@@ -111,10 +137,6 @@ public class GridMoveAgent
             manager.DeletaPath(pathID);
             pathID = 0;
         }
-    }
-    Vector3 GetRightDir()
-    {
-        return Vector3.Cross(flatFrontDir, Vector3.up);
     }
     float CalcFootPrintAxisStretchFactor()
     {
@@ -378,6 +400,7 @@ public class GridMoveAgent
         //TODO callback
         heading += rawDeltaHeading;
         flatFrontDir = GridMathUtils.GetVectorFromHeading(heading);
+        rightDir = Vector3.Cross(flatFrontDir, Vector3.up);
     }
     Vector3 GetObstacleAvoidanceDir(Vector3 desireDir)
     {
@@ -439,8 +462,8 @@ public class GridMoveAgent
                 continue;
             }
 
-            float avoiderTurnSign = -GridMathUtils.Sign(Vector3.Dot(avoidee.pos, avoider.GetRightDir()) - Vector3.Dot(avoider.pos, avoider.GetRightDir()));
-            float avoideeTurnSign = -GridMathUtils.Sign(Vector3.Dot(avoider.pos, avoidee.GetRightDir()) - Vector3.Dot(avoidee.pos, avoidee.GetRightDir()));
+            float avoiderTurnSign = -GridMathUtils.Sign(Vector3.Dot(avoidee.pos, avoider.rightDir) - Vector3.Dot(avoider.pos, avoider.rightDir));
+            float avoideeTurnSign = -GridMathUtils.Sign(Vector3.Dot(avoider.pos, avoidee.rightDir) - Vector3.Dot(avoidee.pos, avoidee.rightDir));
 
             float avoidanceCosAngle = Mathf.Clamp(Vector3.Dot(avoider.flatFrontDir, avoidee.flatFrontDir), -1.0f, 1.0f);
             float avoidanceResponse = (1.0f - avoidanceCosAngle) + 0.1f;
@@ -450,7 +473,7 @@ public class GridMoveAgent
             {
                 avoiderTurnSign = Mathf.Max(avoiderTurnSign, avoideeTurnSign);
             }
-            avoidanceDir = avoider.GetRightDir() * avoiderTurnSign;
+            avoidanceDir = avoider.rightDir * avoiderTurnSign;
             avoidanceVec += (avoidanceDir * avoidanceResponse * avoidanceFallOff * avoideeMassScale);
         }
 
@@ -638,7 +661,7 @@ public class GridMoveAgent
 
         Vector3 pos = collider.pos;
         Vector3 vel = collider.currentVelocity;
-        Vector3 rgt = collider.GetRightDir();
+        Vector3 rgt = collider.rightDir;
 
         Vector3 strafeVec = Vector3.zero;
         Vector3 bounceVec = Vector3.zero;
@@ -828,13 +851,13 @@ public class GridMoveAgent
             float colliderMassScale = Mathf.Clamp(1.0f - r1, 0.01f, 0.99f);
             float collideeMassScale = Mathf.Clamp(1.0f - r2, 0.01f, 0.99f);
 
-            float colliderSlideSign = Mathf.Sign(Vector3.Dot(separationVec, collider.GetRightDir()));
-            float collideeSlideSign = Mathf.Sign(Vector3.Dot(-separationVec, collidee.GetRightDir()));
+            float colliderSlideSign = Mathf.Sign(Vector3.Dot(separationVec, collider.rightDir));
+            float collideeSlideSign = Mathf.Sign(Vector3.Dot(-separationVec, collidee.rightDir));
 
             Vector3 colliderPushVec = colResponseVec * colliderMassScale * (!ignoreCollidee ? 1 : 0);
             Vector3 collideePushVec = -colResponseVec * collideeMassScale;
-            Vector3 colliderSlideVec = collider.GetRightDir() * colliderSlideSign * (1.0f / penDistance) * r2;
-            Vector3 collideeSlideVec = collidee.GetRightDir() * collideeSlideSign * (1.0f / penDistance) * r1;
+            Vector3 colliderSlideVec = collider.rightDir * colliderSlideSign * (1.0f / penDistance) * r2;
+            Vector3 collideeSlideVec = collidee.rightDir * collideeSlideSign * (1.0f / penDistance) * r1;
             Vector3 colliderMoveVec = colliderPushVec + colliderSlideVec;
             Vector3 collideeMoveVec = collideePushVec + collideeSlideVec;
 
@@ -871,16 +894,16 @@ public class GridMoveAgent
                 for (int n = 1; n <= 8; n++)
                 {
                     float t = manager.SquareSize * n / 8;
-                    updatePos = manager.TestMoveSquare(this, pos + GetRightDir() * t, currentVelocity, true, false, true);
+                    updatePos = manager.TestMoveSquare(this, pos + rightDir * t, currentVelocity, true, false, true);
                     if (updatePos)
                     {
-                        Move(pos + GetRightDir() * t, false);
+                        Move(pos + rightDir * t, false);
                         break;
                     }
-                    updatePos = manager.TestMoveSquare(this, pos - GetRightDir() * t, currentVelocity, true, false, true);
+                    updatePos = manager.TestMoveSquare(this, pos - rightDir * t, currentVelocity, true, false, true);
                     if (updatePos)
                     {
-                        Move(pos - GetRightDir() * t, false);
+                        Move(pos - rightDir * t, false);
                         break;
                     }
                 }
