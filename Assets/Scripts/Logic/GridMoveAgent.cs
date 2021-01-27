@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class GridMoveAgentParams
 {
+    public int allyID;
+    public float mass;
     public int xsize;
     public int zsize;
     public float speed;
@@ -17,56 +19,58 @@ public class GridMoveAgent
 
     GridMoveManager manager;
     int id;
-    int teamID;
+    int allyID;
     float mass;
     int xsize;
     int zsize;
     float minExteriorRadius;
     float maxInteriorRadius;
-    bool isPushResistant;
     float maxSpeedDef;
     float accRate;
     float decRate;
     float turnRate;
     //float turnAccel;
+    bool isPushResistant;
 
     Vector3 pos;
     int heading;
     //Vector3 frontDir;
     //Vector3 rightDir;
+    Vector3 flatFrontDir;
+    int mapSquare;
 
     ProgressState progressState;
-    Vector3 flatFrontDir;
     int pathID;
     Vector3 goalPos;
     float goalRadius;
     Vector3 oldPos;
     Vector3 oldSlowUpdatePos;
 
+    bool isMoving;
+    bool wantRepath;
+    int wantedHeading;
+    Vector3 waypointDir;
     Vector3 currentVelocity;
     float currentSpeed;
     float deltaSpeed;
     float wantedSpeed;
     float maxSpeed;
     float maxWantedSpeed;
+    //float turnSpeed;
+
     Vector3 currWayPoint;
     Vector3 nextWayPoint;
-    //Vector3 lastAvoidanceDir = Vector3.zero;
-    int wantedHeading;
-    bool idling;
-    bool reversing;
-    Vector3 waypointDir;
     float currWayPointDist;
     float prevWayPointDist;
-    bool atEndOfPath;
+    //Vector3 lastAvoidanceDir;
+
     bool atGoal;
+    bool atEndOfPath;
+    bool idling;
+    bool reversing;
     int numIdlingUpdates;
     int numIdlingSlowUpdates;
-    int mapSquare;
-    bool isMoving;
-    bool wantRepath;
-    //float turnSpeed = 0.0f;
-    int nextObstacleAvoidanceFrame = 0;
+    int nextObstacleAvoidanceFrame;
 
     public GridMoveAgent(GridMoveManager manager)
     {
@@ -340,7 +344,7 @@ public class GridMoveAgent
                     float maxTurnAngle = (turnRate / GridMathUtils.CIRCLE_DIVS) * 360.0f;
                     float turnMaxSpeed = !reversing ? maxSpeed : 0.0f;
                     float turnModSpeed = turnMaxSpeed;
-                    
+
                     if (reqTurnAngle != 0.0f)
                     {
                         turnModSpeed *= Mathf.Clamp(maxTurnAngle / reqTurnAngle, 0.1f, 1.0f);
@@ -977,7 +981,7 @@ public class GridMoveAgent
         }
         if (collidee.progressState == ProgressState.Done)
         {
-            if(collidee.isMoving)
+            if (collidee.isMoving)
             {
                 return;
             }
