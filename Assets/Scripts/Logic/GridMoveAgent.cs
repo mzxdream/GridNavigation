@@ -15,7 +15,6 @@ public class GridMoveAgentParams
 public class GridMoveAgent
 {
     enum ProgressState { Done, Active, Failed };
-    const int MAX_IDLING_SLOWUPDATES = 16;
 
     GridMoveManager manager;
     int id;
@@ -163,7 +162,7 @@ public class GridMoveAgent
             {
                 if (idling)
                 {
-                    numIdlingSlowUpdates = Mathf.Min(MAX_IDLING_SLOWUPDATES, numIdlingSlowUpdates + 1);
+                    numIdlingSlowUpdates = Mathf.Min(GridMathUtils.MAX_IDLING_SLOWUPDATES, numIdlingSlowUpdates + 1);
                 }
                 else
                 {
@@ -172,7 +171,7 @@ public class GridMoveAgent
                 if (numIdlingUpdates > GridMathUtils.MAX_HEADING / turnRate)
                 {
                     Debug.LogWarning("has path but failed");
-                    if (numIdlingSlowUpdates < MAX_IDLING_SLOWUPDATES)
+                    if (numIdlingSlowUpdates < GridMathUtils.MAX_IDLING_SLOWUPDATES)
                     {
                         ReRequestPath(true);
                     }

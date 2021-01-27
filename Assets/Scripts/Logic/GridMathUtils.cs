@@ -5,6 +5,7 @@ public static class GridMathUtils
     public const int NUM_HEADINGS = 4096;
     public const int MAX_HEADING = 32768;
     public const int CIRCLE_DIVS = (MAX_HEADING << 1);
+    public const int MAX_IDLING_SLOWUPDATES = 16;
     static Vector3[] headingToVectorTable;
 
     static GridMathUtils()
