@@ -106,8 +106,8 @@ public class GridMoveAgent
         oldPos = pos;
         oldSlowUpdatePos = pos;
 
-        atGoal = false;
-        atEndOfPath = false;
+        atGoal = true;
+        atEndOfPath = true;
         isMoving = false;
         reversing = false;
         wantRepath = false;
