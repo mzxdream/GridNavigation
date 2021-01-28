@@ -27,7 +27,6 @@ public class CharacterFactory : GameObjectFactory
         var prefab = GetPrefab(type);
         var instance = CreateGameObjectInstance(prefab);
         instance.OriginFactory = this;
-        instance.Init();
         return instance;
     }
     public void Reclaim(Character character)

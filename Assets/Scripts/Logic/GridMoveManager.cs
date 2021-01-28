@@ -10,6 +10,8 @@ public class GridMoveManager
 {
     int gameSpeed = 30;
     public int GameSpeed { get => gameSpeed; }
+    Vector3 pos = Vector3.zero;
+    public Vector3 Pos { get => pos; }
     int xszie = 11;
     int zsize = 11;
     float squareSize = 8.0f;
@@ -24,6 +26,7 @@ public class GridMoveManager
 
     public bool Init(int xsize, int zsize, float squareSize)
     {
+        this.pos = new Vector3(-xsize * squareSize / 2.0f, 0.0f, -zsize * squareSize / 2.0f);
         this.xszie = xsize;
         this.zsize = zsize;
         this.squareSize = squareSize;

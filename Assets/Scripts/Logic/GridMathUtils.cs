@@ -26,9 +26,9 @@ public static class GridMathUtils
     {
         return (b.x - a.x) * (b.x - a.x) + (b.z - a.z) * (b.z - a.z);
     }
-    public static int Sign<T>(T v) where T : System.IComparable
+    public static int Sign(float v)
     {
-        return v.CompareTo(0) > 0 ? 1 : -1;
+        return v > 0.0f ? 1 : -1;
     }
     public static int GetHeadingFromVector(Vector3 vec3)
     {

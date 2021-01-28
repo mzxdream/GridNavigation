@@ -32,8 +32,10 @@ public class GridMoveAgent
     bool isPushResistant;
 
     Vector3 pos;
+    public Vector3 Pos { get => pos; }
     int heading;
     Vector3 flatFrontDir;
+    public Vector3 FlatFrontDir { get => flatFrontDir; }
     Vector3 rightDir;
     //Vector3 frontDir;
     int mapSquare;
