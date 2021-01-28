@@ -3,7 +3,8 @@ using UnityEngine;
 
 public class GridPath
 {
-    public List<Vector3> pathNodes = new List<Vector3>();
+    public Vector3 goalPos;
+    public List<Vector3> posNodes = new List<Vector3>();
 }
 
 public class GridMoveManager
@@ -69,8 +70,9 @@ public class GridMoveManager
         goalRadius = Mathf.Max(goalRadius, SquareSize * 2);
 
         GridPath path = new GridPath();
-        path.pathNodes.Add(goalPos);
-        path.pathNodes.Add(startPos);
+        path.goalPos = goalPos;
+        path.posNodes.Add(goalPos);
+        path.posNodes.Add(startPos);
         int pathID = ++lastPathID;
         paths.Add(pathID, path);
         return pathID;
@@ -80,20 +82,20 @@ public class GridMoveManager
     }
     public Vector3 NextWayPoint(GridMoveAgent agent, int pathID, Vector3 callerPos, float radius)
     {
-        Vector3 waypoint = new Vector3(-1.0f, 0, -1.0f);
         if (paths.TryGetValue(pathID, out var path))
         {
-            while (path.pathNodes.Count > 0)
+            while (path.posNodes.Count > 0)
             {
-                waypoint = path.pathNodes[path.pathNodes.Count - 1];
-                path.pathNodes.RemoveAt(path.pathNodes.Count - 1);
+                var waypoint = path.posNodes[path.posNodes.Count - 1];
+                path.posNodes.RemoveAt(path.posNodes.Count - 1);
                 if (GridMathUtils.SqrDistance2D(callerPos, waypoint) >= radius * radius)
                 {
-                    break;
+                    return waypoint;
                 }
             }
+            return path.goalPos;
         }
-        return waypoint;
+        return new Vector3(-1.0f, 0, -1.0f);
     }
     public void TerrainChange(int xmin, int zmin, int xmax, int zmax)
     {

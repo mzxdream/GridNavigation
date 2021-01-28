@@ -118,8 +118,8 @@ public class GridMoveAgent
         currentSpeed = 0.0f;
         deltaSpeed = 0.0f;
         wantedSpeed = 0.0f;
-        maxSpeed = 0.0f;
-        maxWantedSpeed = 0.0f;
+        maxSpeed = maxSpeedDef;
+        maxWantedSpeed = maxSpeedDef;
 
         currWayPoint = Vector3.zero;
         nextWayPoint = Vector3.zero;

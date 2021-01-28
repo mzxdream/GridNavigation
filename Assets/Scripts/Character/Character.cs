@@ -39,7 +39,7 @@ public class Character : MonoBehaviour
             speed = 1.0f,
             maxAcc = 0.2f,
             maxDec = 0.2f,
-            turnRate = 1.0f,
+            turnRate = 3000.0f,
             isPushResistant = true,
         };
         this.moveAgent = moveManager.AddAgent(pos - moveManager.Pos, forward, agentParams);
