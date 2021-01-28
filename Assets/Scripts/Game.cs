@@ -17,6 +17,8 @@ public class Game : MonoBehaviour
     public static Game Instance => instance;
     List<Character> characters = new List<Character>();
     GridMoveManager moveManager = new GridMoveManager();
+    bool redDestinationChange = false;
+    Vector3 redDestinationPos;
 
     void Awake()
     {
@@ -39,7 +41,19 @@ public class Game : MonoBehaviour
         }
         if (Input.GetMouseButtonDown(0))
         {
-            ToggleTile(GameTileType.Wall);
+            if (Input.GetKey(KeyCode.Space))
+            {
+                var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
+                {
+                    redDestinationPos = hit.point;
+                    redDestinationChange = true;
+                }
+            }
+            else
+            {
+                ToggleTile(GameTileType.Wall);
+            }
         }
         if (Input.GetMouseButtonDown(1))
         {
@@ -54,8 +68,13 @@ public class Game : MonoBehaviour
         }
         foreach (var c in characters)
         {
+            if (redDestinationChange)
+            {
+                c.MoveTo(redDestinationPos);
+            }
             c.Update();
         }
+        redDestinationChange = false;
     }
     void FixedUpdate()
     {

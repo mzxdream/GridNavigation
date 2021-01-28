@@ -231,7 +231,7 @@ public class GridMoveAgent
             }
         }
     }
-    void StartMoving(Vector3 moveGoalPos, float moveGoalRadius)
+    public void StartMoving(Vector3 moveGoalPos, float moveGoalRadius)
     {
         goalPos = new Vector3(moveGoalPos.x, 0, moveGoalPos.z);
         goalRadius = moveGoalRadius;

@@ -51,6 +51,10 @@ public class Character : MonoBehaviour
         moveAgent = null;
         originFactory.Reclaim(this);
     }
+    public void MoveTo(Vector3 pos)
+    {
+        moveAgent.StartMoving(pos - moveManager.Pos, 0.01f);
+    }
     public void Update()
     {
         transform.position = moveAgent.Pos + moveManager.Pos;
