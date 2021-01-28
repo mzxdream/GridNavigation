@@ -234,7 +234,7 @@ public class GridMoveAgent
     public void StartMoving(Vector3 moveGoalPos, float moveGoalRadius)
     {
         goalPos = new Vector3(moveGoalPos.x, 0, moveGoalPos.z);
-        goalRadius = moveGoalRadius;
+        goalRadius = Mathf.Max(moveGoalRadius, manager.SquareSize * 2);
 
         atGoal = GridMathUtils.SqrDistance2D(pos, goalPos) <= (goalRadius * goalRadius);
         atEndOfPath = false;
@@ -324,7 +324,7 @@ public class GridMoveAgent
             Vector3 waypointVec;
             if (GridMathUtils.SqrDistance2D(cwp, opos) > 1e-4f)
             {
-                waypointVec = new Vector3(cwp.x - opos.x, 0, cwp.z = opos.z);
+                waypointVec = new Vector3(cwp.x - opos.x, 0, cwp.z - opos.z);
                 waypointDir = waypointVec.normalized;
             }
             Vector3 modWantedDir = GetObstacleAvoidanceDir(atGoal ? ffd : waypointDir);

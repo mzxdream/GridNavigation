@@ -39,21 +39,18 @@ public class Game : MonoBehaviour
         {
             AddCharacter(CharacterType.BlueMedium);
         }
+        if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
+            {
+                redDestinationPos = hit.point;
+                redDestinationChange = true;
+            }
+        }
         if (Input.GetMouseButtonDown(0))
         {
-            if (Input.GetKey(KeyCode.Space))
-            {
-                var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                if (Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
-                {
-                    redDestinationPos = hit.point;
-                    redDestinationChange = true;
-                }
-            }
-            else
-            {
-                ToggleTile(GameTileType.Wall);
-            }
+            ToggleTile(GameTileType.Wall);
         }
         if (Input.GetMouseButtonDown(1))
         {
