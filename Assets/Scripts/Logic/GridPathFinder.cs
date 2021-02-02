@@ -9,9 +9,16 @@ public class GridPathNode
 
 public class GridPathPriorityQueue
 {
-    private int capacity = 256;
-    private int count = 0;
-    private GridPathNode[] nodeHeap = new GridPathNode[256];
+    private int capacity;
+    private int count;
+    private GridPathNode[] nodeHeap;
+
+    public GridPathPriorityQueue(int capacity = 256)
+    {
+        this.capacity = capacity;
+        this.count = 0;
+        this.nodeHeap = new GridPathNode[capacity];
+    }
 
     private void Grow()
     {
@@ -50,19 +57,28 @@ public class GridPathPriorityQueue
         count--;
         return node;
     }
-}
-
-public class GridPath
-{
-    public Vector3 goalPos;
-    public List<Vector2Int> nodes;
+    public void Clear()
+    {
+        for (int i = 0; i < count; i++)
+        {
+            nodeHeap[i] = null;
+        }
+        count = 0;
+    }
 }
 
 public class GridPathFinder
 {
+    private float blockSize;
+    private int xsize;
+    private int zsize;
+    private GridPathPriorityQueue openQueue = new GridPathPriorityQueue();
+    private 
 
-
-    public GridPathFinder()
+    public GridPathFinder(float width, float height, float blockSize)
     {
+        this.blockSize = blockSize;
+        this.xsize = (int)(width / blockSize);
+        this.zsize = (int)(height / blockSize);
     }
 }
