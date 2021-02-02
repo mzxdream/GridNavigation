@@ -1,12 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GridPath
-{
-    public Vector3 goalPos;
-    public List<Vector3> posNodes = new List<Vector3>();
-}
-
 public class GridMoveManager
 {
     int gameSpeed = 30;
