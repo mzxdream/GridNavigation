@@ -3,8 +3,25 @@ using UnityEngine;
 
 public class GridPathNode
 {
-    public Vector2Int pos;
-    public float fCost;
+    private enum Mask { Blocked = 1, Closed = 2, ParentFwd = 4, ParentRgt = 8 };
+
+    private int index;
+    private Mask mask;
+    private int gCost;
+    private int hCost;
+
+    public int Index { get => index; set => index = value; }
+    public bool IsBlocked
+    {
+        get { return (mask & Mask.Blocked) != 0; }
+        set { if (value) { mask |= Mask.Blocked; } else { mask &= ~Mask.Blocked; } }
+    }
+    public bool IsClosed
+    {
+        get { return (mask & Mask.Closed) != 0; }
+        set { if (value) { mask |= Mask.Closed; } else { mask &= ~Mask.Closed; } }
+    }
+    public int FCost { get => gCost + hCost; }
 }
 
 public class GridPathPriorityQueue
@@ -46,7 +63,7 @@ public class GridPathPriorityQueue
         int index = 0;
         for (int i = 1; i < count; i++)
         {
-            if (nodeHeap[index].fCost > nodeHeap[i].fCost)
+            if (nodeHeap[index].FCost > nodeHeap[i].FCost)
             {
                 index = i;
             }
@@ -67,18 +84,59 @@ public class GridPathPriorityQueue
     }
 }
 
+public class GridPath
+{
+    private Vector2Int startPos;
+    private Vector2Int goalPos;
+    private int goalRadius;
+    private int searchSize;
+    public List<int> path;
+
+    public GridPath(Vector2Int startPos, Vector2Int goalPos, int goalRadius, int searchSize)
+    {
+        this.startPos = startPos;
+        this.goalPos = goalPos;
+        this.goalRadius = goalRadius;
+        this.searchSize = searchSize;
+    }
+}
+
 public class GridPathFinder
 {
-    private float blockSize;
-    private int xsize;
-    private int zsize;
-    private GridPathPriorityQueue openQueue = new GridPathPriorityQueue();
-    private 
+    private int gridX;
+    private int gridZ;
+    private int blockSize;
+    private GridPathNode[] nodes;
+    private GridPathPriorityQueue openQueue;
+    private List<GridPathNode> closedQueue;
 
-    public GridPathFinder(float width, float height, float blockSize)
+    public GridPathFinder(int gridX, int gridZ, int blockSize)
     {
+        this.gridX = gridX;
+        this.gridZ = gridZ;
         this.blockSize = blockSize;
-        this.xsize = (int)(width / blockSize);
-        this.zsize = (int)(height / blockSize);
+        this.nodes = new GridPathNode[this.gridX * this.gridZ];
+        this.openQueue = new GridPathPriorityQueue();
+        this.closedQueue = new List<GridPathNode>();
+    }
+    public bool Init()
+    {
+        for (int i = 0; i < nodes.Length; i++)
+        {
+            nodes[i].Index = i;
+            //TODO check block
+        }
+        return true;
+    }
+    public bool Search(GridMoveAgent agent, ref GridPath path)
+    {
+
+
+        foreach (var node in closedQueue)
+        {
+            node.IsClosed = false;
+        }
+        closedQueue.Clear();
+        return true;
     }
 }
