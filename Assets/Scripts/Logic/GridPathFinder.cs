@@ -3,19 +3,21 @@ using UnityEngine;
 
 public class GridPathNode
 {
-    private enum Mask { Blocked = 1, Closed = 2, ParentFwd = 4, ParentRgt = 8 };
+    private enum Mask { Blocked = 1, Closed = 2 };
 
     private int x;
     private int z;
     private int gCost;
     private int hCost;
     private Mask mask;
+    private GridPathNode parent;
 
     public int X { get => x; set => x = value; }
     public int Z { get => z; set => z = value; }
     public int FCost { get => gCost + hCost; }
     public int GCost { get => gCost; set => gCost = value; }
     public int HCost { set => hCost = value; }
+    public GridPathNode Parent { get => parent; set => parent = value; }
     public bool IsBlocked
     {
         get { return (mask & Mask.Blocked) != 0; }
@@ -88,44 +90,6 @@ public class GridPathPriorityQueue
     }
 }
 
-public class GridPath
-{
-    private int startX;
-    private int startZ;
-    private int goalX;
-    private int goalZ;
-    private int goalRadius;
-    private int searchSize;
-    private List<int> path;
-
-    public int StartX { get => startX; }
-    public int StartZ { get => startZ; }
-    public int GoalX { get => goalX; }
-    public int GoalZ { get => goalZ; }
-
-    public GridPath(int startX, int startZ, int goalX, int goalZ, int goalRadius, int searchSize)
-    {
-        this.startX = startX;
-        this.startZ = startZ;
-        this.goalX = goalX;
-        this.goalZ = goalZ;
-        this.goalRadius = goalRadius;
-        this.searchSize = searchSize;
-    }
-    public bool IsGoal(int x, int z)
-    {
-        return false;
-    }
-    public bool IsWalkable(int fromX, int fromZ, int toX, int toZ)
-    {
-        return true;
-    }
-    public void SetPath(List<int> path)
-    {
-        this.path = path;
-    }
-}
-
 public class GridPathFinder
 {
     private int[] neighbors = { 0, 1, 0, -1, 1, 0, -1, 0, -1, 1, 1, 1, -1, -1, 1, -1 };
@@ -163,10 +127,20 @@ public class GridPathFinder
         int z = Mathf.Abs(toZ - fromZ);
         return x > z ? 14 * z + 10 * (x - z) : 14 * x + 10 * (z - x);
     }
-    public bool Search(int maxNodes, ref GridPath path)
+    private bool IsAtGoal()
     {
-        Debug.Assert(path.StartX >= 0 && path.StartZ < gridX && path.StartZ >= 0 && path.StartZ < gridZ);
-        Debug.Assert(path.GoalX >= 0 && path.GoalX < gridX && path.GoalZ >= 0 && path.GoalZ < gridZ);
+        return false;
+    }
+    private bool IsNeighborWalkable(int fromX, int fromZ, int toX, int toZ)
+    {
+        return false;
+    }
+    public List<Vector2Int> Search(int unitSize, int startX, int startZ, int goalX, int goalZ, int goalRadius, int searchRadius, int searchMaxNodes)
+    {
+        Debug.Assert(unitSize >= 3 && (unitSize & 1) == 1);
+        Debug.Assert(startX >= 0 && startX < gridX && startZ >= 0 && startZ < gridZ);
+        Debug.Assert(goalX >= 0 && goalX < gridX && goalZ >= 0 && goalZ < gridZ);
+        Debug.Assert(goalRadius >= 0 && searchRadius >= 0 && searchMaxNodes >= 0);
 
         openQueue.Clear();
         foreach (var n in closedQueue)
@@ -175,24 +149,21 @@ public class GridPathFinder
         }
         closedQueue.Clear();
 
-
         bool isFound = false;
-        int nodeCount = 0;
-        var node = nodes[path.StartX + path.StartZ * gridX];
+        var node = nodes[startX + startZ * gridX];
         node.IsClosed = true;
         closedQueue.Add(node);
-        openQueue.Push(node);
-        while ((node = openQueue.Pop()) != null && nodeCount++ < maxNodes)
+        for (int i = 0; i < searchMaxNodes && node != null; i++)
         {
-            if (path.IsGoal(node.X, node.Z))
+            if (IsAtGoal())
             {
                 isFound = true;
                 break;
             }
-            for (int i = 0; i < neighbors.Length; i += 2)
+            for (int j = 0; j < neighbors.Length; j += 2)
             {
-                var x = node.X + neighbors[i];
-                var z = node.Z + neighbors[i + 1];
+                var x = node.X + neighbors[j];
+                var z = node.Z + neighbors[j + 1];
                 if (x < 0 || x >= gridX || z < 0 || z >= gridZ)
                 {
                     continue;
@@ -202,19 +173,25 @@ public class GridPathFinder
                 {
                     continue;
                 }
-                if (!path.IsWalkable(node.X, node.Z, x, z))
+                if (!IsNeighborWalkable(node.X, node.Z, x, z))
                 {
                     n.IsClosed = true;
                     closedQueue.Add(n);
                     continue;
                 }
                 n.GCost = node.GCost + CalcDistanceCost(node.X, node.Z, x, z);
-                n.HCost = CalcDistanceCost(x, z, );
+                n.HCost = CalcDistanceCost(x, z, goalX, goalZ);
                 n.IsClosed = true;
+                n.Parent = node;
                 closedQueue.Add(n);
                 openQueue.Push(n);
             }
+            node = openQueue.Pop();
         }
-        return isFound;
+        if (isFound)
+        {
+            var path = new List<GridPathNode>();
+        }
+        return null;
     }
 }
