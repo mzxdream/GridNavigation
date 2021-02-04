@@ -173,15 +173,11 @@ public class GridPathFinder
         this.openQueue = new GridPathPriorityQueue();
         this.closedQueue = new List<GridPathNode>();
     }
-    private static int CalcDistanceCost(int fromX, int fromZ, int toX, int toZ)
+    private static int CalcDistance(int fromX, int fromZ, int toX, int toZ)
     {
         int x = Mathf.Abs(toX - fromX);
         int z = Mathf.Abs(toZ - fromZ);
         return x > z ? 14 * z + 10 * (x - z) : 14 * x + 10 * (z - x);
-    }
-    private bool IsAtGoal()
-    {
-        return false;
     }
     private bool IsNodeBlocked(GridPathNode node, Func<int, int, bool> checkBlockedFunc)
     {
@@ -314,7 +310,7 @@ public class GridPathFinder
         closedQueue.Add(node);
         for (int i = 0; i < searchMaxNodes && node != null; i++)
         {
-            if (IsAtGoal())
+            if (CalcDistance(node.X, node.Z, goalX, goalZ) <= goalRadius * 14)
             {
                 var snode = nodes[startX + startZ * gridX];
                 var path = new GridPath();
@@ -341,12 +337,16 @@ public class GridPathFinder
                 }
                 n.IsClosed = true;
                 closedQueue.Add(n);
+                if (searchRadius > 0 && CalcDistance(startX, startZ, x, z) > searchRadius * 14)
+                {
+                    continue;
+                }
                 if (!IsNeighborWalkable(unitSize, node, n, checkBlockedFunc))
                 {
                     continue;
                 }
-                n.GCost = node.GCost + CalcDistanceCost(node.X, node.Z, x, z);
-                n.HCost = CalcDistanceCost(x, z, goalX, goalZ);
+                n.GCost = node.GCost + CalcDistance(node.X, node.Z, x, z);
+                n.HCost = CalcDistance(x, z, goalX, goalZ);
                 n.Parent = node;
                 openQueue.Push(n);
             }
