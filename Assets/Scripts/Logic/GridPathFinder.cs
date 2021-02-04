@@ -176,7 +176,7 @@ public class GridPathFinder
             }
             return true;
         }
-        {//cross
+        { //Cross
             int x = enode.X + offset * (enode.X - snode.X);
             int z = enode.Z + offset * (enode.Z - snode.Z);
             if (x < 0 || x >= gridX || z < 0 || z >= gridZ)
@@ -199,6 +199,49 @@ public class GridPathFinder
             }
             return true;
         }
+    }
+    private bool IsCrossWalkable(int unitSize, GridPathNode snode, GridPathNode enode, Func<int, int, bool> checkBlockedFunc)
+    {
+        int dx = enode.X - snode.X, dz = enode.Z - snode.Z;
+        int nx = Mathf.Abs(dx), nz = Mathf.Abs(dz);
+        int signX = dx > 0 ? 1 : -1, signZ = dz > 0 ? 1 : -1;
+
+        int x = snode.X, z = snode.Z;
+        for (int ix = 0, iz = 0; ix < nx || iz < nz;)
+        {
+            var t1 = (2 * ix + 1) * nz;
+            var t2 = (2 * iz + 1) * nx;
+            if (t1 < t2) //Horizontal
+            {
+                if (!IsNeighborWalkable(unitSize, nodes[x + z * gridX], nodes[x + signX + z * gridX], checkBlockedFunc))
+                {
+                    return false;
+                }
+                x += signX;
+                ix++;
+            }
+            else if (t1 > t2) //Vertical
+            {
+                if (!IsNeighborWalkable(unitSize, nodes[x + z * gridX], nodes[x + (z + signZ) * gridX], checkBlockedFunc))
+                {
+                    return false;
+                }
+                z += signZ;
+                iz++;
+            }
+            else //Cross
+            {
+                if (!IsNeighborWalkable(unitSize, nodes[x + z * gridX], nodes[x + signX + (z + signZ) * gridX], checkBlockedFunc))
+                {
+                    return false;
+                }
+                x += signX;
+                z += signZ;
+                ix++;
+                iz++;
+            }
+        }
+        return true;
     }
     public List<Vector2Int> Search(int unitSize, int startX, int startZ, int goalX, int goalZ, int goalRadius, int searchRadius, int searchMaxNodes, Func<int, int, bool> checkBlockedFunc)
     {
