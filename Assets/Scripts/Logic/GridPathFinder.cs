@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class GridPathNode
 {
-    private enum Mask { CheckBlocked = 1, Blocked = 2, Closed = 4 };
+    private enum Mask { TestBlocked = 1, Blocked = 2, Closed = 4 };
 
     private int x;
     private int z;
@@ -19,10 +19,10 @@ public class GridPathNode
     public int GCost { get => gCost; set => gCost = value; }
     public int HCost { set => hCost = value; }
     public GridPathNode Parent { get => parent; set => parent = value; }
-    public bool IsCheckBlocked
+    public bool HasTestBlocked
     {
-        get { return (mask & Mask.CheckBlocked) != 0; }
-        set { if (value) { mask |= Mask.CheckBlocked; } else { mask &= ~Mask.CheckBlocked; } }
+        get { return (mask & Mask.TestBlocked) != 0; }
+        set { if (value) { mask |= Mask.TestBlocked; } else { mask &= ~Mask.TestBlocked; } }
     }
     public bool IsBlocked
     {
@@ -134,9 +134,9 @@ public class GridPathFinder
     }
     private bool IsNodeBlocked(GridPathNode node, Func<int, int, bool> checkBlockedFunc)
     {
-        if (!node.IsCheckBlocked)
+        if (!node.HasTestBlocked)
         {
-            node.IsCheckBlocked = true;
+            node.HasTestBlocked = true;
             node.IsBlocked = checkBlockedFunc(node.X, node.Z);
         }
         return node.IsBlocked;
@@ -200,35 +200,6 @@ public class GridPathFinder
             return true;
         }
     }
-    private bool IsNodeWalkable(int unitSize, int x, int z, Func<int, int, bool> checkBlockedFunc)
-    {
-        int offset = unitSize / 2;
-        int minx = x - offset;
-        int maxx = x + offset;
-        int minz = z - offset;
-        int maxz = z + offset;
-        if (minx < 0 || maxx >= gridX || maxz < 0 || maxz >= gridZ)
-        {
-            return false;
-        }
-        for (int j = minz; j < maxz; j++)
-        {
-            for (int i = minx; i < maxz; i++)
-            {
-                var node = nodes[i + j * gridX];
-                if (!node.IsCheckBlocked)
-                {
-                    node.IsCheckBlocked = true;
-                    node.IsBlocked = checkBlockedFunc(i, j);
-                }
-                if (node.IsBlocked)
-                {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
     public List<Vector2Int> Search(int unitSize, int startX, int startZ, int goalX, int goalZ, int goalRadius, int searchRadius, int searchMaxNodes, Func<int, int, bool> checkBlockedFunc)
     {
         Debug.Assert(unitSize >= 3 && (unitSize & 1) == 1);
@@ -239,7 +210,7 @@ public class GridPathFinder
         openQueue.Clear();
         foreach (var n in closedQueue)
         {
-            n.IsCheckBlocked = false;
+            n.HasTestBlocked = false;
             n.IsClosed = false;
         }
         closedQueue.Clear();
@@ -268,17 +239,15 @@ public class GridPathFinder
                 {
                     continue;
                 }
-                if (!IsNodeWalkable(unitSize, x, z, checkBlockedFunc))
+                n.IsClosed = true;
+                closedQueue.Add(n);
+                if (!IsNeighborWalkable(unitSize, node, n, checkBlockedFunc))
                 {
-                    n.IsClosed = true;
-                    closedQueue.Add(n);
                     continue;
                 }
                 n.GCost = node.GCost + CalcDistanceCost(node.X, node.Z, x, z);
                 n.HCost = CalcDistanceCost(x, z, goalX, goalZ);
-                n.IsClosed = true;
                 n.Parent = node;
-                closedQueue.Add(n);
                 openQueue.Push(n);
             }
             node = openQueue.Pop();
