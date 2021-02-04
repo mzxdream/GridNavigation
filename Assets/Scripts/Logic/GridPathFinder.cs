@@ -273,6 +273,7 @@ public class GridPathFinder
                     node = node.Parent;
                 }
                 path.Add(snode);
+                path.Reverse();
                 return path;
             }
             for (int j = 0; j < neighbors.Length; j += 2)
