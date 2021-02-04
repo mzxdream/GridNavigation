@@ -96,6 +96,57 @@ public class GridPathPriorityQueue
     }
 }
 
+public class GridPath
+{
+    public class Node
+    {
+        private int x;
+        private int z;
+        private Node prev;
+        private Node next;
+
+        public int X { get => x; }
+        public int Z { get => z; }
+        public Node Prev { get => prev; }
+        public Node Next { get => next; }
+
+        public Node(int x, int z)
+        {
+            this.x = x;
+            this.z = z;
+            prev = this;
+            next = this;
+        }
+        public void Insert(Node p, Node n)
+        {
+            Debug.Assert(prev == this && next == this);
+            p.next = this;
+            n.prev = this;
+            prev = p;
+            next = n;
+        }
+        public void Erase()
+        {
+            prev.next = next;
+            next.prev = prev;
+            prev = this;
+            next = this;
+        }
+    }
+    private Node head = new Node(-1, -1);
+
+    public Node Head { get => head; }
+
+    public void PushFront(Node n)
+    {
+        n.Insert(head, head.Next);
+    }
+    public void PushBack(Node n)
+    {
+        n.Insert(head.Prev, head);
+    }
+}
+
 public class GridPathFinder
 {
     private int[] neighbors = { 0, 1, 0, -1, 1, 0, -1, 0, -1, 1, 1, 1, -1, -1, 1, -1 };
@@ -243,7 +294,7 @@ public class GridPathFinder
         }
         return true;
     }
-    public List<GridPathNode> Search(int unitSize, int startX, int startZ, int goalX, int goalZ, int goalRadius, int searchRadius, int searchMaxNodes, Func<int, int, bool> checkBlockedFunc)
+    public GridPath Search(int unitSize, int startX, int startZ, int goalX, int goalZ, int goalRadius, int searchRadius, int searchMaxNodes, Func<int, int, bool> checkBlockedFunc)
     {
         Debug.Assert(unitSize >= 3 && (unitSize & 1) == 1);
         Debug.Assert(startX - unitSize / 2 >= 0 && startX + unitSize / 2 < gridX && startZ - unitSize / 2 >= 0 && startZ + unitSize / 2 < gridZ);
@@ -266,14 +317,13 @@ public class GridPathFinder
             if (IsAtGoal())
             {
                 var snode = nodes[startX + startZ * gridX];
-                var path = new List<GridPathNode>();
+                var path = new GridPath();
                 while (node != snode)
                 {
-                    path.Add(node);
+                    path.PushFront(new GridPath.Node(node.X, node.Z));
                     node = node.Parent;
                 }
-                path.Add(snode);
-                path.Reverse();
+                path.PushFront(new GridPath.Node(startX, startZ));
                 return path;
             }
             for (int j = 0; j < neighbors.Length; j += 2)
