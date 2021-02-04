@@ -132,6 +132,74 @@ public class GridPathFinder
     {
         return false;
     }
+    private bool IsNodeBlocked(GridPathNode node, Func<int, int, bool> checkBlockedFunc)
+    {
+        if (!node.IsCheckBlocked)
+        {
+            node.IsCheckBlocked = true;
+            node.IsBlocked = checkBlockedFunc(node.X, node.Z);
+        }
+        return node.IsBlocked;
+    }
+    private bool IsNeighborWalkable(int unitSize, GridPathNode snode, GridPathNode enode, Func<int, int, bool> checkBlockedFunc)
+    {
+        var offset = unitSize / 2;
+        if (snode.Z == enode.Z) //Horizontal
+        {
+            int x = enode.X + offset * (enode.X - snode.X);
+            if (x < 0 || x >= gridX)
+            {
+                return false;
+            }
+            for (int i = 0; i < unitSize; i++)
+            {
+                if (IsNodeBlocked(nodes[x + (enode.Z - offset + i) * gridX], checkBlockedFunc))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        if (snode.X == enode.X) //Vertical
+        {
+            int z = enode.Z + offset * (enode.Z - snode.Z);
+            if (z < 0 || z >= gridZ)
+            {
+                return false;
+            }
+            for (int i = 0; i < unitSize; i++)
+            {
+                if (IsNodeBlocked(nodes[enode.X - offset + i + z * gridX], checkBlockedFunc))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        {//cross
+            int x = enode.X + offset * (enode.X - snode.X);
+            int z = enode.Z + offset * (enode.Z - snode.Z);
+            if (x < 0 || x >= gridX || z < 0 || z >= gridZ)
+            {
+                return false;
+            }
+            for (int i = 0; i <= unitSize; i++)
+            {
+                if (IsNodeBlocked(nodes[x - i * (enode.X - snode.X) + z * gridX], checkBlockedFunc))
+                {
+                    return false;
+                }
+            }
+            for (int i = 1; i <= unitSize; i++)
+            {
+                if (IsNodeBlocked(nodes[x + (z - i * (enode.Z - snode.Z) * gridX)], checkBlockedFunc))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
     private bool IsNodeWalkable(int unitSize, int x, int z, Func<int, int, bool> checkBlockedFunc)
     {
         int offset = unitSize / 2;
@@ -164,7 +232,7 @@ public class GridPathFinder
     public List<Vector2Int> Search(int unitSize, int startX, int startZ, int goalX, int goalZ, int goalRadius, int searchRadius, int searchMaxNodes, Func<int, int, bool> checkBlockedFunc)
     {
         Debug.Assert(unitSize >= 3 && (unitSize & 1) == 1);
-        Debug.Assert(startX >= 0 && startX < gridX && startZ >= 0 && startZ < gridZ);
+        Debug.Assert(startX - unitSize / 2 >= 0 && startX + unitSize / 2 < gridX && startZ - unitSize / 2 >= 0 && startZ + unitSize / 2 < gridZ);
         Debug.Assert(goalX >= 0 && goalX < gridX && goalZ >= 0 && goalZ < gridZ);
         Debug.Assert(goalRadius >= 0 && searchRadius >= 0 && searchMaxNodes >= 0);
 
