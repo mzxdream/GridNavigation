@@ -243,7 +243,7 @@ public class GridPathFinder
         }
         return true;
     }
-    public List<Vector2Int> Search(int unitSize, int startX, int startZ, int goalX, int goalZ, int goalRadius, int searchRadius, int searchMaxNodes, Func<int, int, bool> checkBlockedFunc)
+    public List<GridPathNode> Search(int unitSize, int startX, int startZ, int goalX, int goalZ, int goalRadius, int searchRadius, int searchMaxNodes, Func<int, int, bool> checkBlockedFunc)
     {
         Debug.Assert(unitSize >= 3 && (unitSize & 1) == 1);
         Debug.Assert(startX - unitSize / 2 >= 0 && startX + unitSize / 2 < gridX && startZ - unitSize / 2 >= 0 && startZ + unitSize / 2 < gridZ);
@@ -258,7 +258,6 @@ public class GridPathFinder
         }
         closedQueue.Clear();
 
-        bool isFound = false;
         var node = nodes[startX + startZ * gridX];
         node.IsClosed = true;
         closedQueue.Add(node);
@@ -266,8 +265,15 @@ public class GridPathFinder
         {
             if (IsAtGoal())
             {
-                isFound = true;
-                break;
+                var snode = nodes[startX + startZ * gridX];
+                var path = new List<GridPathNode>();
+                while (node != snode)
+                {
+                    path.Add(node);
+                    node = node.Parent;
+                }
+                path.Add(snode);
+                return path;
             }
             for (int j = 0; j < neighbors.Length; j += 2)
             {
@@ -294,10 +300,6 @@ public class GridPathFinder
                 openQueue.Push(n);
             }
             node = openQueue.Pop();
-        }
-        if (isFound)
-        {
-            var path = new List<GridPathNode>();
         }
         return null;
     }
