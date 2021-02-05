@@ -6,15 +6,15 @@ public class GridPathNode
 {
     private enum Mask { TestBlocked = 1, Blocked = 2, Closed = 4 };
 
-    private int x;
-    private int z;
+    private readonly int x;
+    private readonly int z;
     private int gCost;
     private int hCost;
-    private Mask mask;
     private GridPathNode parent;
+    private Mask mask;
 
-    public int X { get => x; set => x = value; }
-    public int Z { get => z; set => z = value; }
+    public int X { get => x; }
+    public int Z { get => z; }
     public int FCost { get => gCost + hCost; }
     public int GCost { get => gCost; set => gCost = value; }
     public int HCost { set => hCost = value; }
@@ -34,19 +34,25 @@ public class GridPathNode
         get { return (mask & Mask.Closed) != 0; }
         set { if (value) { mask |= Mask.Closed; } else { mask &= ~Mask.Closed; } }
     }
+
+    public GridPathNode(int x, int z)
+    {
+        this.x = x;
+        this.z = z;
+    }
 }
 
 public class GridPathPriorityQueue
 {
-    private int capacity;
-    private int count;
     private GridPathNode[] nodeHeap;
+    private int count;
+    private int capacity;
 
     public GridPathPriorityQueue(int capacity = 256)
     {
-        this.capacity = capacity;
-        this.count = 0;
         this.nodeHeap = new GridPathNode[capacity];
+        this.count = 0;
+        this.capacity = capacity;
     }
     private void Grow()
     {
@@ -127,8 +133,8 @@ public class GridPath
 {
     public class Node
     {
-        private int x;
-        private int z;
+        private readonly int x;
+        private readonly int z;
         private Node prev;
         private Node next;
 
@@ -192,9 +198,7 @@ public class GridPathFinder
         {
             for (int x = 0; x < gridX; x++)
             {
-                var node = nodes[x + z * gridX];
-                node.X = x;
-                node.Z = z;
+                nodes[x + z * gridX] = new GridPathNode(x, z);
             }
         }
         this.openQueue = new GridPathPriorityQueue();
