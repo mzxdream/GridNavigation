@@ -54,11 +54,11 @@ public class GridMoveManager
     public void Clear()
     {
     }
-    public void Update(float deltaTime)
+    public void Update()
     {
         foreach (var agent in agents)
         {
-            agent.Update(deltaTime);
+            agent.Update();
         }
     }
     public void LateUpdate()
@@ -102,6 +102,10 @@ public class GridMoveManager
         int x = index - z * gridX;
         return new Vector3(bmin.x + (x + 0.5f) * gridSize, 0, bmin.z + (z + 0.5f) * gridSize);
     }
+    public Vector3 GetGridPos(int x, int z)
+    {
+        return GetGridPos(x + z * gridX);
+    }
     public GridPath FindPath(GridMoveAgent agent, Vector3 goalPos, float goalRadius)
     {
         GetGirdXZ(agent.Pos, out int startX, out int startZ);
@@ -117,10 +121,41 @@ public class GridMoveManager
             {
                 if (a.IsBlockedOther(agent))
                 {
-                    return false;
+                    return true;
                 }
             }
             return false;
         });
+    }
+    public Vector3 NextWayPoint(GridMoveAgent agent, GridPath path, Vector3 pos, float distance)
+    {
+        var h = path.Head.Next;
+        while (h != path.Head)
+        {
+            var waypoint = GetGridPos(h.X, h.Z);
+            h.Erase();
+            if ((pos - waypoint).sqrMagnitude >= distance * distance)
+            {
+                return waypoint;
+            }
+        }
+        return GetGridPos(path.goalNode.X, path.goalNode.Z);
+    }
+    public bool IsGridBlocked(GridMoveAgent agent, Vector3 pos)
+    {
+        GetGirdXZ(pos, out int x, out int z);
+        var grid = grids[x + z * gridX];
+        if (grid.isBlocked)
+        {
+            return true;
+        }
+        foreach (var a in grid.agents)
+        {
+            if (a.IsBlockedOther(agent))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

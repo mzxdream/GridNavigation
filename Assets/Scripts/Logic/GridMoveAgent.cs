@@ -19,7 +19,7 @@ public class GridMoveAgent
     private int teamID;
     private int unitSize;
     private float mass;
-    private float maxSpeedDef;
+    private float maxSpeed;
     private bool isPushResistant;
 
     private Vector3 goalPos;
@@ -28,7 +28,8 @@ public class GridMoveAgent
     private bool isMoving;
     private bool isWantRepath;
     private float curSpeed;
-    private float maxSpeed;
+    private Vector3 currWayPoint;
+    private Vector3 nextWayPoint;
 
     public Vector3 Pos { get => pos; }
     public Vector3 Forward { get => forward; }
@@ -47,7 +48,7 @@ public class GridMoveAgent
         this.teamID = param.teamID;
         this.unitSize = param.unitSize;
         this.mass = param.mass;
-        this.maxSpeedDef = param.maxSpeed;
+        this.maxSpeed = param.maxSpeed / 30;
         this.isPushResistant = param.isPushResistant;
 
 
@@ -58,8 +59,29 @@ public class GridMoveAgent
     public void Clear()
     {
     }
-    public void Update(float deltaTime)
+    public void Update()
     {
+        if (isMoving)
+        {
+            bool atGoal = (goalPos - pos).sqrMagnitude <= goalRadius * goalRadius;
+            if (atGoal)
+            {
+                isMoving = false;
+            }
+            else
+            {
+                if (path != null && (currWayPoint - pos).sqrMagnitude < (maxSpeed * 1.05f * maxSpeed * 1.05f))
+                {
+                    currWayPoint = nextWayPoint;
+                    nextWayPoint = manager.NextWayPoint(this, this.path, currWayPoint, maxSpeed * 1.05f);
+                }
+                if (manager.IsGridBlocked(this, currWayPoint) || manager.IsGridBlocked(this, nextWayPoint))
+                {
+                    isWantRepath = true;
+                }
+            }
+            
+        }
     }
     public void LateUpdate()
     {
@@ -75,8 +97,9 @@ public class GridMoveAgent
         }
         isMoving = true;
         isWantRepath = false;
-        curSpeed = 0;
-        maxSpeed = maxSpeedDef;
+        curSpeed = maxSpeed;
+        currWayPoint = manager.NextWayPoint(this, this.path, pos, maxSpeed * 1.05f);
+        nextWayPoint = manager.NextWayPoint(this, this.path, currWayPoint, maxSpeed * 1.05f);
         return true;
     }
     public void StopMoving()

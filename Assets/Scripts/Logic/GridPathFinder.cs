@@ -169,6 +169,7 @@ public class GridPath
     private Node head = new Node(-1, -1);
 
     public Node Head { get => head; }
+    public Node goalNode;
 
     public void PushFront(Node n)
     {
@@ -346,6 +347,7 @@ public class GridPathFinder
             {
                 var snode = nodes[startX + startZ * gridX];
                 var path = new GridPath();
+                path.goalNode = new GridPath.Node(goalX, goalZ);
                 while (node != snode)
                 {
                     path.PushFront(new GridPath.Node(node.X, node.Z));
