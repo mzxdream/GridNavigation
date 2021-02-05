@@ -80,7 +80,12 @@ public class GridMoveAgent
                     isWantRepath = true;
                 }
             }
-            
+            Vector3 waypointDir = (currWayPoint - pos).normalized;
+            if (waypointDir != Vector3.zero)
+            {
+                forward = waypointDir;
+            }
+            this.pos = this.forward * curSpeed;
         }
     }
     public void LateUpdate()
