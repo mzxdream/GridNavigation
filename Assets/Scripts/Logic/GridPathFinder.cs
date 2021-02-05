@@ -217,6 +217,7 @@ public class GridPathFinder
     }
     private bool IsNeighborWalkable(int unitSize, GridPathNode snode, GridPathNode enode, Func<int, int, bool> checkBlockedFunc)
     {
+        Debug.Assert(unitSize > 0 && Mathf.Abs(snode.X - enode.X) <= 1 && Mathf.Abs(snode.Z - enode.Z) <= 1);
         var offset = unitSize / 2;
         if (snode.Z == enode.Z) //Horizontal
         {
