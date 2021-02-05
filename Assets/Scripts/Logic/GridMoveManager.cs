@@ -5,10 +5,16 @@ public class GridMoveManager
 {
     class Grid
     {
-        int x;
-        int z;
-        bool isBlocked;
-        List<GridMoveAgent> agents;
+        public readonly int x;
+        public readonly int z;
+        public bool isBlocked;
+        public List<GridMoveAgent> agents = new List<GridMoveAgent>();
+
+        public Grid(int x, int z)
+        {
+            this.x = x;
+            this.z = z;
+        }
     }
 
     int gameSpeed = 30;
@@ -32,9 +38,15 @@ public class GridMoveManager
         this.gridSize = gridSize;
 
         this.grids = new Grid[gridX * gridZ];
+        for (int z = 0; z < gridZ; z++)
+        {
+            for (int x = 0; x < gridX; x++)
+            {
+                this.grids[x + z * gridX] = new Grid(x, z);
+            }
+        }
         this.agents = new GridMoveAgent[maxAgent];
         this.pathFinder = new GridPathFinder(gridX, gridZ);
-
     }
 
     public void Update()
