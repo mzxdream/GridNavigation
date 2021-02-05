@@ -17,18 +17,21 @@ public class GridMoveManager
         }
     }
 
-    private readonly int gameSpeed = 30;
-    private readonly Vector3 pos = Vector3.zero;
-    private readonly int gridX = 11;
-    private readonly int gridZ = 11;
-    private readonly float gridSize = 0.2f;
+    private int gameSpeed = 30;
+    private Vector3 pos = Vector3.zero;
+    private int gridX = 11;
+    private int gridZ = 11;
+    private float gridSize = 0.2f;
 
     private int frameNum = 0;
     private Grid[] grids;
     private GridMoveAgent[] agents;
     private GridPathFinder pathFinder;
 
-    public GridMoveManager(int gameSpeed, Vector3 pos, int gridX, int gridZ, float gridSize, int maxAgent)
+    public GridMoveManager()
+    {
+    }
+    public bool Init(int gameSpeed, Vector3 pos, int gridX, int gridZ, float gridSize, int maxAgents)
     {
         this.gameSpeed = gameSpeed;
         this.pos = pos;
@@ -45,10 +48,13 @@ public class GridMoveManager
                 this.grids[x + z * gridX] = new Grid(x, z);
             }
         }
-        this.agents = new GridMoveAgent[maxAgent];
+        this.agents = new GridMoveAgent[maxAgents];
         this.pathFinder = new GridPathFinder(gridX, gridZ);
+        return true;
     }
-
+    public void Clear()
+    {
+    }
     public void Update()
     {
 
