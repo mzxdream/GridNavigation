@@ -17,14 +17,12 @@ public class GridMoveManager
         }
     }
 
-    private int gameSpeed = 30;
     private Vector3 bmin = Vector3.zero;
     private Vector3 bmax = Vector3.zero;
     private int gridX = 11;
     private int gridZ = 11;
     private float gridSize = 0.2f;
 
-    private int frameNum = 0;
     private Grid[] grids;
     private List<GridMoveAgent> agents; //TODO optimization
     private GridPathFinder pathFinder;
@@ -32,9 +30,8 @@ public class GridMoveManager
     public GridMoveManager()
     {
     }
-    public bool Init(int gameSpeed, Vector3 pos, int gridX, int gridZ, float gridSize, int maxAgents)
+    public bool Init(Vector3 pos, int gridX, int gridZ, float gridSize, int maxAgents)
     {
-        this.gameSpeed = gameSpeed;
         var offset = new Vector3(gridX * gridSize / 2, 0, gridZ * gridSize / 2);
         this.bmin = pos - offset;
         this.bmax = pos + offset;
@@ -42,7 +39,6 @@ public class GridMoveManager
         this.gridZ = gridZ;
         this.gridSize = gridSize;
 
-        this.frameNum = 0;
         this.grids = new Grid[gridX * gridZ];
         for (int z = 0; z < gridZ; z++)
         {
@@ -58,6 +54,20 @@ public class GridMoveManager
     public void Clear()
     {
     }
+    public void Update(float deltaTime)
+    {
+        foreach (var agent in agents)
+        {
+            agent.Update(deltaTime);
+        }
+    }
+    public void LateUpdate()
+    {
+        foreach (var agent in agents)
+        {
+            agent.LateUpdate();
+        }
+    }
     public GridMoveAgent CreateAgent(Vector3 pos, Vector3 forward, GridMoveAgentParam agentParam)
     {
         GridMoveAgent agent = new GridMoveAgent(this);
@@ -68,10 +78,16 @@ public class GridMoveManager
         agents.Add(agent);
         return agent;
     }
-    public void ClampInBounds(ref Vector3 pos)
+    public Vector3 ClampInBounds(Vector3 pos)
     {
-        pos.x = Mathf.Clamp(pos.x, bmin.x, bmax.x);
-        pos.z = Mathf.Clamp(pos.z, bmin.z, bmax.z);
+        return new Vector3(Mathf.Clamp(pos.x, bmin.x, bmax.x), pos.y, Mathf.Clamp(pos.z, bmin.z, bmax.z));
+    }
+    public void GetGirdXZ(Vector3 pos, out int x, out int z)
+    {
+        x = (int)((pos.x - bmin.x) / gridSize);
+        z = (int)((pos.z - bmin.z) / gridSize);
+        x = Mathf.Clamp(x, 0, gridX - 1);
+        z = Mathf.Clamp(z, 0, gridZ - 1);
     }
     public int GetGridIndex(Vector3 pos)
     {
@@ -86,18 +102,25 @@ public class GridMoveManager
         int x = index - z * gridX;
         return new Vector3(bmin.x + (x + 0.5f) * gridSize, 0, bmin.z + (z + 0.5f) * gridSize);
     }
-    public void Update()
+    public GridPath FindPath(GridMoveAgent agent, Vector3 goalPos, float goalRadius)
     {
-        foreach (var agent in agents)
+        GetGirdXZ(agent.Pos, out int startX, out int startZ);
+        GetGirdXZ(goalPos, out int goalX, out int goalZ);
+        return pathFinder.Search(agent.UnitSize, startX, startZ, goalX, goalZ, (int)(goalRadius / gridSize), -1, -1, (int x, int z) =>
         {
-            agent.Update();
-        }
-    }
-    public void LateUpdate()
-    {
-        foreach (var agent in agents)
-        {
-            agent.LateUpdate();
-        }
+            Grid grid = grids[x + z * gridX];
+            if (grid.isBlocked)
+            {
+                return true;
+            }
+            foreach (var a in grid.agents)
+            {
+                if (a.IsBlockedOther(agent))
+                {
+                    return false;
+                }
+            }
+            return false;
+        });
     }
 }
