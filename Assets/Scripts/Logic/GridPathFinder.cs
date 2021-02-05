@@ -48,7 +48,6 @@ public class GridPathPriorityQueue
         this.count = 0;
         this.nodeHeap = new GridPathNode[capacity];
     }
-
     private void Grow()
     {
         capacity <<= 1;
@@ -56,14 +55,51 @@ public class GridPathPriorityQueue
         nodeHeap.CopyTo(newNodeHeap, 0);
         nodeHeap = newNodeHeap;
     }
+    private void HeapifyDown(int i, int length)
+    {
+        int lowest = i;
+        int left = i * 2 + 1;
+        int right = i * 2 + 2;
+        if (left < length && nodeHeap[left].FCost < nodeHeap[lowest].FCost)
+        {
+            lowest = left;
+        }
+        if (right < length && nodeHeap[right].FCost < nodeHeap[lowest].FCost)
+        {
+            lowest = right;
+        }
+        if (lowest != i)
+        {
+            var tmp = nodeHeap[i];
+            nodeHeap[i] = nodeHeap[lowest];
+            nodeHeap[lowest] = tmp;
+            HeapifyDown(lowest, length);
+        }
+    }
+    private void HeapifyUp(int i)
+    {
+        while (i > 0)
+        {
+            int j = (i - 1) / 2; //parent
+            if (nodeHeap[j].FCost <= nodeHeap[i].FCost)
+            {
+                break;
+            }
+            var tmp = nodeHeap[j];
+            nodeHeap[j] = nodeHeap[i];
+            nodeHeap[i] = tmp;
+            i = j;
+        }
+    }
     public void Push(GridPathNode node)
     {
         if (count == capacity)
         {
             Grow();
         }
-        //TODO
-        nodeHeap[count++] = node;
+        nodeHeap[count] = node;
+        HeapifyUp(count);
+        count++;
     }
     public GridPathNode Pop()
     {
@@ -71,19 +107,10 @@ public class GridPathPriorityQueue
         {
             return null;
         }
-        //TODO
-        int index = 0;
-        for (int i = 1; i < count; i++)
-        {
-            if (nodeHeap[index].FCost > nodeHeap[i].FCost)
-            {
-                index = i;
-            }
-        }
-        var node = nodeHeap[index];
-        nodeHeap[index] = nodeHeap[count - 1];
-        nodeHeap[count - 1] = null;
         count--;
+        var node = nodeHeap[0];
+        nodeHeap[0] = nodeHeap[count];
+        HeapifyDown(0, count);
         return node;
     }
     public void Clear()
