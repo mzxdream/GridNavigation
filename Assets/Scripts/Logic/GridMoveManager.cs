@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class GridMoveManager
 {
-    class Grid
+    private class Grid
     {
         public readonly int x;
         public readonly int z;
@@ -17,26 +17,26 @@ public class GridMoveManager
         }
     }
 
-    int gameSpeed = 30;
-    int frameNum = 0;
-    Vector3 pos = Vector3.zero;
-    int gridX = 11;
-    int gridZ = 11;
-    float gridSize = 0.2f;
+    private readonly int gameSpeed = 30;
+    private readonly Vector3 pos = Vector3.zero;
+    private readonly int gridX = 11;
+    private readonly int gridZ = 11;
+    private readonly float gridSize = 0.2f;
 
-    Grid[] grids;
-    GridMoveAgent[] agents;
-    GridPathFinder pathFinder;
+    private int frameNum = 0;
+    private Grid[] grids;
+    private GridMoveAgent[] agents;
+    private GridPathFinder pathFinder;
 
     public GridMoveManager(int gameSpeed, Vector3 pos, int gridX, int gridZ, float gridSize, int maxAgent)
     {
         this.gameSpeed = gameSpeed;
-        this.frameNum = 0;
         this.pos = pos;
         this.gridX = gridX;
         this.gridZ = gridZ;
         this.gridSize = gridSize;
 
+        this.frameNum = 0;
         this.grids = new Grid[gridX * gridZ];
         for (int z = 0; z < gridZ; z++)
         {
