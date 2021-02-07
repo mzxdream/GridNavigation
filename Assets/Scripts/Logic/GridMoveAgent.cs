@@ -85,6 +85,7 @@ public class GridMoveAgent
             }
         }
         this.pos = this.forward * curSpeed;
+        //collision
         this.pos.y = 0.0f;
     }
     public void LateUpdate()
