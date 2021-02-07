@@ -79,14 +79,13 @@ public class GridMoveAgent
                 {
                     isWantRepath = true;
                 }
+                Vector3 waypointDir = (currWayPoint - pos).normalized;
+                this.forward = waypointDir;
+                curSpeed = maxSpeed;
             }
-            Vector3 waypointDir = (currWayPoint - pos).normalized;
-            if (waypointDir != Vector3.zero)
-            {
-                forward = waypointDir;
-            }
-            this.pos = this.forward * curSpeed;
         }
+        this.pos = this.forward * curSpeed;
+        this.pos.y = 0.0f;
     }
     public void LateUpdate()
     {
