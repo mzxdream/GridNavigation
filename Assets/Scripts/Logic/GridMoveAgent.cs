@@ -67,6 +67,7 @@ public class GridMoveAgent
             if (atGoal)
             {
                 isMoving = false;
+                curSpeed = 0f;
             }
             else
             {
@@ -84,7 +85,7 @@ public class GridMoveAgent
                 curSpeed = maxSpeed;
             }
         }
-        this.pos = this.forward * curSpeed;
+        this.pos = this.pos + this.forward * curSpeed;
         //collision
         this.pos.y = 0.0f;
     }

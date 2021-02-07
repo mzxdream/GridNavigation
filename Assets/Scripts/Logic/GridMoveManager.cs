@@ -110,7 +110,7 @@ public class GridMoveManager
     {
         GetGirdXZ(agent.Pos, out int startX, out int startZ);
         GetGirdXZ(goalPos, out int goalX, out int goalZ);
-        return pathFinder.Search(agent.UnitSize, startX, startZ, goalX, goalZ, (int)(goalRadius / gridSize), -1, -1, (int x, int z) =>
+        return pathFinder.Search(agent.UnitSize, startX, startZ, goalX, goalZ, (int)(goalRadius / gridSize), 8192, 8192, (int x, int z) =>
         {
             Grid grid = grids[x + z * gridX];
             if (grid.isBlocked)

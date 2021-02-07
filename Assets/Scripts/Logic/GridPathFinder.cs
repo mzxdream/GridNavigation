@@ -272,7 +272,7 @@ public class GridPathFinder
             }
             for (int i = 1; i <= unitSize; i++)
             {
-                if (IsNodeBlocked(nodes[x + (z - i * (enode.Z - snode.Z) * gridX)], checkBlockedFunc))
+                if (IsNodeBlocked(nodes[x + (z - i * (enode.Z - snode.Z)) * gridX], checkBlockedFunc))
                 {
                     return false;
                 }

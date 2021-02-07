@@ -23,7 +23,7 @@ public class Game : MonoBehaviour
     void Awake()
     {
         board.Init(gridX, gridZ, gridSize);
-        moveManager.Init(gridX, gridZ, gridSize);
+        moveManager.Init(transform.position, gridX, gridZ, gridSize, 1000);
     }
     void OnEnable()
     {

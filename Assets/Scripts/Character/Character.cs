@@ -30,34 +30,29 @@ public class Character : MonoBehaviour
         transform.forward = forward;
         model.localScale = new Vector3(radius, radius, radius);
         this.moveManager = moveManager;
-        var agentParams = new GridMoveAgentParams
+        var agentParams = new GridMoveAgentParam
         {
-            allyID = 1,
+            teamID = 1,
+            unitSize = 3,
             mass = 1.0f,
-            xsize = 3,
-            zsize = 3,
-            speed = 1.0f,
-            maxAcc = 0.2f,
-            maxDec = 0.2f,
-            turnRate = 3000.0f,
+            maxSpeed = 1.0f,
             isPushResistant = true,
         };
-        this.moveAgent = moveManager.AddAgent(pos - moveManager.Pos, forward, agentParams);
+        this.moveAgent = moveManager.CreateAgent(pos, forward, agentParams);
         return true;
     }
     public void Clear()
     {
-        moveManager.RemoveAgent(moveAgent);
         moveAgent = null;
         originFactory.Reclaim(this);
     }
     public void MoveTo(Vector3 pos)
     {
-        moveAgent.StartMoving(pos - moveManager.Pos, 0.01f);
+        moveAgent.StartMoving(pos, 0.01f);
     }
     public void Update()
     {
-        transform.position = moveAgent.Pos + moveManager.Pos;
-        transform.forward = moveAgent.FlatFrontDir;
+        transform.position = moveAgent.Pos;
+        transform.forward = moveAgent.Forward;
     }
 }
