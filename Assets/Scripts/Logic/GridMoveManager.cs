@@ -27,6 +27,9 @@ public class GridMoveManager
     private List<GridMoveAgent> agents; //TODO optimization
     private GridPathFinder pathFinder;
 
+    public float GridSize { get => gridSize; }
+    public float GameSpeed { get => 30; }
+
     public GridMoveManager()
     {
     }

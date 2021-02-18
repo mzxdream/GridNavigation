@@ -133,20 +133,84 @@ public class GridMoveAgent
             deltaSpeed = Mathf.Max(speedDiff, -decRate);
         }
     }
+    private bool CanSetNextWayPoint()
+    {
+        if (path == null)
+        {
+            return false;
+        }
+        if ((pos - currWayPoint).magnitude > Mathf.Max(currentSpeed * 1.05f, manager.GridSize))
+        {
+            return false;
+        }
+        atEndOfPath = (currWayPoint - goalPos).sqrMagnitude <= goalRadius * goalRadius;
+        return true;
+    }
     private void SetNextWayPoint()
     {
+        if (CanSetNextWayPoint())
+        {
+            currWayPoint = nextWayPoint;
+            nextWayPoint = manager.NextWayPoint(this, this.path, currWayPoint, Mathf.Max(currentSpeed * 1.05f, 1.25f * manager.GridSize));
+        }
+        //TODO check obstacle
+        //ReRequestPath(false);
     }
     private void Arrived(bool call)
     {
+        StopEngine(call, false);
+    }
+    private void Fail(bool call)
+    {
+        StopEngine(call, false);
+    }
+    private void StartEngine(bool call)
+    {
+        if (path == null)
+        {
+            path = manager.FindPath(this, this.goalPos, this.goalRadius);
+            if (path != null)
+            {
+                atGoal = false;
+                atEndOfPath = false;
+                currWayPoint = manager.NextWayPoint(this, this.path, pos, Mathf.Max(currentSpeed * 1.05f, 1.25f * manager.GridSize));
+                nextWayPoint = manager.NextWayPoint(this, this.path, currWayPoint, Mathf.Max(currentSpeed * 1.05f, 1.25f * manager.GridSize));
+            }
+            else
+            {
+                Fail(false);
+            }
+        }
+    }
+    private void StopEngine(bool call, bool hardStop)
+    {
+        if (path != null)
+        {
+            path = null;
+        }
+        atEndOfPath = true;
+        if (hardStop)
+        {
+            currentVelocity = Vector3.zero;
+            currentSpeed = 0f;
+        }
     }
     private void ReRequestPath(bool forceRequest)
     {
+        if (forceRequest)
+        {
+            isWantRepath = false;
+            StopEngine(false, false);
+            StartEngine(false);
+            return;
+        }
+        isWantRepath = true;
     }
     private void UpdateOwnerAccelAndHeading()
     {
         if (WantToStop)
         {
-            //ChangeHeading(heading);
+            ChangeHeading(forward);
             ChangeSpeed(0.0f);
         }
         else
@@ -212,23 +276,12 @@ public class GridMoveAgent
         this.goalPos = goalPos;
         this.goalRadius = goalRadius;
         atGoal = (goalPos - pos).sqrMagnitude < goalRadius * goalRadius;
-        atEndOfPath = false;
-
+        atEndOfPath = true;
         if (atGoal)
         {
             return true;
         }
-
         ReRequestPath(true);
-
-        path = manager.FindPath(this, this.goalPos, this.goalRadius);
-        if (path == null)
-        {
-            return false;
-        }
-        isWantRepath = false;
-        currWayPoint = manager.NextWayPoint(this, this.path, pos, maxSpeed * 1.05f);
-        nextWayPoint = manager.NextWayPoint(this, this.path, currWayPoint, maxSpeed * 1.05f);
         return true;
     }
     public void StopMoving()
@@ -236,6 +289,6 @@ public class GridMoveAgent
     }
     public bool IsBlockedOther(GridMoveAgent a)
     {
-        return this != a && !isPushResistant && a.teamID == teamID;
+        return this != a && !param.isPushResistant && a.param.teamID == param.teamID;
     }
 }
