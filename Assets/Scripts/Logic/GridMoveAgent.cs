@@ -273,6 +273,7 @@ public class GridMoveAgent
     }
     public bool StartMoving(Vector3 goalPos, float goalRadius = 0.1f)
     {
+        goalRadius = Mathf.Max(goalRadius, param.unitSize * manager.GridSize / 2);
         this.goalPos = goalPos;
         this.goalRadius = goalRadius;
         atGoal = (goalPos - pos).sqrMagnitude < goalRadius * goalRadius;

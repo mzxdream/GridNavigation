@@ -41,27 +41,7 @@ public class Game : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.Alpha3))
         {
-            var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            if (Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
-            {
-                redDestinationPos = hit.point;
-                redDestinationChange = true;
-            }
-        }
-        if (Input.GetMouseButtonDown(0))
-        {
-            ToggleTile(GameTileType.Wall);
-        }
-        if (Input.GetMouseButtonDown(1))
-        {
-            if (Input.GetKey(KeyCode.LeftShift))
-            {
-                ToggleTile(GameTileType.BlueDestination);
-            }
-            else
-            {
-                ToggleTile(GameTileType.RedDestination);
-            }
+            ToggleTile(GameTileType.RedDestination);
         }
         foreach (var c in characters)
         {
@@ -97,6 +77,11 @@ public class Game : MonoBehaviour
         if (Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
         {
             board.ToggleTile(type, hit.point);
+            if (type == GameTileType.RedDestination)
+            {
+                redDestinationPos = hit.point;
+                redDestinationChange = true;
+            }
         }
     }
 }
