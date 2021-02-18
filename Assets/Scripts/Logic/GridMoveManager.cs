@@ -113,7 +113,7 @@ public class GridMoveManager
     {
         GetGirdXZ(agent.Pos, out int startX, out int startZ);
         GetGirdXZ(goalPos, out int goalX, out int goalZ);
-        return pathFinder.Search(agent.UnitSize, startX, startZ, goalX, goalZ, (int)(goalRadius / gridSize), 8192, 8192, (int x, int z) =>
+        var path = pathFinder.Search(agent.UnitSize, startX, startZ, goalX, goalZ, (int)(goalRadius / gridSize), 8192, 8192, (int x, int z) =>
         {
             Grid grid = grids[x + z * gridX];
             if (grid.isBlocked)
@@ -129,6 +129,11 @@ public class GridMoveManager
             }
             return false;
         });
+        if (path != null)
+        {
+            path.goalPos = goalPos;
+        }
+        return path;
     }
     public Vector3 NextWayPoint(GridMoveAgent agent, GridPath path, Vector3 pos, float distance)
     {
@@ -143,7 +148,8 @@ public class GridMoveManager
             }
             h = path.Head.Next;
         }
-        return GetGridPos(path.goalNode.X, path.goalNode.Z);
+        return path.goalPos;
+        //return GetGridPos(path.goalNode.X, path.goalNode.Z);
     }
     public bool IsGridBlocked(GridMoveAgent agent, Vector3 pos)
     {

@@ -170,6 +170,7 @@ public class GridPath
 
     public Node Head { get => head; }
     public Node goalNode;
+    public Vector3 goalPos;
 
     public void PushFront(Node n)
     {
