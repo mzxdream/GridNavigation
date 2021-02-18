@@ -6,6 +6,8 @@ public class GridMoveAgentParam
     public int unitSize;
     public float mass; //calc push distance
     public float maxSpeed;
+    public float maxAcc;
+    public float maxDec;
     public bool isPushResistant;
 }
 
@@ -13,27 +15,35 @@ public class GridMoveAgent
 {
     GridMoveManager manager;
     private int id;
+    private GridMoveAgentParam param;
     private Vector3 pos;
-    private int gridIndex;
     private Vector3 forward;
-    private int teamID;
-    private int unitSize;
-    private float mass;
-    private float maxSpeed;
-    private bool isPushResistant;
+    private int gridIndex;
+    private int heading;
 
+    private float maxSpeed;
+    private float accRate;
+    private float decRate;
+    private Vector3 currentVelocity;
+    private float currentSpeed;
+
+    private float turnRate;
+    private float turnAcc;
+
+    private bool isWantRepath;
+    private bool atGoal;
+    private bool atEndOfPath;
+    private bool reversing;
     private Vector3 goalPos;
     private float goalRadius;
     private GridPath path;
-    private bool isMoving;
-    private bool isWantRepath;
-    private float curSpeed;
     private Vector3 currWayPoint;
     private Vector3 nextWayPoint;
 
     public Vector3 Pos { get => pos; }
     public Vector3 Forward { get => forward; }
-    public int UnitSize { get => unitSize; }
+    public int UnitSize { get => param.unitSize; }
+    public bool WantToStop { get => path == null && atEndOfPath; }
 
     public GridMoveAgent(GridMoveManager manager)
     {
@@ -42,22 +52,94 @@ public class GridMoveAgent
     public bool Init(int id, Vector3 pos, Vector3 forward, GridMoveAgentParam param)
     {
         this.id = id;
+        this.param = param;
         this.pos = manager.ClampInBounds(pos);
-        this.gridIndex = manager.GetGridIndex(this.pos);
         this.forward = forward;
-        this.teamID = param.teamID;
-        this.unitSize = param.unitSize;
-        this.mass = param.mass;
+        this.gridIndex = manager.GetGridIndex(this.pos);
+        this.heading = 0;
+
         this.maxSpeed = param.maxSpeed / 30;
-        this.isPushResistant = param.isPushResistant;
+        this.accRate = Mathf.Max(0.01f, param.maxAcc);
+        this.decRate = Mathf.Max(0.01f, param.maxDec);
+        this.currentVelocity = Vector3.zero;
+        this.currentSpeed = 0f;
 
+        this.turnRate = 0f;
+        this.turnAcc = 0f;
 
-        this.isMoving = false;
         this.isWantRepath = false;
+        this.atGoal = true;
+        this.atEndOfPath = true;
+        this.goalPos = this.pos;
+        this.goalRadius = 0.01f;
+
         return true;
     }
     public void Clear()
     {
+    }
+    private void ChangeHeading(int newHeading)
+    {
+    }
+    private void ChangeSpeed(float newWantedSpeed)
+    {
+    }
+    private void SetNextWayPoint()
+    {
+    }
+    private void Arrived(bool call)
+    {
+    }
+    private void ReRequestPath(bool forceRequest)
+    {
+    }
+    private void UpdateOwnerAccelAndHeading()
+    {
+        if (WantToStop)
+        {
+            //ChangeHeading(heading);
+            //ChangeSpeed(0.0f);
+        }
+        else
+        {
+            float curGoalDistSq = (pos - goalPos).sqrMagnitude;
+            atGoal |= curGoalDistSq <= goalRadius * goalRadius;
+            if (curGoalDistSq <= currentSpeed * 1.05f * currentSpeed * 1.05f)
+            {
+                if (!reversing)
+                {
+                    atGoal |= Vector3.Dot(forward, goalPos - pos) > 0.0f && Vector3.Dot(forward, goalPos - (pos + currentVelocity)) <= 0.0f;
+                }
+                else
+                {
+                    atGoal |= Vector3.Dot(forward, goalPos - pos) < 0.0f && Vector3.Dot(forward, goalPos - (pos + currentVelocity)) >= 0.0f;
+                }
+            }
+            //TODO
+            if (!atEndOfPath)
+            {
+                SetNextWayPoint();
+            }
+            else
+            {
+                if (atGoal)
+                {
+                    Arrived(false);
+                }
+                else
+                {
+                    ReRequestPath(false);
+                }
+            }
+            Vector3 wantedDir = forward;
+            if (!atGoal)
+            {
+                wantedDir = (currWayPoint - pos).normalized;
+            }
+            //TODO obstacle
+            ChangeHeading();
+            ChangeSpeed(maxSpeed);
+        }
     }
     public void Update()
     {
