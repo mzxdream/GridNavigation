@@ -30,11 +30,12 @@ public class GridMoveAgent
     private float turnRate;
     private float turnAcc;
 
-    private bool isWantRepath;
-    private bool atGoal;
-    private bool atEndOfPath;
     private Vector3 goalPos;
     private float goalRadius;
+    private bool atGoal;
+    private bool atEndOfPath;
+
+    private bool isWantRepath;
     private GridPath path;
     private Vector3 currWayPoint;
     private Vector3 nextWayPoint;
@@ -61,15 +62,16 @@ public class GridMoveAgent
         this.decRate = Mathf.Max(0.01f, param.maxDec);
         this.currentVelocity = Vector3.zero;
         this.currentSpeed = 0f;
+        this.deltaSpeed = 0f;
 
         this.turnRate = 0f;
         this.turnAcc = 0f;
 
-        this.isWantRepath = false;
-        this.atGoal = true;
-        this.atEndOfPath = true;
         this.goalPos = this.pos;
         this.goalRadius = 0.01f;
+        this.atGoal = true;
+        this.atEndOfPath = true;
+        this.isWantRepath = false;
 
         return true;
     }
@@ -78,6 +80,8 @@ public class GridMoveAgent
     }
     private void ChangeHeading(Vector3 newWantedForward)
     {
+        //todo turn rate
+        forward = newWantedForward;
     }
     private static float BrakingDistance(float speed, float rate)
     {
@@ -126,7 +130,7 @@ public class GridMoveAgent
         }
         else
         {
-            deltaSpeed = -Mathf.Min(-speedDiff, decRate);
+            deltaSpeed = Mathf.Max(speedDiff, -decRate);
         }
     }
     private void SetNextWayPoint()
@@ -143,7 +147,7 @@ public class GridMoveAgent
         if (WantToStop)
         {
             //ChangeHeading(heading);
-            //ChangeSpeed(0.0f);
+            ChangeSpeed(0.0f);
         }
         else
         {
@@ -151,14 +155,7 @@ public class GridMoveAgent
             atGoal |= curGoalDistSq <= goalRadius * goalRadius;
             if (curGoalDistSq <= currentSpeed * 1.05f * currentSpeed * 1.05f)
             {
-                if (!reversing)
-                {
-                    atGoal |= Vector3.Dot(forward, goalPos - pos) > 0.0f && Vector3.Dot(forward, goalPos - (pos + currentVelocity)) <= 0.0f;
-                }
-                else
-                {
-                    atGoal |= Vector3.Dot(forward, goalPos - pos) < 0.0f && Vector3.Dot(forward, goalPos - (pos + currentVelocity)) >= 0.0f;
-                }
+                atGoal |= Vector3.Dot(forward, goalPos - pos) > 0.0f && Vector3.Dot(forward, goalPos - (pos + currentVelocity)) <= 0.0f;
             }
             //TODO idling
             if (!atEndOfPath)
@@ -186,51 +183,50 @@ public class GridMoveAgent
             ChangeSpeed(maxSpeed);
         }
     }
+    private void UpdateOwnerPos(Vector3 oldVelocity, Vector3 newVelocity)
+    {
+        if (newVelocity != Vector3.zero)
+        {
+            pos = pos + newVelocity;
+            //TODO collision
+        }
+        currentVelocity = newVelocity;
+        currentSpeed = newVelocity.magnitude;
+        deltaSpeed = 0.0f;
+    }
+    private void HandleObjectCollision()
+    {
+    }
     public void Update()
     {
-        if (isMoving)
-        {
-            bool atGoal = (goalPos - pos).sqrMagnitude <= goalRadius * goalRadius;
-            if (atGoal)
-            {
-                isMoving = false;
-                curSpeed = 0f;
-            }
-            else
-            {
-                if (path != null && (currWayPoint - pos).sqrMagnitude < (maxSpeed * 1.05f * maxSpeed * 1.05f))
-                {
-                    currWayPoint = nextWayPoint;
-                    nextWayPoint = manager.NextWayPoint(this, this.path, currWayPoint, maxSpeed * 1.05f);
-                }
-                if (manager.IsGridBlocked(this, currWayPoint) || manager.IsGridBlocked(this, nextWayPoint))
-                {
-                    isWantRepath = true;
-                }
-                Vector3 waypointDir = (currWayPoint - pos).normalized;
-                this.forward = waypointDir;
-                curSpeed = maxSpeed;
-            }
-        }
-        this.pos = this.pos + this.forward * curSpeed;
-        //collision
+        UpdateOwnerAccelAndHeading();
+        UpdateOwnerPos(currentVelocity, this.forward * (currentSpeed + deltaSpeed));
+        HandleObjectCollision();
         this.pos.y = 0.0f;
     }
     public void LateUpdate()
     {
     }
-    public bool StartMoving(Vector3 goalPos, float goalRadius)
+    public bool StartMoving(Vector3 goalPos, float goalRadius = 0.1f)
     {
         this.goalPos = goalPos;
         this.goalRadius = goalRadius;
+        atGoal = (goalPos - pos).sqrMagnitude < goalRadius * goalRadius;
+        atEndOfPath = false;
+
+        if (atGoal)
+        {
+            return true;
+        }
+
+        ReRequestPath(true);
+
         path = manager.FindPath(this, this.goalPos, this.goalRadius);
         if (path == null)
         {
             return false;
         }
-        isMoving = true;
         isWantRepath = false;
-        curSpeed = maxSpeed;
         currWayPoint = manager.NextWayPoint(this, this.path, pos, maxSpeed * 1.05f);
         nextWayPoint = manager.NextWayPoint(this, this.path, currWayPoint, maxSpeed * 1.05f);
         return true;
