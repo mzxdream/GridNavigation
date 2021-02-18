@@ -25,6 +25,7 @@ public class GridMoveAgent
     private float decRate;
     private Vector3 currentVelocity;
     private float currentSpeed;
+    private float deltaSpeed;
 
     private float turnRate;
     private float turnAcc;
@@ -32,7 +33,6 @@ public class GridMoveAgent
     private bool isWantRepath;
     private bool atGoal;
     private bool atEndOfPath;
-    private bool reversing;
     private Vector3 goalPos;
     private float goalRadius;
     private GridPath path;
@@ -79,8 +79,55 @@ public class GridMoveAgent
     private void ChangeHeading(Vector3 newWantedForward)
     {
     }
+    private static float BrakingDistance(float speed, float rate)
+    {
+        float t = speed / Mathf.Max(rate, 0.001f);
+        float d = 0.5f * rate * t * t;
+        return d;
+    }
     private void ChangeSpeed(float newWantedSpeed)
     {
+        if (newWantedSpeed <= 0.0f && currentSpeed < 0.01f)
+        {
+            currentSpeed = 0.0f;
+            return;
+        }
+        float targetSpeed = maxSpeed;
+        if (newWantedSpeed > 0.0f)
+        {
+            if (!WantToStop)
+            {
+                float curGoalDistSq = (pos - goalPos).sqrMagnitude;
+                float minGoalDist = BrakingDistance(currentSpeed, decRate);
+                if (curGoalDistSq > minGoalDist * minGoalDist)
+                {
+                    //TODO check turn speed
+                }
+                else
+                {
+                    targetSpeed = 0.0f;
+
+                }
+            }
+            else
+            {
+                targetSpeed = 0.0f;
+            }
+        }
+        else
+        {
+            targetSpeed = 0.0f;
+        }
+        targetSpeed = Mathf.Min(targetSpeed, newWantedSpeed);
+        float speedDiff = targetSpeed - currentSpeed;
+        if (speedDiff > 0.0f)
+        {
+            deltaSpeed = Mathf.Min(speedDiff, accRate);
+        }
+        else
+        {
+            deltaSpeed = -Mathf.Min(-speedDiff, decRate);
+        }
     }
     private void SetNextWayPoint()
     {
