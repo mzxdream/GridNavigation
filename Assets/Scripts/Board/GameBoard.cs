@@ -13,6 +13,7 @@ public class GameBoard : MonoBehaviour
     int gridZ;
     float gridSize;
     Dictionary<int, GameTile> tiles = new Dictionary<int, GameTile>();
+    GameTile redDestination = null;
 
     public bool Init(int gridX, int gridZ, float gridSize)
     {
@@ -58,6 +59,10 @@ public class GameBoard : MonoBehaviour
         if (tiles.TryGetValue(key, out var tile))
         {
             isOnlyRemove = tile.Type == type;
+            if (tile == redDestination)
+            {
+                redDestination = null;
+            }
             tile.Clear();
             tiles.Remove(key);
         }
@@ -66,7 +71,17 @@ public class GameBoard : MonoBehaviour
             tile = tileFactory.Get(type);
             tile.transform.localPosition = GetTilePos(tx, tz);
             tile.transform.localScale = new Vector3(gridSize, gridSize, gridSize);
+            tile.key = key;
             tiles.Add(key, tile);
+            if (tile.Type == GameTileType.RedDestination)
+            {
+                if (redDestination != null)
+                {
+                    redDestination.Clear();
+                    tiles.Remove(redDestination.key);
+                }
+                redDestination = tile;
+            }
         }
         return false;
     }
