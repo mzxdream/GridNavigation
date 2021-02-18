@@ -141,6 +141,7 @@ public class GridMoveManager
             {
                 return waypoint;
             }
+            h = path.Head.Next;
         }
         return GetGridPos(path.goalNode.X, path.goalNode.Z);
     }
