@@ -19,7 +19,6 @@ public class GridMoveAgent
     private Vector3 pos;
     private Vector3 forward;
     private int gridIndex;
-    private int heading;
 
     private float maxSpeed;
     private float accRate;
@@ -56,7 +55,6 @@ public class GridMoveAgent
         this.pos = manager.ClampInBounds(pos);
         this.forward = forward;
         this.gridIndex = manager.GetGridIndex(this.pos);
-        this.heading = 0;
 
         this.maxSpeed = param.maxSpeed / 30;
         this.accRate = Mathf.Max(0.01f, param.maxAcc);
@@ -78,7 +76,7 @@ public class GridMoveAgent
     public void Clear()
     {
     }
-    private void ChangeHeading(int newHeading)
+    private void ChangeHeading(Vector3 newWantedForward)
     {
     }
     private void ChangeSpeed(float newWantedSpeed)
@@ -115,7 +113,7 @@ public class GridMoveAgent
                     atGoal |= Vector3.Dot(forward, goalPos - pos) < 0.0f && Vector3.Dot(forward, goalPos - (pos + currentVelocity)) >= 0.0f;
                 }
             }
-            //TODO
+            //TODO idling
             if (!atEndOfPath)
             {
                 SetNextWayPoint();
@@ -131,13 +129,13 @@ public class GridMoveAgent
                     ReRequestPath(false);
                 }
             }
-            Vector3 wantedDir = forward;
+            Vector3 wantedForward = forward;
             if (!atGoal)
             {
-                wantedDir = (currWayPoint - pos).normalized;
+                wantedForward = (currWayPoint - pos).normalized;
             }
             //TODO obstacle
-            ChangeHeading();
+            ChangeHeading(wantedForward);
             ChangeSpeed(maxSpeed);
         }
     }
