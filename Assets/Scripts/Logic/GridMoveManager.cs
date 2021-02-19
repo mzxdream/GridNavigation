@@ -168,4 +168,8 @@ public class GridMoveManager
         //}
         return false;
     }
+    public bool TestMoveRange(GridMoveAgent agent, Vector3 rmin, Vector3 rmax, bool checkAgents)
+    {
+        return true;
+    }
 }

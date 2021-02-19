@@ -159,12 +159,12 @@ public class GridMoveAgent
         {
             return false;
         }
-        //TODO check circle
-        //bool allowSkip = currWayPointDist <= manager.GridSize;
-        //if (!allowSkip)
-        //{
-        //    return false;
-        //}
+        ;
+        if (currWayPointDist > manager.GridSize
+            && !manager.TestMoveRange(this, Vector3.Min(pos, currWayPoint), Vector3.Max(pos, currWayPoint), true))
+        {
+            return false;
+        }
         atEndOfPath = GridMathUtils.SqrDistance2D(currWayPoint, goalPos) <= goalRadius * goalRadius;
         if (atEndOfPath)
         {
@@ -180,6 +180,10 @@ public class GridMoveAgent
             currWayPoint = nextWayPoint;
             nextWayPoint = manager.NextWayPoint(this, this.path, currWayPoint, Mathf.Max(currentSpeed * 1.05f, 1.25f * manager.GridSize));
             //check nextwaypoint is success
+            //if ()
+            //{
+            //    Fail(false);
+            //}
         }
         if (manager.IsGridBlocked(this, currWayPoint) || manager.IsGridBlocked(this, nextWayPoint))
         {
