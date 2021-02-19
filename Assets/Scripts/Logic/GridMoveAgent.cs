@@ -301,8 +301,30 @@ public class GridMoveAgent
     {
         if (newVelocity != Vector3.zero)
         {
-            pos = pos + newVelocity;
-            //TODO collision
+            Vector3 newPos = pos + newVelocity;
+            if (!manager.TestMoveRange(this, newPos, newPos, false))
+            {
+                Vector3 rightDir = Vector3.Cross(forward, Vector3.up);
+                for (int n = 8; n > 0; n--)
+                {
+                    Vector3 testPos = newPos + rightDir * (manager.GridSize / n);
+                    if (manager.TestMoveRange(this, testPos, testPos, false))
+                    {
+                        pos = testPos;
+                        break;
+                    }
+                    testPos = newPos - rightDir * (manager.GridSize / n);
+                    if (manager.TestMoveRange(this, testPos, testPos, false))
+                    {
+                        pos = testPos;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                pos = newPos;
+            }
         }
         currentVelocity = newVelocity;
         currentSpeed = newVelocity.magnitude;
