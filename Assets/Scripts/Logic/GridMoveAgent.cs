@@ -365,6 +365,48 @@ public class GridMoveAgent
                 }
                 continue;
             }
+            //float colliderRelRadius = colliderRadius / (colliderRadius + collideeRadius);
+            //float collideeRelRadius = collideeRadius / (colliderRadius + collideeRadius);
+            float collisionRadiusSum = colliderRadius + collideeRadius;
+            float sepDistance = separationVec.magnitude + 0.1f;
+            float penDistance = Mathf.Max(collisionRadiusSum - sepDistance, 1.0f);
+            float sepResponse = Mathf.Min(manager.GridSize * 2.0f, penDistance * 0.5f);
+
+            Vector3 sepDirection = separationVec / sepDistance;
+            Vector3 colResponseVec = new Vector3(sepDirection.x, 0, sepDirection.z) * sepResponse;
+
+            float m1 = collider.param.mass;
+            float m2 = collidee.param.mass;
+            float v1 = Mathf.Max(1.0f, colliderSpeed);
+            float v2 = Mathf.Max(1.0f, collidee.currentSpeed);
+            float c1 = 1.0f + (1.0f - Mathf.Abs(Vector3.Dot(collider.forward, -sepDirection))) * 5.0f;
+            float c2 = 1.0f + (1.0f - Mathf.Abs(Vector3.Dot(collidee.forward, sepDirection))) * 5.0f;
+            float s1 = m1 * v1 * c1;
+            float s2 = m2 * v2 * c2;
+            float r1 = s1 / (s1 + s2 + 1.0f);
+            float r2 = s2 / (s1 + s2 + 1.0f);
+
+            float colliderMassScale = Mathf.Clamp(1.0f - r1, 0.01f, 0.99f);
+            float collideeMassScale = Mathf.Clamp(1.0f - r2, 0.01f, 0.99f);
+
+            //const float colliderSlideSign = Sign(separationVect.dot(collider->rightdir));
+            //const float collideeSlideSign = Sign(-separationVect.dot(collidee->rightdir));
+
+            //const float3 colliderPushVec = colResponseVec * colliderMassScale * int(!ignoreCollidee);
+            //const float3 collideePushVec = -colResponseVec * collideeMassScale;
+            //const float3 colliderSlideVec = collider->rightdir * colliderSlideSign * (1.0f / penDistance) * r2;
+            //const float3 collideeSlideVec = collidee->rightdir * collideeSlideSign * (1.0f / penDistance) * r1;
+            //const float3 colliderMoveVec = colliderPushVec + colliderSlideVec;
+            //const float3 collideeMoveVec = collideePushVec + collideeSlideVec;
+
+            //const bool moveCollider = ((pushCollider || !pushCollidee) && colliderMobile);
+            //const bool moveCollidee = ((pushCollidee || !pushCollider) && collideeMobile);
+
+            //if (moveCollider && colliderMD->TestMoveSquare(collider, collider->pos + colliderMoveVec, colliderMoveVec))
+            //    collider->Move(colliderMoveVec, true);
+
+            //if (moveCollidee && collideeMD->TestMoveSquare(collidee, collidee->pos + collideeMoveVec, collideeMoveVec))
+            //    collidee->Move(collideeMoveVec, true);
         }
     }
     public float GetRadius()
