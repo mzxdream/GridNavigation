@@ -120,13 +120,13 @@ public class GridMoveManager
             {
                 return true;
             }
-            //foreach (var a in grid.agents)
-            //{
-            //    if (a.IsBlockedOther(agent))
-            //    {
-            //        return true;
-            //    }
-            //}
+            foreach (var a in grid.agents)
+            {
+                if (a.IsBlockedOther(agent))
+                {
+                    return true;
+                }
+            }
             return false;
         });
         if (path != null)
@@ -159,17 +159,41 @@ public class GridMoveManager
         {
             return true;
         }
-        //foreach (var a in grid.agents)
-        //{
-        //    if (a.IsBlockedOther(agent))
-        //    {
-        //        return true;
-        //    }
-        //}
+        foreach (var a in grid.agents)
+        {
+            if (a.IsBlockedOther(agent))
+            {
+                return true;
+            }
+        }
         return false;
     }
     public bool TestMoveRange(GridMoveAgent agent, Vector3 rmin, Vector3 rmax, bool checkAgents)
     {
+        GetGirdXZ(rmin, out int xmin, out int zmin);
+        GetGirdXZ(rmax, out int xmax, out int zmax);
+        if (xmin < 0 || xmax >= gridX || zmin < 0 || zmax >= gridZ)
+        {
+            return false;
+        }
+        for (int z = zmin; z <= zmax; z++)
+        {
+            for (int x = xmin; x <= xmax; x++)
+            {
+                var grid = grids[x + z * gridX];
+                if (grid.isBlocked)
+                {
+                    return false;
+                }
+                foreach (var a in grid.agents)
+                {
+                    if (a.IsBlockedOther(agent))
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
         return true;
     }
 }
