@@ -330,8 +330,24 @@ public class GridMoveAgent
         currentSpeed = newVelocity.magnitude;
         deltaSpeed = 0.0f;
     }
+    private static bool HandleStaticObjectCollision(GridMoveAgent collider, GridMoveAgent collidee, float colliderRadius, float collideeRadius, Vector3 separationVector, bool canRequestPath, bool checkTerrain)
+    {
+        return false;
+    }
+    private static void HandleUnitCollisions(GridMoveAgent collider, float speed, float radius)
+    {
+    }
     private void HandleObjectCollision()
     {
+        float radius = param.unitSize * manager.GridSize / 2.0f;
+        HandleUnitCollisions(this, currentSpeed, radius);
+        if (manager.GetGridIndex(pos + currentVelocity) != manager.GetGridIndex(pos))
+        {
+            if (HandleStaticObjectCollision(this, this, radius, 0.0f, Vector3.zero, true, true))
+            {
+                ReRequestPath(false);
+            }
+        }
     }
     public void OwnerMoved(Vector3 oldPos, Vector3 oldForward)
     {
