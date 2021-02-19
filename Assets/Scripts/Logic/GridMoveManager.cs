@@ -154,6 +154,10 @@ public class GridMoveManager
     public bool IsGridBlocked(GridMoveAgent agent, Vector3 pos)
     {
         GetGirdXZ(pos, out int x, out int z);
+        if (x < 0 || x >= gridX || z < 0 || z >= gridZ)
+        {
+            return true;
+        }
         var grid = grids[x + z * gridX];
         if (grid.isBlocked)
         {
