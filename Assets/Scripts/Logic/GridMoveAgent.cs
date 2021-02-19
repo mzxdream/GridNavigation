@@ -185,7 +185,7 @@ public class GridMoveAgent
             //    Fail(false);
             //}
         }
-        if (manager.IsGridBlocked(this, currWayPoint) || manager.IsGridBlocked(this, nextWayPoint))
+        if (manager.IsGridBlocked(this, currWayPoint, true) || manager.IsGridBlocked(this, nextWayPoint, true))
         {
             ReRequestPath(false);
         }

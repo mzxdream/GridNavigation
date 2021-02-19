@@ -151,7 +151,7 @@ public class GridMoveManager
         return path.goalPos;
         //return GetGridPos(path.goalNode.X, path.goalNode.Z);
     }
-    public bool IsGridBlocked(GridMoveAgent agent, Vector3 pos)
+    public bool IsGridBlocked(GridMoveAgent agent, Vector3 pos, bool checkAgents)
     {
         GetGirdXZ(pos, out int x, out int z);
         if (x < 0 || x >= gridX || z < 0 || z >= gridZ)
@@ -163,11 +163,14 @@ public class GridMoveManager
         {
             return true;
         }
-        foreach (var a in grid.agents)
+        if (checkAgents)
         {
-            if (a.IsBlockedOther(agent))
+            foreach (var a in grid.agents)
             {
-                return true;
+                if (a.IsBlockedOther(agent))
+                {
+                    return true;
+                }
             }
         }
         return false;
@@ -189,11 +192,14 @@ public class GridMoveManager
                 {
                     return false;
                 }
-                foreach (var a in grid.agents)
+                if (checkAgents)
                 {
-                    if (a.IsBlockedOther(agent))
+                    foreach (var a in grid.agents)
                     {
-                        return false;
+                        if (a.IsBlockedOther(agent))
+                        {
+                            return false;
+                        }
                     }
                 }
             }
