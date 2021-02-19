@@ -42,6 +42,7 @@ public class GridMoveAgent
     private bool idling;
     private int numIdlingUpdates;
     private int numIdlingSlowUpdates;
+    private Vector3 waypointDir;
 
     public Vector3 Pos { get => pos; }
     public Vector3 Forward { get => forward; }
@@ -269,11 +270,11 @@ public class GridMoveAgent
                     ReRequestPath(false);
                 }
             }
-            Vector3 wantedForward = forward;
-            if (!atGoal)
+            if (Mathf.Abs(currWayPoint.x - pos.x) > 0.0001f || Mathf.Abs(currWayPoint.z - pos.z) > 0.0001f)
             {
-                wantedForward = (currWayPoint - pos).normalized;
+                waypointDir = new Vector3(currWayPoint.x - pos.x, 0.0f, currWayPoint.z - pos.z).normalized;
             }
+            Vector3 wantedForward = !atGoal ? waypointDir : forward;
             wantedForward = GetObstacleAvoidanceDir(wantedForward);
             ChangeHeading(wantedForward);
             ChangeSpeed(maxSpeed);
