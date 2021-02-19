@@ -165,9 +165,12 @@ public class GridMoveAgent
         {
             currWayPoint = nextWayPoint;
             nextWayPoint = manager.NextWayPoint(this, this.path, currWayPoint, Mathf.Max(currentSpeed * 1.05f, 1.25f * manager.GridSize));
+            //check nextwaypoint is success
         }
-        //TODO check obstacle
-        //ReRequestPath(false);
+        if (manager.IsGridBlocked(this, currWayPoint) || manager.IsGridBlocked(this, nextWayPoint))
+        {
+            ReRequestPath(false);
+        }
     }
     private void Arrived(bool call)
     {

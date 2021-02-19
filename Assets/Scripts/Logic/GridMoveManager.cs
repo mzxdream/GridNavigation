@@ -151,21 +151,21 @@ public class GridMoveManager
         return path.goalPos;
         //return GetGridPos(path.goalNode.X, path.goalNode.Z);
     }
-    //public bool IsGridBlocked(GridMoveAgent agent, Vector3 pos)
-    //{
-    //    GetGirdXZ(pos, out int x, out int z);
-    //    var grid = grids[x + z * gridX];
-    //    if (grid.isBlocked)
-    //    {
-    //        return true;
-    //    }
-    //    foreach (var a in grid.agents)
-    //    {
-    //        if (a.IsBlockedOther(agent))
-    //        {
-    //            return true;
-    //        }
-    //    }
-    //    return false;
-    //}
+    public bool IsGridBlocked(GridMoveAgent agent, Vector3 pos)
+    {
+        GetGirdXZ(pos, out int x, out int z);
+        var grid = grids[x + z * gridX];
+        if (grid.isBlocked)
+        {
+            return true;
+        }
+        //foreach (var a in grid.agents)
+        //{
+        //    if (a.IsBlockedOther(agent))
+        //    {
+        //        return true;
+        //    }
+        //}
+        return false;
+    }
 }
