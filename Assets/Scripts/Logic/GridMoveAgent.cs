@@ -346,6 +346,14 @@ public class GridMoveAgent
     }
     public bool IsBlockedOther(GridMoveAgent a)
     {
-        return this != a && !param.isPushResistant && a.param.teamID == param.teamID;
+        if (this == a)
+        {
+            return false;
+        }
+        if (param.isPushResistant)
+        {
+            return true;
+        }
+        return param.teamID != a.param.teamID;
     }
 }
