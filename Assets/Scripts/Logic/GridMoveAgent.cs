@@ -334,8 +334,38 @@ public class GridMoveAgent
     {
         return false;
     }
+    private static void HandleUnitCollisionsAux(GridMoveAgent collider, GridMoveAgent collidee)
+    {
+    }
     private static void HandleUnitCollisions(GridMoveAgent collider, float colliderSpeed, float colliderRadius)
     {
+        var manager = collider.manager;
+        foreach (var collidee in manager.GetUnitsExact(collider.pos, colliderSpeed + colliderRadius * 2.0f))
+        {
+            if (collider == collidee)
+            {
+                continue;
+            }
+            HandleUnitCollisionsAux(collider, collidee);
+            bool pushCollider = !collider.param.isPushResistant;
+            bool pushCollidee = !collidee.param.isPushResistant;
+            if (collider.param.teamID != collidee.param.teamID)
+            {
+                pushCollidee = false;
+                pushCollider = false;
+            }
+            Vector3 separationVec = collider.pos - collidee.pos;
+            float collideeRadius = collidee.GetRadius();
+            if (!pushCollider && !pushCollidee)
+            {
+                bool allowNewPath = !collider.atEndOfPath && !collider.atGoal;
+                if (HandleStaticObjectCollision(collider, collidee, colliderRadius, collideeRadius, separationVec, allowNewPath, false))
+                {
+                    collider.ReRequestPath(false);
+                }
+                continue;
+            }
+        }
     }
     public float GetRadius()
     {
