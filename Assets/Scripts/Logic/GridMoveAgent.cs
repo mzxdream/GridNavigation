@@ -39,6 +39,9 @@ public class GridMoveAgent
     private GridPath path;
     private Vector3 currWayPoint;
     private Vector3 nextWayPoint;
+    private bool idling;
+    private int numIdlingUpdates;
+    private int numIdlingSlowUpdates;
 
     public Vector3 Pos { get => pos; }
     public Vector3 Forward { get => forward; }
@@ -72,6 +75,8 @@ public class GridMoveAgent
         this.atGoal = true;
         this.atEndOfPath = true;
         this.isWantRepath = false;
+        this.currWayPoint = new Vector3();
+        this.nextWayPoint = new Vector3();
 
         return true;
     }
@@ -94,33 +99,41 @@ public class GridMoveAgent
         if (newWantedSpeed <= 0.0f && currentSpeed < 0.01f)
         {
             currentSpeed = 0.0f;
+            deltaSpeed = 0.0f;
             return;
         }
         float targetSpeed = maxSpeed;
-        if (newWantedSpeed > 0.0f)
+        if (currWayPoint.y == -1.0f && nextWayPoint.y == -1.0f)
         {
-            if (!WantToStop)
+            targetSpeed = 0.0f;
+        }
+        else
+        {
+            if (newWantedSpeed > 0.0f)
             {
-                float curGoalDistSq = (pos - goalPos).sqrMagnitude;
-                float minGoalDist = BrakingDistance(currentSpeed, decRate);
-                if (curGoalDistSq > minGoalDist * minGoalDist)
+                if (!WantToStop)
                 {
-                    //TODO check turn speed
+                    float curGoalDistSq = (pos - goalPos).sqrMagnitude;
+                    float minGoalDist = BrakingDistance(currentSpeed, decRate);
+                    if (curGoalDistSq > minGoalDist * minGoalDist)
+                    {
+                        //TODO check turn speed
+                    }
+                    else
+                    {
+                        targetSpeed = 0.0f;
+
+                    }
                 }
                 else
                 {
                     targetSpeed = 0.0f;
-
                 }
             }
             else
             {
                 targetSpeed = 0.0f;
             }
-        }
-        else
-        {
-            targetSpeed = 0.0f;
         }
         targetSpeed = Mathf.Min(targetSpeed, newWantedSpeed);
         float speedDiff = targetSpeed - currentSpeed;
@@ -206,10 +219,16 @@ public class GridMoveAgent
         }
         isWantRepath = true;
     }
+    private Vector3 GetObstacleAvoidanceDir(Vector3 desiredDir)
+    {
+        return desiredDir;
+    }
     private void UpdateOwnerAccelAndHeading()
     {
         if (WantToStop)
         {
+            currWayPoint.y = -1.0f;
+            nextWayPoint.y = -1.0f;
             ChangeHeading(forward);
             ChangeSpeed(0.0f);
         }
@@ -221,7 +240,17 @@ public class GridMoveAgent
             {
                 atGoal |= Vector3.Dot(forward, goalPos - pos) > 0.0f && Vector3.Dot(forward, goalPos - (pos + currentVelocity)) <= 0.0f;
             }
-            //TODO idling
+            if (!atGoal)
+            {
+                if (idling)
+                {
+                    numIdlingUpdates = Mathf.Min(numIdlingUpdates + 1, 32768);
+                }
+                else
+                {
+                    numIdlingUpdates = Mathf.Max(numIdlingUpdates - 1, 0);
+                }
+            }
             if (!atEndOfPath)
             {
                 SetNextWayPoint();
@@ -242,7 +271,7 @@ public class GridMoveAgent
             {
                 wantedForward = (currWayPoint - pos).normalized;
             }
-            //TODO obstacle
+            wantedForward = GetObstacleAvoidanceDir(wantedForward);
             ChangeHeading(wantedForward);
             ChangeSpeed(maxSpeed);
         }
