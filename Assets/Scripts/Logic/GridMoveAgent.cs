@@ -334,12 +334,16 @@ public class GridMoveAgent
     {
         return false;
     }
-    private static void HandleUnitCollisions(GridMoveAgent collider, float speed, float radius)
+    private static void HandleUnitCollisions(GridMoveAgent collider, float colliderSpeed, float colliderRadius)
     {
+    }
+    public float GetRadius()
+    {
+        return param.unitSize * manager.GridSize / 2.0f;
     }
     private void HandleObjectCollision()
     {
-        float radius = param.unitSize * manager.GridSize / 2.0f;
+        float radius = GetRadius();
         HandleUnitCollisions(this, currentSpeed, radius);
         if (manager.GetGridIndex(pos + currentVelocity) != manager.GetGridIndex(pos))
         {

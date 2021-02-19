@@ -206,4 +206,17 @@ public class GridMoveManager
         }
         return true;
     }
+    public List<GridMoveAgent> GetUnitsExact(Vector3 pos, float radius)
+    {
+        var arr = new List<GridMoveAgent>();
+        foreach (var agent in agents)
+        {
+            float r = radius + agent.GetRadius();
+            if (GridMathUtils.SqrDistance2D(pos, agent.Pos) <= r * r)
+            {
+                arr.Add(agent);
+            }
+        }
+        return arr;
+    }
 }
