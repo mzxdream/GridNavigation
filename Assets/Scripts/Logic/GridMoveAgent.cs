@@ -165,7 +165,7 @@ public class GridMoveAgent
         //{
         //    return false;
         //}
-        atEndOfPath = (currWayPoint - goalPos).sqrMagnitude <= goalRadius * goalRadius;
+        atEndOfPath = GridMathUtils.SqrDistance2D(currWayPoint, goalPos) <= goalRadius * goalRadius;
         if (atEndOfPath)
         {
             currWayPoint = goalPos;
