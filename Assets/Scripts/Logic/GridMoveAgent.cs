@@ -57,7 +57,7 @@ public class GridMoveAgent
         this.forward = forward;
         this.gridIndex = manager.GetGridIndex(this.pos);
 
-        this.maxSpeed = param.maxSpeed / 30;
+        this.maxSpeed = param.maxSpeed / manager.GameSpeed;
         this.accRate = Mathf.Max(0.01f, param.maxAcc);
         this.decRate = Mathf.Max(0.01f, param.maxDec);
         this.currentVelocity = Vector3.zero;
@@ -261,12 +261,18 @@ public class GridMoveAgent
     private void HandleObjectCollision()
     {
     }
+    public void OwnerMoved(Vector3 oldPos, Vector3 oldForward)
+    {
+    }
     public void Update()
     {
+        Vector3 oldPos = pos;
+        Vector3 oldForward = forward;
         UpdateOwnerAccelAndHeading();
         UpdateOwnerPos(currentVelocity, this.forward * (currentSpeed + deltaSpeed));
         HandleObjectCollision();
         this.pos.y = 0.0f;
+        OwnerMoved(oldPos, oldForward);
     }
     public void LateUpdate()
     {
