@@ -142,7 +142,7 @@ public class GridMoveManager
         {
             var waypoint = GetGridPos(h.X, h.Z);
             h.Erase();
-            if ((pos - waypoint).sqrMagnitude >= distance * distance)
+            if (GridMathUtils.SqrDistance2D(pos, waypoint) >= distance * distance)
             {
                 return waypoint;
             }
