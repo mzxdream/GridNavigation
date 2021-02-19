@@ -153,11 +153,24 @@ public class GridMoveAgent
         {
             return false;
         }
-        if ((pos - currWayPoint).magnitude > Mathf.Max(currentSpeed * 1.05f, manager.GridSize))
+        float currWayPointDist = GridMathUtils.Distance2D(pos, currWayPoint);
+        //TODO check turn rate
+        if (currWayPointDist > Mathf.Max(currentSpeed * 1.05f, manager.GridSize) && Vector3.Dot(waypointDir, forward) >= 0.995f)
         {
             return false;
         }
+        //TODO check circle
+        //bool allowSkip = currWayPointDist <= manager.GridSize;
+        //if (!allowSkip)
+        //{
+        //    return false;
+        //}
         atEndOfPath = (currWayPoint - goalPos).sqrMagnitude <= goalRadius * goalRadius;
+        if (atEndOfPath)
+        {
+            currWayPoint = goalPos;
+            nextWayPoint = goalPos;
+        }
         return true;
     }
     private void SetNextWayPoint()
