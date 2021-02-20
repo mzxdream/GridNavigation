@@ -13,6 +13,7 @@ public class GridMoveAgentParam
 
 public class GridMoveAgent
 {
+    private enum ProgressState { Done = 0, Active = 1, Failed = 2 };
     GridMoveManager manager;
     private int id;
     private GridMoveAgentParam param;
@@ -35,6 +36,7 @@ public class GridMoveAgent
     private bool atGoal;
     private bool atEndOfPath;
 
+    private ProgressState progressState;
     private bool isWantRepath;
     private GridPath path;
     private Vector3 currWayPoint;
@@ -75,6 +77,8 @@ public class GridMoveAgent
         this.goalRadius = 0.01f;
         this.atGoal = true;
         this.atEndOfPath = true;
+
+        this.progressState = ProgressState.Done;
         this.isWantRepath = false;
         this.currWayPoint = new Vector3();
         this.nextWayPoint = new Vector3();
@@ -336,6 +340,10 @@ public class GridMoveAgent
     }
     private static void HandleUnitCollisionsAux(GridMoveAgent collider, GridMoveAgent collidee)
     {
+        if (collider.currentSpeed < 0.001f)
+        {
+            return;
+        }
     }
     private static void HandleUnitCollisions(GridMoveAgent collider, float colliderSpeed, float colliderRadius)
     {
@@ -346,6 +354,7 @@ public class GridMoveAgent
             {
                 continue;
             }
+            //TODO filter
             HandleUnitCollisionsAux(collider, collidee);
             bool pushCollider = !collider.param.isPushResistant;
             bool pushCollidee = !collidee.param.isPushResistant;
@@ -443,20 +452,30 @@ public class GridMoveAgent
     }
     public bool StartMoving(Vector3 goalPos, float goalRadius = 0.1f)
     {
-        //goalRadius = Mathf.Max(goalRadius, param.unitSize * manager.GridSize / 2);
-        this.goalPos = goalPos;
+        this.goalPos = new Vector3(goalPos.x, 0, goalPos.z);
         this.goalRadius = goalRadius;
-        atGoal = (goalPos - pos).sqrMagnitude < goalRadius * goalRadius;
-        atEndOfPath = true;
-        if (atGoal)
+        if ((this.goalPos - pos).sqrMagnitude < goalRadius * goalRadius)
         {
             return true;
         }
+        atGoal = false;
+        atEndOfPath = false;
+        progressState = ProgressState.Active;
+        numIdlingUpdates = 0;
+        numIdlingSlowUpdates = 0;
         ReRequestPath(true);
         return true;
     }
-    public void StopMoving()
+    public void StopMoving(bool callScript, bool hardStop)
     {
+        if (!atGoal)
+        {
+            float dist = BrakingDistance(currentSpeed, decRate);
+            currWayPoint = pos + forward * dist;
+            goalPos = currWayPoint;
+        }
+        StopEngine(callScript, hardStop);
+        progressState = ProgressState.Done;
     }
     public bool IsBlockedOther(GridMoveAgent a)
     {
