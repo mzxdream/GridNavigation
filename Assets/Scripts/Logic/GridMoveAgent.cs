@@ -457,11 +457,14 @@ public class GridMoveAgent
             bool moveCollider = pushCollider || !pushCollidee;
             bool moveCollidee = pushCollidee || !pushCollider;
 
-            //if (moveCollider && colliderMD->TestMoveSquare(collider, collider->pos + colliderMoveVec, colliderMoveVec))
-            //    collider->Move(colliderMoveVec, true);
-
-            //if (moveCollidee && collideeMD->TestMoveSquare(collidee, collidee->pos + collideeMoveVec, collideeMoveVec))
-            //    collidee->Move(collideeMoveVec, true);
+            if (moveCollider && manager.TestMoveRange(collider, collider.pos + colliderMoveVec, collider.pos + colliderMoveVec, true))
+            {
+                collider.pos = collider.pos + colliderMoveVec;
+            }
+            if (moveCollidee && manager.TestMoveRange(collidee, collidee.pos + collideeMoveVec, collidee.pos + collideeMoveVec, true))
+            {
+                collidee.pos = collidee.pos + collideeMoveVec;
+            }
         }
     }
     public float GetRadius()
