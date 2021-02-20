@@ -386,6 +386,10 @@ public class GridMoveAgent
                 break;
         }
     }
+    private Vector3 GetRightDir()
+    {
+        return Vector3.Cross(forward, Vector3.up);
+    }
     private static void HandleUnitCollisions(GridMoveAgent collider, float colliderSpeed, float colliderRadius)
     {
         var manager = collider.manager;
@@ -439,18 +443,19 @@ public class GridMoveAgent
             float colliderMassScale = Mathf.Clamp(1.0f - r1, 0.01f, 0.99f);
             float collideeMassScale = Mathf.Clamp(1.0f - r2, 0.01f, 0.99f);
 
-            //const float colliderSlideSign = Sign(separationVect.dot(collider->rightdir));
-            //const float collideeSlideSign = Sign(-separationVect.dot(collidee->rightdir));
+            float colliderSlideSign = Vector3.Dot(separationVec, collider.GetRightDir()) > 0 ? 1 : -1;
+            float collideeSlideSign = Vector3.Dot(-separationVec, collidee.GetRightDir()) > 0 ? 1 : -1;
 
-            //const float3 colliderPushVec = colResponseVec * colliderMassScale * int(!ignoreCollidee);
-            //const float3 collideePushVec = -colResponseVec * collideeMassScale;
-            //const float3 colliderSlideVec = collider->rightdir * colliderSlideSign * (1.0f / penDistance) * r2;
-            //const float3 collideeSlideVec = collidee->rightdir * collideeSlideSign * (1.0f / penDistance) * r1;
-            //const float3 colliderMoveVec = colliderPushVec + colliderSlideVec;
-            //const float3 collideeMoveVec = collideePushVec + collideeSlideVec;
+            bool ignoreCollidee = collider.param.teamID == collidee.param.teamID && collider.IsMoving() && !collidee.IsMoving();
+            Vector3 colliderPushVec = colResponseVec * colliderMassScale * (!ignoreCollidee ? 1 : 0);
+            Vector3 collideePushVec = -colResponseVec * collideeMassScale;
+            Vector3 colliderSlideVec = collider.GetRightDir() * colliderSlideSign * (1.0f / penDistance) * r2;
+            Vector3 collideeSlideVec = collidee.GetRightDir() * collideeSlideSign * (1.0f / penDistance) * r1;
+            Vector3 colliderMoveVec = colliderPushVec + colliderSlideVec;
+            Vector3 collideeMoveVec = collideePushVec + collideeSlideVec;
 
-            //const bool moveCollider = ((pushCollider || !pushCollidee) && colliderMobile);
-            //const bool moveCollidee = ((pushCollidee || !pushCollider) && collideeMobile);
+            bool moveCollider = pushCollider || !pushCollidee;
+            bool moveCollidee = pushCollidee || !pushCollider;
 
             //if (moveCollider && colliderMD->TestMoveSquare(collider, collider->pos + colliderMoveVec, colliderMoveVec))
             //    collider->Move(colliderMoveVec, true);
