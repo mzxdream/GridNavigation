@@ -196,11 +196,16 @@ public class GridMoveAgent
     }
     private void Arrived(bool call)
     {
-        StopEngine(call, false);
+        if (progressState == ProgressState.Active)
+        {
+            StopEngine(call, false);
+            progressState = ProgressState.Done;
+        }
     }
     private void Fail(bool call)
     {
         StopEngine(call, false);
+        progressState = ProgressState.Failed;
     }
     private void StartEngine(bool call)
     {
@@ -334,15 +339,51 @@ public class GridMoveAgent
         currentSpeed = newVelocity.magnitude;
         deltaSpeed = 0.0f;
     }
+    private bool IsMoving()
+    {
+        return currentSpeed < 0.001f;
+    }
     private static bool HandleStaticObjectCollision(GridMoveAgent collider, GridMoveAgent collidee, float colliderRadius, float collideeRadius, Vector3 separationVector, bool canRequestPath, bool checkTerrain)
     {
         return false;
     }
     private static void HandleUnitCollisionsAux(GridMoveAgent collider, GridMoveAgent collidee)
     {
-        if (collider.currentSpeed < 0.001f)
+        if (!collider.IsMoving() || collider.progressState != ProgressState.Active)
         {
             return;
+        }
+        if (GridMathUtils.SqrDistance2D(collider.pos, collidee.pos) >= Mathf.PI * Mathf.PI)
+        {
+            return;
+        }
+        switch (collidee.progressState)
+        {
+            case ProgressState.Done:
+                {
+                    if (collidee.IsMoving())
+                    {
+                        return;
+                    }
+                    collider.atGoal = true;
+                    collider.atEndOfPath = true;
+                }
+                break;
+            case ProgressState.Active:
+                {
+                    if (collidee.currWayPoint == collider.nextWayPoint)
+                    {
+                        collider.currWayPoint.y = -1.0f;
+                        return;
+                    }
+                    if (GridMathUtils.SqrDistance2D(collider.pos, collider.goalPos) >= collider.GetRadius() * collider.GetRadius())
+                    {
+                        return;
+                    }
+                    collider.atGoal = true;
+                    collider.atEndOfPath = true;
+                }
+                break;
         }
     }
     private static void HandleUnitCollisions(GridMoveAgent collider, float colliderSpeed, float colliderRadius)
