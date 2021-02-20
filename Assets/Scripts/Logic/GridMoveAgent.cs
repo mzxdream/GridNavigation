@@ -250,9 +250,84 @@ public class GridMoveAgent
         }
         isWantRepath = true;
     }
-    private Vector3 GetObstacleAvoidanceDir(Vector3 desiredDir)
+    private static Vector3 GetObstacleAvoidanceDir(GridMoveAgent avoider, Vector3 desiredDir)
     {
-        return desiredDir;
+        var manager = avoider.manager;
+        if (avoider.WantToStop)
+        {
+            return avoider.forward;
+        }
+        if (Vector3.Dot(avoider.forward, desiredDir) < 0.0f)
+        {
+            return desiredDir;
+        }
+        var avoidanceVec = Vector3.zero;
+        var avoidanceDir = desiredDir;
+
+        //static constexpr float AVOIDER_DIR_WEIGHT = 1.0f;
+        //static constexpr float DESIRED_DIR_WEIGHT = 0.5f;
+        //static constexpr float LAST_DIR_MIX_ALPHA = 0.7f;
+        //static const float MAX_AVOIDEE_COSINE = math::cosf(120.0f * math::DEG_TO_RAD);
+
+        float avoidanceRadius = Mathf.Max(avoider.currentSpeed, 1.0f) * (avoider.GetRadius() * 2.0f);
+        float avoiderRadius = avoider.GetMinExteriorRadius();
+
+        foreach (var avoidee in manager.GetUnitsExact(avoider.pos, avoidanceRadius))
+        {
+            if (avoidee == avoider)
+            {
+                continue;
+            }
+            bool avoideeMobile = true;
+            bool avoideeMovable = !avoidee.param.isPushResistant;
+
+            Vector3 avoideeVector = (avoider.pos + avoider.currentVelocity) - (avoidee.pos + avoidee.currentVelocity);
+
+            float avoideeRadius = avoidee.GetMinExteriorRadius();
+            float avoidanceRadiusSum = avoiderRadius + avoideeRadius;
+            float avoidanceMassSum = avoider.param.mass + avoidee.param.mass;
+            float avoideeMassScale = avoideeMobile ? (avoidee.param.mass / avoidanceMassSum) : 1.0f;
+            float avoideeDistSq = avoideeVector.sqrMagnitude;
+            float avoideeDist = Mathf.Sqrt(avoideeDistSq) + 0.01f;
+
+            if (avoideeMobile && avoideeMovable)
+            {
+                if (!avoidee.IsMoving() && avoidee.param.teamID == avoider.param.teamID)
+                {
+                    continue;
+                }
+            }
+            if (Vector3.Dot(avoider.forward, -avoideeVector / avoideeDist) < Mathf.Cos(120.0f * Mathf.Deg2Rad))
+            {
+                continue;
+            }
+            float t = Mathf.Max(avoider.currentSpeed, 1.0f) * manager.GameSpeed + avoidanceRadiusSum;
+            if (avoideeDistSq >= t * t)
+            {
+                continue;
+            }
+            if (avoideeDistSq >= GridMathUtils.SqrDistance2D(avoider.pos, avoider.goalPos))
+            {
+                continue;
+            }
+
+            float avoiderTurnSign = Vector3.Dot(avoidee.pos, avoider.GetRightDir()) - Vector3.Dot(avoider.pos, avoider.GetRightDir()) > 0.0f ? -1 : 1;
+            float avoideeTurnSign = Vector3.Dot(avoider.pos, avoidee.GetRightDir()) - Vector3.Dot(avoidee.pos, avoidee.GetRightDir()) > 0.0f ? -1 : 1;
+
+            float avoidanceCosAngle = Mathf.Clamp(Vector3.Dot(avoider.forward, avoidee.forward), -1.0f, 1.0f);
+            float avoidanceResponse = (1.0f - avoidanceCosAngle * (avoideeMobile ? 1 : 0)) + 0.1f;
+            float avoidanceFallOff = (1.0f - Mathf.Min(1.0f, avoideeDist / (5.0f * avoidanceRadiusSum)));
+
+            if (avoidanceCosAngle < 0.0f)
+            {
+                avoiderTurnSign = Mathf.Max(avoiderTurnSign, avoideeTurnSign);
+            }
+            avoidanceDir = avoider.GetRightDir() * avoiderTurnSign;
+            avoidanceVec += (avoidanceDir * avoidanceResponse * avoidanceFallOff * avoideeMassScale);
+        }
+        avoidanceDir = Vector3.Lerp(desiredDir, avoidanceVec, 0.5f).normalized;
+        avoidanceDir = Vector3.Lerp(avoidanceDir, desiredDir, 0.7f).normalized;
+        return avoidanceDir;
     }
     private void UpdateOwnerAccelAndHeading()
     {
@@ -302,7 +377,7 @@ public class GridMoveAgent
                 waypointDir = new Vector3(currWayPoint.x - pos.x, 0.0f, currWayPoint.z - pos.z).normalized;
             }
             Vector3 wantedForward = !atGoal ? waypointDir : forward;
-            wantedForward = GetObstacleAvoidanceDir(wantedForward);
+            wantedForward = GetObstacleAvoidanceDir(this, wantedForward);
             ChangeHeading(wantedForward);
             ChangeSpeed(maxSpeed);
         }
@@ -585,6 +660,10 @@ public class GridMoveAgent
     public float GetRadius()
     {
         return param.unitSize * manager.GridSize / 2.0f;
+    }
+    public float GetMinExteriorRadius()
+    {
+        return Mathf.Sqrt(2 * GetRadius() * GetRadius());
     }
     private void HandleObjectCollision()
     {
