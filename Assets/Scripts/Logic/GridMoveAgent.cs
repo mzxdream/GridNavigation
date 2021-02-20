@@ -264,11 +264,6 @@ public class GridMoveAgent
         var avoidanceVec = Vector3.zero;
         var avoidanceDir = desiredDir;
 
-        //static constexpr float AVOIDER_DIR_WEIGHT = 1.0f;
-        //static constexpr float DESIRED_DIR_WEIGHT = 0.5f;
-        //static constexpr float LAST_DIR_MIX_ALPHA = 0.7f;
-        //static const float MAX_AVOIDEE_COSINE = math::cosf(120.0f * math::DEG_TO_RAD);
-
         float avoidanceRadius = Mathf.Max(avoider.currentSpeed, 1.0f) * (avoider.GetRadius() * 2.0f);
         float avoiderRadius = avoider.GetMinExteriorRadius();
 
@@ -679,10 +674,24 @@ public class GridMoveAgent
     }
     public void OwnerMoved(Vector3 oldPos, Vector3 oldForward)
     {
+        if ((oldPos - pos).sqrMagnitude < 0.0001f)
+        {
+            currentVelocity = Vector3.zero;
+            currentSpeed = 0.0f;
+            idling = true;
+            idling &= (currWayPoint.y != -1.0f && nextWayPoint.y != -1.0f);
+            //todo
+            return;
+        }
+        Vector3 ffd = forward * GridMathUtils.SqrDistance2D(oldPos, pos) * 0.5f;
+        Vector3 wpd = waypointDir;
+        idling = true;
+        //TODO
+        idling &= GridMathUtils.SqrDistance2D(oldPos, pos) < currentSpeed * 0.5f * currentSpeed * 0.5f;
     }
     public void Update()
     {
-        Vector3 oldPos = pos;
+        oldPos = pos;
         Vector3 oldForward = forward;
         UpdateOwnerAccelAndHeading();
         UpdateOwnerPos(currentVelocity, this.forward * (currentSpeed + deltaSpeed));
