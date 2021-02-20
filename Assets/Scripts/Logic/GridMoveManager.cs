@@ -175,6 +175,15 @@ public class GridMoveManager
         }
         return false;
     }
+    public bool IsGridBlocked(int x, int z)
+    {
+        if (x < 0 || x >= gridX || z < 0 || z >= gridZ)
+        {
+            return true;
+        }
+        var grid = grids[x + z * gridX];
+        return grid.isBlocked;
+    }
     public bool TestMoveRange(GridMoveAgent agent, Vector3 rmin, Vector3 rmax, bool checkAgents)
     {
         GetGirdXZ(rmin, out int xmin, out int zmin);
