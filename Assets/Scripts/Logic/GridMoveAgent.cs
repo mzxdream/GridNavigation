@@ -45,6 +45,7 @@ public class GridMoveAgent
     private int numIdlingUpdates;
     private int numIdlingSlowUpdates;
     private Vector3 waypointDir;
+    private Vector3 oldPos;
 
     public Vector3 Pos { get => pos; }
     public Vector3 Forward { get => forward; }
@@ -343,19 +344,18 @@ public class GridMoveAgent
     {
         return currentSpeed < 0.001f;
     }
-    private static bool HandleStaticObjectCollision(GridMoveAgent collider, GridMoveAgent collidee, Vector3 separationVec, bool canRequestPath, bool checkTerrain)
+    private static bool HandleStaticObjectCollision(GridMoveAgent collider, GridMoveAgent collidee, float colliderRadius, float collideeRadius, Vector3 separationVec, bool canRequestPath, bool checkTerrain)
     {
         var manager = collider.manager;
         if (checkTerrain && !collider.IsMoving())
         {
             return false;
         }
+        Vector3 pos = collider.pos;
+        Vector3 vel = collider.currentVelocity;
+        Vector3 rgt = collider.GetRightDir();
         if (checkTerrain)
         {
-            Vector3 pos = collider.pos;
-            Vector3 vel = collider.currentVelocity;
-            Vector3 rgt = collider.GetRightDir();
-
             var rightDir2D = new Vector3(rgt.x, 0, rgt.z).normalized;
             var speedDir2D = new Vector3(vel.x, 0, vel.z).normalized;
 
@@ -407,72 +407,57 @@ public class GridMoveAgent
                 sqrPenDistanceSum *= (1.0f / sqrPenDistanceCount);
                 sqrPenDistanceCount *= (1.0f / sqrPenDistanceCount);
 
-                const float strafeSign = -Sign(sqrSumPosition.dot(rightDir2D) - pos.dot(rightDir2D));
-                const float bounceSign = Sign(rightDir2D.dot(bounceVec));
-                const float strafeScale = std::min(std::max(currentSpeed * 0.0f, maxSpeedDef), std::max(0.1f, -sqrPenDistance.x * 0.5f));
-                const float bounceScale = std::min(std::max(currentSpeed * 0.0f, maxSpeedDef), std::max(0.1f, -sqrPenDistance.x * 0.5f));
+                float strafeSign = Vector3.Dot(sqrSumPosition, rightDir2D) - Vector3.Dot(pos, rightDir2D) > 0 ? -1 : 1;
+                float bounceSign = Vector3.Dot(rightDir2D, bounceVec) > 0 ? 1 : -1;
+                float strafeScale = Mathf.Min(collider.param.maxSpeed, Mathf.Max(0.1f, -sqrPenDistanceSum * 0.5f));
+                float bounceScale = Mathf.Min(collider.param.maxSpeed, Mathf.Max(0.1f, -sqrPenDistanceSum * 0.5f));
 
-                // in FPS mode, normalize {strafe,bounce}Scale and multiply by maxSpeedDef
-                // (otherwise it would be possible to slide along map edges at above-normal
-                // speeds, etc.)
-                const float fpsStrafeScale = (strafeScale / (strafeScale + bounceScale)) * maxSpeedDef;
-                const float fpsBounceScale = (bounceScale / (strafeScale + bounceScale)) * maxSpeedDef;
+                float fpsStrafeScale = (strafeScale / (strafeScale + bounceScale)) * collider.param.maxSpeed;
+                float fpsBounceScale = (bounceScale / (strafeScale + bounceScale)) * collider.param.maxSpeed;
 
                 // bounceVec always points along rightDir by construction
-                strafeVec = (rightDir2D * strafeSign) * mix(strafeScale, fpsStrafeScale, owner->UnderFirstPersonControl());
-                bounceVec = (rightDir2D * bounceSign) * mix(bounceScale, fpsBounceScale, owner->UnderFirstPersonControl());
+                strafeVec = (rightDir2D * strafeSign) * strafeScale;
+                bounceVec = (rightDir2D * bounceSign) * bounceScale;
                 summedVec = strafeVec + bounceVec;
 
                 // if checkTerrain is true, test only the center square
-                if (colliderMD->TestMoveSquare(collider, pos + summedVec, vel, checkTerrain, checkYardMap, checkTerrain))
+                if (manager.TestMoveRange(collider, pos + summedVec, pos + summedVec, false))
                 {
-                    collider->Move(summedVec, true);
-
-                    // minimal hack to make FollowPath work at all turn-rates
-                    // since waypointDir will undergo a (large) discontinuity
-                    currWayPoint += summedVec;
-                    nextWayPoint += summedVec;
+                    collider.pos = collider.pos + summedVec;
+                    collider.currWayPoint += summedVec;
+                    collider.nextWayPoint += summedVec;
                 }
                 else
                 {
-                    // never move fully back to oldPos when dealing with yardmaps
-                    collider->Move((oldPos - pos) + summedVec * 0.25f * checkYardMap, true);
+                    collider.pos = collider.oldPos;
                 }
             }
             return canRequestPath && summedVec != Vector3.zero;
         }
         else
         {
-            const float colRadiusSum = colliderRadius + collideeRadius;
-            const float sepDistance = separationVector.Length() + 0.1f;
-            const float penDistance = std::min(sepDistance - colRadiusSum, 0.0f);
-            const float colSlideSign = -Sign(collidee->pos.dot(rgt) - pos.dot(rgt));
+            float colRadiusSum = collider.GetRadius() + collidee.GetRadius();
+            float sepDistance = separationVec.magnitude + 0.1f;
+            float penDistance = Mathf.Min(sepDistance - colRadiusSum, 0.0f);
+            float colSlideSign = Vector3.Dot(collidee.pos, rgt) - Vector3.Dot(pos, rgt) > 0.0f ? -1 : 1;
 
-            const float strafeScale = std::min(currentSpeed, std::max(0.0f, -penDistance * 0.5f)) * (1 - checkYardMap * false);
-            const float bounceScale = std::min(currentSpeed, std::max(0.0f, -penDistance)) * (1 - checkYardMap * true);
+            float strafeScale = Mathf.Min(collider.currentSpeed, Mathf.Max(0.0f, -penDistance * 0.5f));
+            float bounceScale = Mathf.Min(collider.currentSpeed, Mathf.Max(0.0f, -penDistance));
 
-            strafeVec = (rgt * colSlideSign) * strafeScale;
-            bounceVec = (separationVector / sepDistance) * bounceScale;
-            summedVec = strafeVec + bounceVec;
+            Vector3 strafeVec = (rgt * colSlideSign) * strafeScale;
+            Vector3 bounceVec = (separationVec / sepDistance) * bounceScale;
+            Vector3 summedVec = strafeVec + bounceVec;
 
-            if (colliderMD->TestMoveSquare(collider, pos + summedVec, vel, true, true, true))
+            if (manager.TestMoveRange(collider, pos + summedVec, pos + summedVec, true))
             {
-                collider->Move(summedVec, true);
-
-                currWayPoint += summedVec;
-                nextWayPoint += summedVec;
+                collider.pos = collider.pos + summedVec;
+                collider.currWayPoint += summedVec;
+                collider.nextWayPoint += summedVec;
             }
             else
             {
-                // move back to previous-frame position
-                // ChangeSpeed calculates speedMod without checking squares for *structure* blockage
-                // (so that a unit can free itself if it ends up within the footprint of a structure)
-                // this means deltaSpeed will be non-zero if stuck on an impassable square and hence
-                // the new speedvector which is constructed from deltaSpeed --> we would simply keep
-                // moving forward through obstacles if not counteracted by this
-                collider->Move((oldPos - pos) + summedVec * 0.25f * (collider->frontdir.dot(separationVector) < 0.25f), true);
+                collider.pos = collider.oldPos + summedVec * 0.25f * (Vector3.Dot(collider.forward, separationVec) < 0.25f ? 1 : 0);
             }
-
             // same here
             return (canRequestPath && (penDistance < 0.0f));
         }
