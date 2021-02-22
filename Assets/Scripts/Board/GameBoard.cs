@@ -9,17 +9,18 @@ public class GameBoard : MonoBehaviour
     Texture2D gridTexture = default;
     [SerializeField]
     GameTileFactory tileFactory = default;
-    int gridX;
-    int gridZ;
+
+    int xsize;
+    int zsize;
     float gridSize;
-    Dictionary<int, GameTile> tiles = new Dictionary<int, GameTile>();
-    GameTile redDestination = null;
+    Dictionary<int, GameTile> tiles;
 
     public bool Init(int gridX, int gridZ, float gridSize)
     {
-        this.gridX = gridX;
-        this.gridZ = gridZ;
+        this.xsize = gridX;
+        this.zsize = gridZ;
         this.gridSize = gridSize;
+        this.tiles = new Dictionary<int, GameTile>();
 
         ground.localScale = new Vector3(gridX * gridSize, gridZ * gridSize, 1f);
         var material = ground.GetComponent<MeshRenderer>().material;
@@ -35,53 +36,40 @@ public class GameBoard : MonoBehaviour
         }
         tiles.Clear();
     }
-    public bool GetTileGrid(Vector3 pos, out int tx, out int tz)
+    public bool GetTileGrid(Vector3 pos, out int x, out int z)
     {
-        tx = (int)((pos.x + gridX * gridSize / 2) / gridSize);
-        tz = (int)((pos.z + gridZ * gridSize / 2) / gridSize);
-        return tx >= 0 && tx < gridX && tz >= 0 && tz < gridZ;
+        x = (int)((pos.x + xsize * gridSize / 2) / gridSize);
+        z = (int)((pos.z + zsize * gridSize / 2) / gridSize);
+        return x >= 0 && x < xsize && z >= 0 && z < zsize;
     }
-    public Vector3 GetTilePos(int tx, int tz)
+    public Vector3 GetTilePos(int x, int z)
     {
-        Debug.Assert(tx >= 0 && tx < gridX && tz >= 0 && tz < gridZ);
-        float x = (tx + 0.5f - gridX * 0.5f) * gridSize;
-        float z = (tz + 0.5f - gridZ * 0.5f) * gridSize;
-        return new Vector3(x, 0, z);
+        Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
+        float tx = (x - xsize * 0.5f + 0.5f) * gridSize;
+        float tz = (z - zsize * 0.5f + 0.5f) * gridSize;
+        return new Vector3(tx, 0, tz);
     }
-    public bool ToggleTile(GameTileType type, Vector3 pos)
+    public void AddTile(int x, int z, GameTileType type)
     {
-        if (!GetTileGrid(pos, out var tx, out var tz))
+        Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
+        var index = x + z * xsize;
+        Debug.Assert(tiles.ContainsKey(index));
+
+        var tile = tileFactory.Get(type);
+        tile.transform.localPosition = GetTilePos(x, z);
+        tile.transform.localScale = new Vector3(gridSize, gridSize, gridSize);
+        tile.Index = index;
+        tiles.Add(index, tile);
+    }
+    public bool RemoveTile(int x, int z)
+    {
+        Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
+        var index = x + z * xsize;
+        if (tiles.TryGetValue(index, out var tile))
         {
-            return false;
-        }
-        int key = tx + tz * gridX;
-        bool isOnlyRemove = false;
-        if (tiles.TryGetValue(key, out var tile))
-        {
-            isOnlyRemove = tile.Type == type;
-            if (tile == redDestination)
-            {
-                redDestination = null;
-            }
             tile.Clear();
-            tiles.Remove(key);
-        }
-        if (!isOnlyRemove)
-        {
-            tile = tileFactory.Get(type);
-            tile.transform.localPosition = GetTilePos(tx, tz);
-            tile.transform.localScale = new Vector3(gridSize, gridSize, gridSize);
-            tile.key = key;
-            tiles.Add(key, tile);
-            if (tile.Type == GameTileType.RedDestination)
-            {
-                if (redDestination != null)
-                {
-                    redDestination.Clear();
-                    tiles.Remove(redDestination.key);
-                }
-                redDestination = tile;
-            }
+            tiles.Remove(index);
+            return true;
         }
         return false;
     }

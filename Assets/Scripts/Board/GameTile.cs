@@ -7,7 +7,7 @@ public class GameTile : MonoBehaviour
     [SerializeField]
     GameTileType type = default;
     public GameTileType Type { get => type; }
-    public int key;
+    public int Index;
     GameTileFactory originFactory;
     public GameTileFactory OriginFactory
     {
