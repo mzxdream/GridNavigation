@@ -2,20 +2,9 @@ using UnityEngine;
 
 public class GameTileContent : MonoBehaviour
 {
-    GameTileContentFactory originFactory;
-    public GameTileContentFactory OriginFactory
+    public void Clear()
     {
-        get => originFactory;
-        set
-        {
-            Debug.Assert(originFactory == null, "redefined origin factory");
-            originFactory = value;
-        }
-    }
-
-    public void Recycle()
-    {
-        originFactory.Reclaim(this);
+        Destroy(this.gameObject);
     }
     public void SetPosition(Vector3 position)
     {

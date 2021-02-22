@@ -6,21 +6,17 @@ public class Character
 {
     private readonly CharacterType type;
     private readonly CharacterContent content;
-    private readonly GridMoveManager moveManager;
     private GridMoveAgent moveAgent;
 
     public CharacterType Type { get => type; }
 
-    public Character(Vector3 position, Vector3 forward, CharacterType type, CharacterContentFactory contentFactory, GridMoveManager moveManager)
+    public Character(Game game, CharacterType type, Vector3 position, Vector3 forward, float radius)
     {
-        float radius = 0.6f;
-
         this.type = type;
-        this.content = contentFactory.Get(type);
-        this.content.SetPosition(position);
-        this.content.SetForward(forward);
-        this.content.SetScale(radius);
-        this.moveManager = moveManager;
+        //content = ;
+        content.transform.position = position;
+        content.transform.forward = forward;
+        content.transform.localScale = new Vector3(radius, radius, radius);
         var param = new GridMoveAgentParam
         {
             teamID = 1,
@@ -29,10 +25,11 @@ public class Character
             maxSpeed = 1.0f,
             isPushResistant = true,
         };
-        this.moveAgent = moveManager.CreateAgent(position, forward, param);
+        //moveAgent = moveManager.CreateAgent(position, forward, param);
     }
-    public void Recycle()
+    public void Clear()
     {
+        content.Clear();
     }
     public void StartMoving(Vector3 position)
     {

@@ -3,20 +3,20 @@ using UnityEngine;
 
 public class Game : MonoBehaviour
 {
+    [SerializeField]
+    Transform ground = default;
+    [SerializeField]
+    Texture2D tileTexture = default;
+    [SerializeField]
+    GameTileContent wallContent = default, redDestinationContent = default, blueDestinationContent = default;
+    [SerializeField]
+    CharacterContent redCharacterContent = default, blueCharacterContent = default;
     [SerializeField, Range(2, 128)]
     int xsize = 128;
     [SerializeField, Range(2, 128)]
     int zsize = 128;
     [SerializeField, Range(0.1f, 1.0f)]
     float tileSize = 0.2f;
-    [SerializeField]
-    Transform ground = default;
-    [SerializeField]
-    Texture2D tileTexture = default;
-    [SerializeField]
-    GameTileContentFactory tileContentFactory = default;
-    [SerializeField]
-    CharacterContentFactory characterContentFactory = default;
 
     Dictionary<int, GameTile> tiles;
     List<Character> characters;
@@ -71,6 +71,9 @@ public class Game : MonoBehaviour
     {
         moveManager.Update();
     }
+
+
+
     void AddCharacter(CharacterType type)
     {
         var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
