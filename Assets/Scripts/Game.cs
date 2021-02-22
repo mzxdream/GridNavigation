@@ -4,15 +4,20 @@ using UnityEngine;
 public class Game : MonoBehaviour
 {
     [SerializeField, Range(2, 128)]
-    int gridX = 128;
+    int xsize = 128;
     [SerializeField, Range(2, 128)]
-    int gridZ = 128;
+    int zsize = 128;
     [SerializeField, Range(0.1f, 1.0f)]
-    float gridSize = 0.2f;
+    float tileSize = 0.2f;
     [SerializeField]
-    GameBoard board = default;
+    Transform ground = default;
+    [SerializeField]
+    Texture2D tileTexture = default;
+    [SerializeField]
+    GameTileContentFactory tileContentFactory = default;
     [SerializeField]
     CharacterFactory characterFactory = default;
+
     List<Character> characters = new List<Character>();
     GridMoveManager moveManager = new GridMoveManager();
 

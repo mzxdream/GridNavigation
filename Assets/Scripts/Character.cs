@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public enum CharacterType { RedSmall, RedMedium, RedLarge, BlueSmall, BlueMedium, BlueLarge }
+public enum CharacterType { Red, Blue }
 
 public class Character : MonoBehaviour
 {
