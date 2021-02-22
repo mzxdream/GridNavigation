@@ -19,7 +19,6 @@ public class GridMoveAgent
     private GridMoveAgentParam param;
     private Vector3 pos;
     private Vector3 forward;
-    private int gridIndex;
 
     private float maxSpeed;
     private float accRate;
@@ -47,6 +46,7 @@ public class GridMoveAgent
     private Vector3 waypointDir;
     private Vector3 oldPos;
 
+    public int ID { get => id; }
     public Vector3 Pos { get => pos; }
     public Vector3 Forward { get => forward; }
     public int UnitSize { get => param.unitSize; }
@@ -62,7 +62,6 @@ public class GridMoveAgent
         this.param = param;
         this.pos = manager.ClampInBounds(pos);
         this.forward = forward;
-        this.gridIndex = manager.GetGridIndex(this.pos);
 
         this.maxSpeed = param.maxSpeed / manager.GameSpeed;
         this.accRate = Mathf.Max(0.01f, param.maxAcc);
@@ -701,6 +700,40 @@ public class GridMoveAgent
     }
     public void LateUpdate()
     {
+        if (progressState == ProgressState.Active)
+        {
+            if (path != null)
+            {
+                if (idling)
+                {
+                    numIdlingSlowUpdates = Mathf.Min(numIdlingSlowUpdates + 1, 16);
+                }
+                else
+                {
+                    numIdlingSlowUpdates = Mathf.Max(numIdlingSlowUpdates - 1, 0);
+                }
+                if (numIdlingUpdates > 32768)
+                {
+                    if (numIdlingSlowUpdates < 16)
+                    {
+                        ReRequestPath(true);
+                    }
+                    else
+                    {
+                        Fail(false);
+                    }
+                }
+            }
+            else
+            {
+                ReRequestPath(true);
+            }
+            if (isWantRepath)
+            {
+                ReRequestPath(true);
+            }
+        }
+        manager.OnPositionChange(this, pos);
     }
     public bool StartMoving(Vector3 goalPos, float goalRadius = 0.1f)
     {

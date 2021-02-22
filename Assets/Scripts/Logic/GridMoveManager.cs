@@ -25,6 +25,7 @@ public class GridMoveManager
 
     private Grid[] grids;
     private List<GridMoveAgent> agents; //TODO optimization
+    private Dictionary<int, int> agentGridIndexes = new Dictionary<int, int>();
     private GridPathFinder pathFinder;
 
     public float GridSize { get => gridSize; }
@@ -227,5 +228,42 @@ public class GridMoveManager
             }
         }
         return arr;
+    }
+    public void OnPositionChange(GridMoveAgent agent, Vector3 pos)
+    {
+        if (agentGridIndexes.TryGetValue(agent.ID, out int oldIndex))
+        {
+            int oldX = oldIndex % gridX, oldZ = oldIndex / gridX;
+            int xmin = Mathf.Max(oldX - agent.UnitSize / 2, 0);
+            int xmax = Mathf.Min(oldX + agent.UnitSize / 2, gridX - 1);
+            int zmin = Mathf.Max(oldZ - agent.UnitSize / 2, 0);
+            int zmax = Mathf.Min(oldZ + agent.UnitSize / 2, gridZ - 1);
+            for (int z = zmin; z <= zmax; z++)
+            {
+                for (int x = xmin; x <= xmax; x++)
+                {
+                    var grid = grids[x + z * gridX];
+                    grid.agents.Remove(agent);
+                }
+            }
+            agentGridIndexes.Remove(agent.ID);
+        }
+        {
+            var newIndex = GetGridIndex(pos);
+            agentGridIndexes.Add(agent.ID, newIndex);
+            int newX = newIndex % gridX, newZ = newIndex / gridX;
+            int xmin = Mathf.Max(newX - agent.UnitSize / 2, 0);
+            int xmax = Mathf.Min(newX + agent.UnitSize / 2, gridX - 1);
+            int zmin = Mathf.Max(newZ - agent.UnitSize / 2, 0);
+            int zmax = Mathf.Min(newZ + agent.UnitSize / 2, gridZ - 1);
+            for (int z = zmin; z <= zmax; z++)
+            {
+                for (int x = xmin; x <= xmax; x++)
+                {
+                    var grid = grids[x + z * gridX];
+                    grid.agents.Add(agent);
+                }
+            }
+        }
     }
 }
