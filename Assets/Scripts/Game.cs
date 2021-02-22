@@ -52,15 +52,15 @@ public class Game : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.Alpha3))
         {
-            ToggleTile(GameTileType.RedDestination);
+            SetTile(GameTileType.RedDestination);
         }
         if (Input.GetKeyDown(KeyCode.Alpha4))
         {
-            ToggleTile(GameTileType.BlueDestination);
+            SetTile(GameTileType.BlueDestination);
         }
         if (Input.GetKeyDown(KeyCode.Alpha5))
         {
-            ToggleTile(GameTileType.Wall);
+            SetTile(GameTileType.Wall);
         }
         foreach (var c in characters)
         {
@@ -80,11 +80,41 @@ public class Game : MonoBehaviour
             characters.Add(character);
         }
     }
-    void ToggleTile(GameTileType type)
+    void SetTile(GameTileType type)
     {
         var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hit, float.MaxValue) )
+        if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
         {
+            return;
+        }
+        var pos = hit.point;
+        int x = (int)((pos.x + xsize * tileSize * 0.5f) / tileSize);
+        int z = (int)((pos.z + zsize * tileSize * 0.5f) / tileSize);
+        if (x < 0 || x >= xsize || z < 0 || z >= zsize)
+        {
+            return;
+        }
+        var index = x + z * xsize;
+        if (tiles.TryGetValue(index, out var tile))
+        {
+            if (tile.Type == type)
+            {
+                if (type == GameTileType.RedDestination)
+                {
+                    redDestinationIndex = -1;
+                }
+                else if (type == GameTileType.BlueDestination)
+                {
+                    blueDestinationIndex = -1;
+                }
+                tile.Recycle();
+                tiles.Remove(index);
+                return;
+            }
+        }
+    }
+            
+
 && board.GetTileGrid(hit.point, out int x, out int z)
             board.RemoveTile(x, z);
             if (type == GameTileType.RedDestination)
