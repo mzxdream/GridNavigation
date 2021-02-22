@@ -16,25 +16,39 @@ public class Game : MonoBehaviour
     [SerializeField]
     GameTileContentFactory tileContentFactory = default;
     [SerializeField]
-    CharacterFactory characterFactory = default;
+    CharacterContentFactory characterContentFactory = default;
 
-    List<Character> characters = new List<Character>();
-    GridMoveManager moveManager = new GridMoveManager();
+    Dictionary<int, GameTile> tiles;
+    List<Character> characters;
+    GridMoveManager moveManager;
+    int redDestinationIndex;
+    int blueDestinationIndex;
 
     void Awake()
     {
-        board.Init(gridX, gridZ, gridSize);
-        moveManager.Init(transform.position, gridX, gridZ, gridSize, 1000);
+        tiles = new Dictionary<int, GameTile>();
+        ground.localScale = new Vector3(xsize * tileSize, zsize * tileSize, 1f);
+        var material = ground.GetComponent<MeshRenderer>().material;
+        material.mainTexture = tileTexture;
+        material.SetTextureScale("_MainTex", new Vector2(xsize, zsize));
+
+        characters = new List<Character>();
+
+        moveManager = new GridMoveManager();
+        moveManager.Init(transform.position, xsize, zsize, tileSize, 1000);
+
+        redDestinationIndex = -1;
+        blueDestinationIndex = -1;
     }
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            AddCharacter(CharacterType.RedMedium);
+            AddCharacter(CharacterType.Red);
         }
         if (Input.GetKeyDown(KeyCode.Alpha2))
         {
-            AddCharacter(CharacterType.BlueMedium);
+            AddCharacter(CharacterType.Blue);
         }
         if (Input.GetKeyDown(KeyCode.Alpha3))
         {
@@ -62,20 +76,16 @@ public class Game : MonoBehaviour
         var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
         {
-            var character = characterFactory.Get(type);
-            if (!character.Init(hit.point, Vector3.forward, moveManager))
-            {
-                return;
-            }
-            character.transform.position = hit.point;
+            var character = new Character(hit.point, Vector3.forward, type, characterContentFactory, moveManager);
             characters.Add(character);
         }
     }
     void ToggleTile(GameTileType type)
     {
         var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hit, float.MaxValue) && board.GetTileGrid(hit.point, out int x, out int z))
+        if (Physics.Raycast(ray, out RaycastHit hit, float.MaxValue) )
         {
+&& board.GetTileGrid(hit.point, out int x, out int z)
             board.RemoveTile(x, z);
             if (type == GameTileType.RedDestination)
             {
