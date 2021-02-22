@@ -2,35 +2,26 @@
 
 public enum CharacterType { Red, Blue }
 
-public class Character : MonoBehaviour
+public class Character
 {
-    [SerializeField]
-    Transform model = default;
-    [SerializeField]
-    float radius = 0.6f;
-    public float Radius { get => radius; }
-    [SerializeField]
-    float maxSpeed = 1.0f;
-    public float MaxSpeed { get => maxSpeed; }
-    GridMoveManager moveManager;
-    GridMoveAgent moveAgent;
-    CharacterFactory originFactory;
-    public CharacterFactory OriginFactory
+    private readonly CharacterType type;
+    private readonly CharacterContent content;
+    private readonly GridMoveManager moveManager;
+    private GridMoveAgent moveAgent;
+
+    public CharacterType Type { get => type; }
+
+    public Character(Vector3 position, Vector3 forward, CharacterType type, CharacterContentFactory contentFactory, GridMoveManager moveManager)
     {
-        get => originFactory;
-        set
-        {
-            Debug.Assert(originFactory == null, "redifined factory!");
-            originFactory = value;
-        }
-    }
-    public bool Init(Vector3 pos, Vector3 forward, GridMoveManager moveManager)
-    {
-        transform.position = pos;
-        transform.forward = forward;
-        model.localScale = new Vector3(radius, radius, radius);
+        float radius = 0.6f;
+
+        this.type = type;
+        this.content = contentFactory.Get(type);
+        this.content.SetPosition(position);
+        this.content.SetForward(forward);
+        this.content.SetScale(radius);
         this.moveManager = moveManager;
-        var agentParams = new GridMoveAgentParam
+        var param = new GridMoveAgentParam
         {
             teamID = 1,
             unitSize = 3,
@@ -38,21 +29,22 @@ public class Character : MonoBehaviour
             maxSpeed = 1.0f,
             isPushResistant = true,
         };
-        this.moveAgent = moveManager.CreateAgent(pos, forward, agentParams);
-        return true;
+        this.moveAgent = moveManager.CreateAgent(position, forward, param);
     }
-    public void Clear()
+    public void Recycle()
     {
-        moveAgent = null;
-        originFactory.Reclaim(this);
     }
-    public void MoveTo(Vector3 pos)
+    public void StartMoving(Vector3 position)
     {
-        moveAgent.StartMoving(pos, 0.01f);
+        moveAgent.StartMoving(position, 0.01f);
+    }
+    public void StopMoving()
+    {
+        moveAgent.StopMoving(false, true);
     }
     public void Update()
     {
-        transform.position = moveAgent.Pos;
-        transform.forward = moveAgent.Forward;
+        content.SetPosition(moveAgent.Pos);
+        content.SetForward(moveAgent.Forward);
     }
 }

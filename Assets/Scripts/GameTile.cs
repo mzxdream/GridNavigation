@@ -1,19 +1,29 @@
+using UnityEngine;
+
 public enum GameTileType { Wall, RedDestination, BlueDestination }
 
 public class GameTile
 {
-    private readonly GameTileType type;
     private readonly int index;
+    private readonly GameTileType type;
     private readonly GameTileContent content;
 
-    public GameTileType Type { get => type; }
     public int Index { get => index; }
+    public GameTileType Type { get => type; }
 
-    public GameTile(GameTileType type, int index, GameTileContent content)
+    public GameTile(int index, GameTileType type, GameTileContentFactory contentFactory)
     {
-        this.type = type;
         this.index = index;
-        this.content = content;
+        this.type = type;
+        this.content = contentFactory.Get(type);
+    }
+    public void SetPosition(Vector3 position)
+    {
+        content.SetPosition(position);
+    }
+    public void SetForward(Vector3 forward)
+    {
+        content.SetForward(forward);
     }
     public void Recycle()
     {
