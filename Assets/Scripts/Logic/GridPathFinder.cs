@@ -131,7 +131,9 @@ class GridPathPriorityQueue
 
 public class GridPath
 {
+    public Vector3 startPos;
     public Vector3 goalPos;
+    public float goalRadius;
     public List<Vector3> positions = new List<Vector3>();
 }
 
@@ -164,7 +166,7 @@ public class GridPathFinder
         int z = Mathf.Abs(toZ - fromZ);
         return x > z ? 14 * z + 10 * (x - z) : 14 * x + 10 * (z - x);
     }
-    private bool IsNeighborWalkable(int unitSize, GridPathNode snode, GridPathNode enode, Func<int, int, bool> checkBlockedFunc)
+    private bool IsNeighborWalkable(int unitSize, GridPathNode snode, GridPathNode enode)
     {
         Debug.Assert(unitSize > 0 && Mathf.Abs(snode.X - enode.X) <= 1 && Mathf.Abs(snode.Z - enode.Z) <= 1);
         var offset = unitSize / 2;
@@ -267,13 +269,9 @@ public class GridPathFinder
         }
         return true;
     }
-    public GridPath Search(int unitSize, int startX, int startZ, int goalX, int goalZ, int goalRadius, int searchRadius, int searchMaxNodes, Func<int, int, bool> checkBlockedFunc)
+    public bool Search(GridMoveAgent agent, float searchSize, int searchMaxNodes, ref GridPath path)
     {
-        Debug.Assert(unitSize >= 3 && (unitSize & 1) == 1);
-        Debug.Assert(startX - unitSize / 2 >= 0 && startX + unitSize / 2 < gridX && startZ - unitSize / 2 >= 0 && startZ + unitSize / 2 < gridZ);
-        Debug.Assert(goalX >= 0 && goalX < gridX && goalZ >= 0 && goalZ < gridZ);
-        Debug.Assert(goalRadius >= 0 && searchRadius >= 0 && searchMaxNodes >= 0);
-
+        Debug.Assert(searchSize > 0 && searchMaxNodes > 0);
         openQueue.Clear();
         foreach (var n in closedQueue)
         {
@@ -281,6 +279,16 @@ public class GridPathFinder
             n.IsClosed = false;
         }
         closedQueue.Clear();
+
+        path.startPos = moveManager.ClampInBounds(path.startPos);
+        path.goalPos = moveManager.ClampInBounds(path.goalPos);
+        moveManager.GetTileXZ(path.startPos, out var startX, out var startZ);
+        moveManager.GetTileXZ(path.startPos, out var goalX, out var goalZ);
+
+        int goalRadiusNodes = (int)(path.goalRadius / moveManager.TileSize);
+        int searchRadiusNodes = (int)(searchSize * CalcDistanceApproximately(startX, startZ, goalX, goalZ));
+
+
 
         var node = nodes[startX + startZ * gridX];
         node.IsClosed = true;

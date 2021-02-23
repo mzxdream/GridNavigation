@@ -79,29 +79,29 @@ public class GridMoveManager
     {
         return new Vector3(Mathf.Clamp(pos.x, bmin.x, bmax.x), pos.y, Mathf.Clamp(pos.z, bmin.z, bmax.z));
     }
-    public void GetGirdXZ(Vector3 pos, out int x, out int z)
+    public void GetTileXZ(Vector3 pos, out int x, out int z)
     {
         x = (int)((pos.x - bmin.x) / tileSize);
         z = (int)((pos.z - bmin.z) / tileSize);
         x = Mathf.Clamp(x, 0, xsize - 1);
         z = Mathf.Clamp(z, 0, zsize - 1);
     }
-    public int GetGridIndex(Vector3 pos)
+    public int GetTileIndex(Vector3 pos)
     {
         int x = (int)((pos.x - bmin.x) / tileSize);
         int z = (int)((pos.z - bmin.z) / tileSize);
         return Mathf.Clamp(x, 0, xsize - 1) + Mathf.Clamp(z, 0, zsize - 1) * xsize;
     }
-    public Vector3 GetGridPos(int index)
+    public Vector3 GetTilePos(int index)
     {
         Debug.Assert(index >= 0 && index < xsize * zsize);
         int z = index / xsize;
         int x = index - z * xsize;
         return new Vector3(bmin.x + (x + 0.5f) * tileSize, 0, bmin.z + (z + 0.5f) * tileSize);
     }
-    public Vector3 GetGridPos(int x, int z)
+    public Vector3 GetTilePos(int x, int z)
     {
-        return GetGridPos(x + z * xsize);
+        return GetTilePos(x + z * xsize);
     }
     public GridPath FindPath(GridMoveAgent agent, Vector3 goalPos, float goalRadius)
     {
