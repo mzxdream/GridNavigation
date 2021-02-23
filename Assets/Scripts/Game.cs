@@ -93,7 +93,7 @@ public class Game : MonoBehaviour
             characters.Add(character);
         }
     }
-    void RemoveTile(int index)
+    bool RemoveTile(int index)
     {
         if (tiles.TryGetValue(index, out var tile))
         {
@@ -110,7 +110,9 @@ public class Game : MonoBehaviour
             }
             tile.Clear();
             tiles.Remove(index);
+            return true;
         }
+        return false;
     }
     Vector3 GetTilePos(int index)
     {
@@ -135,11 +137,13 @@ public class Game : MonoBehaviour
         {
             RemoveTile(redDestinationIndex);
             prefab = redDestinationPrefab;
+            redDestinationIndex = index;
         }
         else if (type == GameTileType.BlueDestination)
         {
             RemoveTile(blueDestinationIndex);
             prefab = blueDestinationPrefab;
+            blueDestinationIndex = index;
         }
         else
         {
@@ -164,7 +168,30 @@ public class Game : MonoBehaviour
             return;
         }
         var index = x + z * xsize;
-        RemoveTile(index);
+        if (RemoveTile(index))
+        {
+            return;
+        }
         AddTile(index, type);
+        if (type == GameTileType.RedDestination)
+        {
+            foreach (var c in characters)
+            {
+                if (c.Type == CharacterType.Red)
+                {
+                    c.StartMoving(pos);
+                }
+            }
+        }
+        else if (type == GameTileType.BlueDestination)
+        {
+            foreach (var c in characters)
+            {
+                if (c.Type == CharacterType.Blue)
+                {
+                    c.StartMoving(pos);
+                }
+            }
+        }
     }
 }
