@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class GameTileContent : MonoBehaviour
+public class GameTileAsset : MonoBehaviour
 {
     public void SetPosition(Vector3 position)
     {

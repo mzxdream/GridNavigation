@@ -4,19 +4,19 @@ public enum CharacterType { Red, Blue }
 
 public class Character
 {
-    private readonly CharacterContent content;
+    private readonly CharacterAsset asset;
     private readonly CharacterType type;
     private GridMoveAgent moveAgent;
 
     public CharacterType Type { get => type; }
 
-    public Character(CharacterContent content, CharacterType type, Vector3 position, Vector3 forward, float radius, GridMoveManager moveManager)
+    public Character(CharacterAsset prefab, CharacterType type, Vector3 position, Vector3 forward, float radius, GridMoveManager moveManager)
     {
-        this.content = content;
+        asset = GameObject.Instantiate(prefab);
         this.type = type;
-        content.transform.position = position;
-        content.transform.forward = forward;
-        content.transform.localScale = new Vector3(radius, radius, radius);
+        asset.transform.position = position;
+        asset.transform.forward = forward;
+        asset.transform.localScale = new Vector3(radius, radius, radius);
         var param = new GridMoveAgentParam
         {
             teamID = 1,
@@ -29,7 +29,7 @@ public class Character
     }
     public void Clear()
     {
-        content.Clear();
+        asset.Clear();
     }
     public void StartMoving(Vector3 position)
     {
@@ -41,7 +41,7 @@ public class Character
     }
     public void Update()
     {
-        content.SetPosition(moveAgent.Pos);
-        content.SetForward(moveAgent.Forward);
+        asset.SetPosition(moveAgent.Pos);
+        asset.SetForward(moveAgent.Forward);
     }
 }

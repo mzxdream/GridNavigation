@@ -8,9 +8,9 @@ public class Game : MonoBehaviour
     [SerializeField]
     Texture2D tileTexture = default;
     [SerializeField]
-    GameTileContent wallContent = default, redDestinationContent = default, blueDestinationContent = default;
+    GameTileAsset wallPrefab = default, redDestinationPrefab = default, blueDestinationPrefab = default;
     [SerializeField]
-    CharacterContent redCharacterContent = default, blueCharacterContent = default;
+    CharacterAsset redCharacterPrefab = default, blueCharacterPrefab = default;
     [SerializeField, Range(2, 128)]
     int xsize = 128;
     [SerializeField, Range(2, 128)]
@@ -76,20 +76,20 @@ public class Game : MonoBehaviour
         var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
         {
-            CharacterContent content = null;
+            CharacterAsset prefab = null;
             switch (type)
             {
                 case CharacterType.Red:
-                    content = Instantiate(redCharacterContent);
+                    prefab = redCharacterPrefab;
                     break;
                 case CharacterType.Blue:
-                    content = Instantiate(blueCharacterContent);
+                    prefab = Instantiate(blueCharacterPrefab);
                     break;
                 default:
                     Debug.Assert(false, "unsupported character type:" + type);
                     break;
             }
-            var character = new Character(content, type, hit.point, Vector3.forward, 0.6f, moveManager);
+            var character = new Character(prefab, type, hit.point, Vector3.forward, 0.6f, moveManager);
             characters.Add(character);
         }
     }
@@ -126,26 +126,26 @@ public class Game : MonoBehaviour
         {
             return false;
         }
-        GameTileContent content = null;
+        GameTileAsset prefab = null;
         if (type == GameTileType.Wall)
         {
-            content = wallContent;
+            prefab = wallPrefab;
         }
         else if (type == GameTileType.RedDestination)
         {
             RemoveTile(redDestinationIndex);
-            content = redDestinationContent;
+            prefab = redDestinationPrefab;
         }
         else if (type == GameTileType.BlueDestination)
         {
             RemoveTile(blueDestinationIndex);
-            content = blueDestinationContent;
+            prefab = blueDestinationPrefab;
         }
         else
         {
             return false;
         }
-        var tile = new GameTile(Instantiate(content), type, index);
+        var tile = new GameTile(prefab, type, index);
         tile.SetPosition(GetTilePos(index));
         tile.SetScale(new Vector3(tileSize, tileSize, tileSize));
         tiles.Add(index, tile);

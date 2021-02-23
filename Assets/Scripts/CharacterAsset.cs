@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class CharacterContent : MonoBehaviour
+public class CharacterAsset : MonoBehaviour
 {
     public void SetPosition(Vector3 position)
     {
