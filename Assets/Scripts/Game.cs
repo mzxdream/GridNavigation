@@ -93,6 +93,64 @@ public class Game : MonoBehaviour
             characters.Add(character);
         }
     }
+    void RemoveTile(int index)
+    {
+        if (tiles.TryGetValue(index, out var tile))
+        {
+            if (tile.Type == GameTileType.Wall)
+            {
+            }
+            else if (tile.Type == GameTileType.RedDestination)
+            {
+                redDestinationIndex = -1;
+            }
+            else if (tile.Type == GameTileType.BlueDestination)
+            {
+                blueDestinationIndex = -1;
+            }
+            tile.Clear();
+            tiles.Remove(index);
+        }
+    }
+    Vector3 GetTilePos(int index)
+    {
+        var x = index % xsize;
+        var z = index / xsize;
+        var px = (x - xsize * 0.5f + 0.5f) * tileSize;
+        var pz = (z - zsize * 0.5f + 0.5f) * tileSize;
+        return new Vector3(px, 0.0f, pz);
+    }
+    bool AddTile(int index, GameTileType type)
+    {
+        if (tiles.ContainsKey(index))
+        {
+            return false;
+        }
+        GameTileContent content = null;
+        if (type == GameTileType.Wall)
+        {
+            content = wallContent;
+        }
+        else if (type == GameTileType.RedDestination)
+        {
+            RemoveTile(redDestinationIndex);
+            content = redDestinationContent;
+        }
+        else if (type == GameTileType.BlueDestination)
+        {
+            RemoveTile(blueDestinationIndex);
+            content = blueDestinationContent;
+        }
+        else
+        {
+            return false;
+        }
+        var tile = new GameTile(Instantiate(content), type, index);
+        tile.SetPosition(GetTilePos(index));
+        tile.SetScale(new Vector3(tileSize, tileSize, tileSize));
+        tiles.Add(index, tile);
+        return true;
+    }
     void SetTile(GameTileType type)
     {
         var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -108,35 +166,7 @@ public class Game : MonoBehaviour
             return;
         }
         var index = x + z * xsize;
-        if (tiles.TryGetValue(index, out var tile))
-        {
-            if (type == GameTileType.RedDestination)
-            {
-                redDestinationIndex = -1;
-            }
-            else if (type == GameTileType.BlueDestination)
-            {
-                blueDestinationIndex = -1;
-            }
-            tile.Clear();
-            tiles.Remove(index);
-            return;
-        }
-    }
-            
-
-&& board.GetTileGrid(hit.point, out int x, out int z)
-            board.RemoveTile(x, z);
-            if (type == GameTileType.RedDestination)
-            {
-            }
-
-            board.ToggleTile(type, hit.point);
-            if (type == GameTileType.RedDestination)
-            {
-                redDestinationPos = hit.point;
-                redDestinationChange = true;
-            }
-        }
+        RemoveTile(index);
+        AddTile(index, type);
     }
 }
