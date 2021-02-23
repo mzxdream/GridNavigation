@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GridPathNode
+class GridPathNode
 {
     private enum Mask { TestBlocked = 1, Blocked = 2, Closed = 4 };
 
@@ -42,7 +42,7 @@ public class GridPathNode
     }
 }
 
-public class GridPathPriorityQueue
+class GridPathPriorityQueue
 {
     private GridPathNode[] nodeHeap;
     private int count;

@@ -1,15 +1,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+class GridTileInfo
+{
+    public int index;
+    public bool isBlocked;
+    public List<GridMoveAgent> agents = new List<GridMoveAgent>();
+}
+
 public class GridMoveManager
 {
-    class TileInfo
-    {
-        public int index;
-        public bool isBlocked;
-        public List<GridMoveAgent> agents = new List<GridMoveAgent>();
-    }
-
     private Vector3 bmin;
     private Vector3 bmax;
     private int xsize;
@@ -17,7 +17,7 @@ public class GridMoveManager
     private float tileSize;
     private int gameSpeed;
 
-    private TileInfo[] tiles;
+    private GridTileInfo[] tiles;
     private List<GridMoveAgent> agents;
     private GridPathFinder pathFinder;
 
@@ -35,17 +35,13 @@ public class GridMoveManager
         xsize = (int)((bmax.x - bmin.x) / tileSize);
         zsize = (int)((bmax.z - bmin.z) / tileSize);
 
-        tiles = new TileInfo[xsize * zsize];
+        tiles = new GridTileInfo[xsize * zsize];
         for (int z = 0; z < zsize; z++)
         {
             for (int x = 0; x < xsize; x++)
             {
                 var index = x + z * xsize;
-                tiles[index] = new TileInfo
-                {
-                    index = index,
-                    isBlocked = false,
-                };
+                tiles[index] = new GridTileInfo { index = index, isBlocked = false, };
             }
         }
         this.agents = new List<GridMoveAgent>();
