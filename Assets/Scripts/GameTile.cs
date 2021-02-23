@@ -11,23 +11,13 @@ public class GameTile
     public GameTileType Type { get => type; }
     public int Index { get => index; }
 
-    public GameTile(GameTileAsset prefab, GameTileType type, int index)
+    public GameTile(GameTileAsset prefab, GameTileType type, int index, Vector3 position, float tileSize)
     {
-        this.asset = GameObject.Instantiate(prefab);
+        asset = GameObject.Instantiate(prefab);
         this.type = type;
         this.index = index;
-    }
-    public void SetPosition(Vector3 position)
-    {
-        asset.SetPosition(position);
-    }
-    public void SetForward(Vector3 forward)
-    {
-        asset.SetForward(forward);
-    }
-    public void SetScale(Vector3 scale)
-    {
-        asset.SetScale(scale);
+        asset.transform.position = position;
+        asset.transform.localScale = new Vector3(tileSize, tileSize, tileSize);
     }
     public void Clear()
     {
