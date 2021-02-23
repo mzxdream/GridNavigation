@@ -14,9 +14,9 @@ public class Character
     {
         asset = GameObject.Instantiate(prefab);
         this.type = type;
-        asset.transform.position = position;
-        asset.transform.forward = forward;
-        asset.transform.localScale = new Vector3(radius, radius, radius);
+        asset.SetPosition(position);
+        asset.SetForward(forward);
+        asset.SetScale(new Vector3(radius, radius, radius));
         var param = new GridMoveAgentParam
         {
             teamID = 1,

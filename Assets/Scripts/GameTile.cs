@@ -16,8 +16,8 @@ public class GameTile
         asset = GameObject.Instantiate(prefab);
         this.type = type;
         this.index = index;
-        asset.transform.position = position;
-        asset.transform.localScale = new Vector3(tileSize, tileSize, tileSize);
+        asset.SetPosition(position);
+        asset.SetScale(new Vector3(tileSize, tileSize, tileSize));
     }
     public void Clear()
     {
