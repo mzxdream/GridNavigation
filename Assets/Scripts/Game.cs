@@ -83,7 +83,7 @@ public class Game : MonoBehaviour
                     prefab = redCharacterPrefab;
                     break;
                 case CharacterType.Blue:
-                    prefab = Instantiate(blueCharacterPrefab);
+                    prefab = blueCharacterPrefab;
                     break;
                 default:
                     Debug.Assert(false, "unsupported character type:" + type);
