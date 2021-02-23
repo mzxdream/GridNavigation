@@ -4,19 +4,19 @@ public enum CharacterType { Red, Blue }
 
 public class Character
 {
-    private readonly CharacterType type;
     private readonly CharacterContent content;
+    private readonly CharacterType type;
     private GridMoveAgent moveAgent;
 
     public CharacterType Type { get => type; }
 
-    public Character(Game game, CharacterType type, Vector3 position, Vector3 forward, float radius)
+    public Character(CharacterContent content, CharacterType type, Vector3 position, Vector3 forward, GridMoveManager moveManager)
     {
+        this.content = content;
         this.type = type;
-        //content = ;
         content.transform.position = position;
         content.transform.forward = forward;
-        content.transform.localScale = new Vector3(radius, radius, radius);
+        content.transform.localScale = new Vector3(0.6f, 0.6f, 0.6f);
         var param = new GridMoveAgentParam
         {
             teamID = 1,
@@ -25,7 +25,7 @@ public class Character
             maxSpeed = 1.0f,
             isPushResistant = true,
         };
-        //moveAgent = moveManager.CreateAgent(position, forward, param);
+        moveAgent = moveManager.CreateAgent(position, forward, param);
     }
     public void Clear()
     {

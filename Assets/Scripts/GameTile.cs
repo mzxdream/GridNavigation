@@ -4,18 +4,18 @@ public enum GameTileType { Wall, RedDestination, BlueDestination }
 
 public class GameTile
 {
-    private readonly int index;
-    private readonly GameTileType type;
     private readonly GameTileContent content;
+    private readonly GameTileType type;
+    private readonly int index;
 
-    public int Index { get => index; }
     public GameTileType Type { get => type; }
+    public int Index { get => index; }
 
-    public GameTile(int index, GameTileType type, GameTileContentFactory contentFactory)
+    public GameTile(GameTileContent content, GameTileType type, int index)
     {
-        this.index = index;
+        this.content = content;
         this.type = type;
-        this.content = contentFactory.Get(type);
+        this.index = index;
     }
     public void SetPosition(Vector3 position)
     {
@@ -25,8 +25,12 @@ public class GameTile
     {
         content.SetForward(forward);
     }
-    public void Recycle()
+    public void SetScale(Vector3 scale)
     {
-        content.Recycle();
+        content.SetScale(scale);
+    }
+    public void Clear()
+    {
+        content.Clear();
     }
 }

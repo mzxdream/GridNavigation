@@ -2,10 +2,6 @@ using UnityEngine;
 
 public class GameTileContent : MonoBehaviour
 {
-    public void Clear()
-    {
-        Destroy(this.gameObject);
-    }
     public void SetPosition(Vector3 position)
     {
         transform.position = position;
@@ -14,8 +10,12 @@ public class GameTileContent : MonoBehaviour
     {
         transform.forward = forward;
     }
-    public void SetScale(float scale)
+    public void SetScale(Vector3 scale)
     {
-        transform.localScale = new Vector3(scale, scale, scale);
+        transform.localScale = scale;
+    }
+    public void Clear()
+    {
+        Destroy(this.gameObject);
     }
 }
