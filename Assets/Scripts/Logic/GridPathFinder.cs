@@ -131,95 +131,38 @@ class GridPathPriorityQueue
 
 public class GridPath
 {
-    public class Node
-    {
-        private readonly int x;
-        private readonly int z;
-        private Node prev;
-        private Node next;
-
-        public int X { get => x; }
-        public int Z { get => z; }
-        public Node Prev { get => prev; }
-        public Node Next { get => next; }
-
-        public Node(int x, int z)
-        {
-            this.x = x;
-            this.z = z;
-            prev = this;
-            next = this;
-        }
-        public void Insert(Node p, Node n)
-        {
-            Debug.Assert(prev == this && next == this);
-            p.next = this;
-            n.prev = this;
-            prev = p;
-            next = n;
-        }
-        public void Erase()
-        {
-            prev.next = next;
-            next.prev = prev;
-            prev = this;
-            next = this;
-        }
-    }
-    private Node head = new Node(-1, -1);
-
-    public Node Head { get => head; }
-    public Node goalNode;
     public Vector3 goalPos;
-
-    public void PushFront(Node n)
-    {
-        n.Insert(head, head.Next);
-    }
-    public void PushBack(Node n)
-    {
-        n.Insert(head.Prev, head);
-    }
+    public List<Vector3> positions = new List<Vector3>();
 }
 
 public class GridPathFinder
 {
     private int[] neighbors = { 0, 1, 0, -1, 1, 0, -1, 0, -1, 1, 1, 1, -1, -1, 1, -1 };
-    private int gridX;
-    private int gridZ;
+    private GridMoveManager moveManager;
     private GridPathNode[] nodes;
     private GridPathPriorityQueue openQueue;
     private List<GridPathNode> closedQueue;
 
-    public GridPathFinder(int gridX, int gridZ)
+    public GridPathFinder(GridMoveManager moveManager)
     {
-        this.gridX = gridX;
-        this.gridZ = gridZ;
-        this.nodes = new GridPathNode[this.gridX * this.gridZ];
-        for (int z = 0; z < gridZ; z++)
+        this.moveManager = moveManager;
+        nodes = new GridPathNode[moveManager.XSize * moveManager.ZSize];
+        for (int z = 0; z < moveManager.ZSize; z++)
         {
-            for (int x = 0; x < gridX; x++)
+            for (int x = 0; x < moveManager.XSize; x++)
             {
-                nodes[x + z * gridX] = new GridPathNode(x, z);
+                var index = x + z * moveManager.XSize;
+                nodes[index] = new GridPathNode(x, z);
             }
         }
-        this.openQueue = new GridPathPriorityQueue();
-        this.closedQueue = new List<GridPathNode>();
+        openQueue = new GridPathPriorityQueue();
+        closedQueue = new List<GridPathNode>();
     }
-    private static int CalcDistance(int fromX, int fromZ, int toX, int toZ)
+    private static int CalcDistanceApproximately(int fromX, int fromZ, int toX, int toZ)
     {
         int x = Mathf.Abs(toX - fromX);
         int z = Mathf.Abs(toZ - fromZ);
         return x > z ? 14 * z + 10 * (x - z) : 14 * x + 10 * (z - x);
-    }
-    private bool IsNodeBlocked(GridPathNode node, Func<int, int, bool> checkBlockedFunc)
-    {
-        if (!node.HasTestBlocked)
-        {
-            node.HasTestBlocked = true;
-            node.IsBlocked = checkBlockedFunc(node.X, node.Z);
-        }
-        return node.IsBlocked;
     }
     private bool IsNeighborWalkable(int unitSize, GridPathNode snode, GridPathNode enode, Func<int, int, bool> checkBlockedFunc)
     {
