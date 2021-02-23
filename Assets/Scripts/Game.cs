@@ -71,15 +71,25 @@ public class Game : MonoBehaviour
     {
         moveManager.Update();
     }
-
-
-
     void AddCharacter(CharacterType type)
     {
         var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
         {
-            var character = new Character(hit.point, Vector3.forward, type, characterContentFactory, moveManager);
+            CharacterContent content = null;
+            switch (type)
+            {
+                case CharacterType.Red:
+                    content = Instantiate(redCharacterContent);
+                    break;
+                case CharacterType.Blue:
+                    content = Instantiate(blueCharacterContent);
+                    break;
+                default:
+                    Debug.Assert(false, "unsupported character type:" + type);
+                    break;
+            }
+            var character = new Character(content, type, hit.point, Vector3.forward, moveManager);
             characters.Add(character);
         }
     }
@@ -110,7 +120,7 @@ public class Game : MonoBehaviour
                 {
                     blueDestinationIndex = -1;
                 }
-                tile.Recycle();
+                tile.Clear();
                 tiles.Remove(index);
                 return;
             }
