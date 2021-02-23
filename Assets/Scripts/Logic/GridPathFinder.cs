@@ -166,18 +166,18 @@ public class GridPathFinder
         int z = Mathf.Abs(toZ - fromZ);
         return x > z ? 14 * z + 10 * (x - z) : 14 * x + 10 * (z - x);
     }
-    private bool IsNeighborWalkable(int unitSize, GridPathNode snode, GridPathNode enode)
+    private bool IsNeighborWalkable(GridMoveAgent agent, GridPathNode snode, GridPathNode enode)
     {
-        Debug.Assert(unitSize > 0 && Mathf.Abs(snode.X - enode.X) <= 1 && Mathf.Abs(snode.Z - enode.Z) <= 1);
-        var offset = unitSize / 2;
+        Debug.Assert(Mathf.Abs(snode.X - enode.X) <= 1 && Mathf.Abs(snode.Z - enode.Z) <= 1);
+        var offset = agent.UnitSize / 2;
         if (snode.Z == enode.Z) //Horizontal
         {
             int x = enode.X + offset * (enode.X - snode.X);
-            if (x < 0 || x >= gridX)
+            if (x < 0 || x >= moveManager.XSize)
             {
                 return false;
             }
-            for (int i = 0; i < unitSize; i++)
+            for (int i = 0; i < agent.UnitSize; i++)
             {
                 if (IsNodeBlocked(nodes[x + (enode.Z - offset + i) * gridX], checkBlockedFunc))
                 {
@@ -292,58 +292,57 @@ public class GridPathFinder
         openQueue.Push(startNode);
         for (int i = 0; i < searchMaxNodes; i++)
         {
-            var n = openQueue.Pop();
-            if (n == null)
+            var node = openQueue.Pop();
+            if (node == null)
             {
                 return false;
             }
-            if (CalcDistanceApproximately(n.X, n.Z, goalX, goalZ) <= goalDistance)
+            if (CalcDistanceApproximately(node.X, node.Z, goalX, goalZ) <= goalDistance)
             {
                 var nodes = new List<GridPathNode>();
-                while (n != startNode)
+                while (node != startNode)
                 {
-                    nodes.Add(n);
-                    n = n.Parent;
+                    nodes.Add(node);
+                    node = node.Parent;
                 }
                 nodes.Add(startNode);
                 path.positions.Clear();
                 for (int t = nodes.Count - 1; t >= 0; t--)
                 {
-                    n = nodes[t];
+                    var n = nodes[t];
                     path.positions.Add(moveManager.GetTilePos(n.X, n.Z));
                 }
                 return true;
             }
             for (int j = 0; j < neighbors.Length; j += 2)
             {
-                var x = n.X + neighbors[j];
-                var z = n.Z + neighbors[j + 1];
-                if (x < 0 || x >= moveManager || z < 0 || z >= gridZ)
+                var x = node.X + neighbors[j];
+                var z = node.Z + neighbors[j + 1];
+                if (x < 0 || x >= moveManager.XSize || z < 0 || z >= moveManager.ZSize)
                 {
                     continue;
                 }
-                var n = nodes[x + z * gridX];
+                var n = nodes[x + z * moveManager.XSize];
                 if (n.IsClosed)
                 {
                     continue;
                 }
                 n.IsClosed = true;
                 closedQueue.Add(n);
-                if (searchRadius > 0 && CalcDistance(startX, startZ, x, z) > searchRadius * 14)
+                if (CalcDistanceApproximately(startX, startZ, x, z) > searchDistance)
                 {
                     continue;
                 }
-                if (!IsNeighborWalkable(unitSize, node, n, checkBlockedFunc))
+                if (!IsNeighborWalkable(agent, node, n))
                 {
                     continue;
                 }
-                n.GCost = node.GCost + CalcDistance(node.X, node.Z, x, z);
-                n.HCost = CalcDistance(x, z, goalX, goalZ);
+                n.GCost = node.GCost + CalcDistanceApproximately(node.X, node.Z, x, z);
+                n.HCost = CalcDistanceApproximately(x, z, goalX, goalZ);
                 n.Parent = node;
                 openQueue.Push(n);
             }
-            node = openQueue.Pop();
         }
-        return null;
+        return false;
     }
 }

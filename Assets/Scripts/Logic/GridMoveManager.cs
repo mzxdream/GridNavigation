@@ -103,6 +103,41 @@ public class GridMoveManager
     {
         return GetTilePos(x + z * xsize);
     }
+    public bool IsTileBlocked(GridMoveAgent agent, int x, int z, bool checkAgents)
+    {
+        var offset = agent.UnitSize / 2;
+        int xmin = x - offset;
+        int xmax = x + offset;
+        int zmin = z - offset;
+        int zmax = z + offset;
+        if (xmin < 0 || xmin >= xsize || zmin < 0 || z)
+        {
+        }
+    }
+    public bool IsTileBlocked(GridMoveAgent agent, Vector3 pos, bool checkAgents)
+    {
+        GetGirdXZ(pos, out int x, out int z);
+        if (x < 0 || x >= xsize || z < 0 || z >= zsize)
+        {
+            return true;
+        }
+        var grid = grids[x + z * xsize];
+        if (grid.isBlocked)
+        {
+            return true;
+        }
+        if (checkAgents)
+        {
+            foreach (var a in grid.agents)
+            {
+                if (a.IsBlockedOther(agent))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
     public GridPath FindPath(GridMoveAgent agent, Vector3 goalPos, float goalRadius)
     {
         GetGirdXZ(agent.Pos, out int startX, out int startZ);
@@ -145,30 +180,7 @@ public class GridMoveManager
         return path.goalPos;
         //return GetGridPos(path.goalNode.X, path.goalNode.Z);
     }
-    public bool IsGridBlocked(GridMoveAgent agent, Vector3 pos, bool checkAgents)
-    {
-        GetGirdXZ(pos, out int x, out int z);
-        if (x < 0 || x >= xsize || z < 0 || z >= zsize)
-        {
-            return true;
-        }
-        var grid = grids[x + z * xsize];
-        if (grid.isBlocked)
-        {
-            return true;
-        }
-        if (checkAgents)
-        {
-            foreach (var a in grid.agents)
-            {
-                if (a.IsBlockedOther(agent))
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+
     public bool IsGridBlocked(int x, int z)
     {
         if (x < 0 || x >= xsize || z < 0 || z >= zsize)
