@@ -229,7 +229,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4430799067832463752}
-  - component: {fileID: 4430799067832463753}
+  - component: {fileID: 5380754720558634589}
   m_Layer: 0
   m_Name: RedCharacter
   m_TagString: Untagged
@@ -252,7 +252,7 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4430799067832463753
+--- !u!114 &5380754720558634589
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -261,7 +261,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 4430799067832463755}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5b639f8905c7fcb4a81a1a90b18436bd, type: 3}
+  m_Script: {fileID: 11500000, guid: 517339584b2895d4d98b67d2189fcceb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  model: {fileID: 3233566457015067782}

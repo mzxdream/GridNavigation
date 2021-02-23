@@ -121,53 +121,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &434151927
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 434151928}
-  - component: {fileID: 434151929}
-  m_Layer: 0
-  m_Name: GameBoard
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &434151928
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 434151927}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children:
-  - {fileID: 978600935}
-  m_Father: {fileID: 1759213330}
-  m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &434151929
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 434151927}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a47c31775b5d6c541bc6bbb25f582710, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ground: {fileID: 978600935}
-  gridTexture: {fileID: 2800000, guid: 1847a973a20a9ad4e9d15d05965d1b1e, type: 3}
-  tileFactory: {fileID: 11400000, guid: bd4a0eee66dd16c4dbd2e2c7a57b5b7a, type: 2}
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -369,11 +322,11 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 978600934}
-  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalRotation: {x: 0.7071068, y: -0, z: -0, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
-  m_Father: {fileID: 434151928}
+  m_Father: {fileID: 1759213330}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
 --- !u!64 &978600936
@@ -465,7 +418,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
-  - {fileID: 434151928}
+  - {fileID: 978600935}
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -481,8 +434,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 228bace5d1114154d868745b603bd07a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gridX: 128
-  gridZ: 128
-  gridSize: 0.2
-  board: {fileID: 434151929}
-  characterFactory: {fileID: 11400000, guid: 49c7cfe99538f2142b8341702e43c511, type: 2}
+  ground: {fileID: 978600935}
+  tileTexture: {fileID: 2800000, guid: 1847a973a20a9ad4e9d15d05965d1b1e, type: 3}
+  wallPrefab: {fileID: 3822899588821314118, guid: 195a1f7e12cbbce48a82e0041794bca1,
+    type: 3}
+  redDestinationPrefab: {fileID: 2794426934202290912, guid: cc8a88cb3d1756443bcce37349e39ae7,
+    type: 3}
+  blueDestinationPrefab: {fileID: 3237148275240825044, guid: 4e02893ed76155c4199ff3f48f5c274e,
+    type: 3}
+  redCharacterPrefab: {fileID: 5380754720558634589, guid: 3a3fd16e941f311448dcaa7f9297e3f5,
+    type: 3}
+  blueCharacterPrefab: {fileID: 539214967020507659, guid: 27afe6d2f6d618942b6d5f6b3b84bf2a,
+    type: 3}
+  xsize: 128
+  zsize: 128
+  tileSize: 0.2

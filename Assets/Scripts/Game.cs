@@ -145,9 +145,7 @@ public class Game : MonoBehaviour
         {
             return false;
         }
-        var tile = new GameTile(prefab, type, index);
-        tile.SetPosition(GetTilePos(index));
-        tile.SetScale(new Vector3(tileSize, tileSize, tileSize));
+        var tile = new GameTile(prefab, type, index, GetTilePos(index), tileSize);
         tiles.Add(index, tile);
         return true;
     }
