@@ -144,6 +144,7 @@ public class GridPathFinder
     private GridPathNode[] nodes;
     private GridPathPriorityQueue openQueue;
     private List<GridPathNode> closedQueue;
+    private List<GridPathNode> testBlockQueue;
 
     public GridPathFinder(GridMoveManager moveManager)
     {
@@ -159,12 +160,23 @@ public class GridPathFinder
         }
         openQueue = new GridPathPriorityQueue();
         closedQueue = new List<GridPathNode>();
+        testBlockQueue = new List<GridPathNode>();
     }
     private static int CalcDistanceApproximately(int fromX, int fromZ, int toX, int toZ)
     {
         int x = Mathf.Abs(toX - fromX);
         int z = Mathf.Abs(toZ - fromZ);
         return x > z ? 14 * z + 10 * (x - z) : 14 * x + 10 * (z - x);
+    }
+    private bool IsNodeBlocked(GridMoveAgent agent, GridPathNode node)
+    {
+        if (!node.HasTestBlocked)
+        {
+            node.HasTestBlocked = true;
+            node.IsBlocked = checkBlockedFunc(node.X, node.Z);
+            testBlockQueue.Add(node);
+        }
+        return node.IsBlocked;
     }
     private bool IsNeighborWalkable(GridMoveAgent agent, GridPathNode snode, GridPathNode enode)
     {
@@ -275,10 +287,13 @@ public class GridPathFinder
         openQueue.Clear();
         foreach (var n in closedQueue)
         {
-            n.HasTestBlocked = false;
             n.IsClosed = false;
         }
         closedQueue.Clear();
+        foreach (var n in testBlockQueue)
+        {
+            n.HasTestBlocked = false;
+        }
 
         moveManager.GetTileXZ(path.startPos, out var startX, out var startZ);
         moveManager.GetTileXZ(path.goalPos, out var goalX, out var goalZ);

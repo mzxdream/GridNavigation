@@ -110,9 +110,32 @@ public class GridMoveManager
         int xmax = x + offset;
         int zmin = z - offset;
         int zmax = z + offset;
-        if (xmin < 0 || xmin >= xsize || zmin < 0 || z)
+        if (xmin < 0 || xmax >= xsize || zmin < 0 || zmax >= zsize)
         {
+            return true;
         }
+        for (int tz = zmin; tz <= zmax; tz++)
+        {
+            for (int tx = xmin; tx <= xmax; tx++)
+            {
+                var tile = tiles[tx + tz * xsize];
+                if (tile.isBlocked)
+                {
+                    return true;
+                }
+                if (checkAgents)
+                {
+                    foreach (var a in tile.agents)
+                    {
+                        if (a.IsBlock(agent))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return true;
     }
     public bool IsTileBlocked(GridMoveAgent agent, Vector3 pos, bool checkAgents)
     {
