@@ -269,7 +269,7 @@ public class GridPathFinder
         }
         return true;
     }
-    public bool Search(GridMoveAgent agent, float searchSize, int searchMaxNodes, ref GridPath path)
+    public bool Search(GridMoveAgent agent, float searchSize, float searchExtraSize, int searchMaxNodes, ref GridPath path)
     {
         Debug.Assert(searchSize > 0 && searchMaxNodes > 0);
         openQueue.Clear();
@@ -280,39 +280,45 @@ public class GridPathFinder
         }
         closedQueue.Clear();
 
-        path.startPos = moveManager.ClampInBounds(path.startPos);
-        path.goalPos = moveManager.ClampInBounds(path.goalPos);
         moveManager.GetTileXZ(path.startPos, out var startX, out var startZ);
-        moveManager.GetTileXZ(path.startPos, out var goalX, out var goalZ);
+        moveManager.GetTileXZ(path.goalPos, out var goalX, out var goalZ);
+        int goalDistance = (int)(path.goalRadius / moveManager.TileSize) * 10;
+        int searchDistance = (int)(searchSize * CalcDistanceApproximately(startX, startZ, goalX, goalZ)) + (int)(searchExtraSize / moveManager.TileSize) * 10;
 
-        int goalRadiusNodes = (int)(path.goalRadius / moveManager.TileSize);
-        int searchRadiusNodes = (int)(searchSize * CalcDistanceApproximately(startX, startZ, goalX, goalZ));
-
-
-
-        var node = nodes[startX + startZ * gridX];
-        node.IsClosed = true;
-        closedQueue.Add(node);
-        for (int i = 0; i < searchMaxNodes && node != null; i++)
+        var startIndex = startX + startZ * moveManager.XSize;
+        var startNode = nodes[startIndex];
+        startNode.IsClosed = true;
+        closedQueue.Add(startNode);
+        openQueue.Push(startNode);
+        for (int i = 0; i < searchMaxNodes; i++)
         {
-            if (CalcDistance(node.X, node.Z, goalX, goalZ) <= goalRadius * 14)
+            var n = openQueue.Pop();
+            if (n == null)
             {
-                var snode = nodes[startX + startZ * gridX];
-                var path = new GridPath();
-                path.goalNode = new GridPath.Node(goalX, goalZ);
-                while (node != snode)
+                return false;
+            }
+            if (CalcDistanceApproximately(n.X, n.Z, goalX, goalZ) <= goalDistance)
+            {
+                var nodes = new List<GridPathNode>();
+                while (n != startNode)
                 {
-                    path.PushFront(new GridPath.Node(node.X, node.Z));
-                    node = node.Parent;
+                    nodes.Add(n);
+                    n = n.Parent;
                 }
-                path.PushFront(new GridPath.Node(startX, startZ));
-                return path;
+                nodes.Add(startNode);
+                path.positions.Clear();
+                for (int t = nodes.Count - 1; t >= 0; t--)
+                {
+                    n = nodes[t];
+                    path.positions.Add(moveManager.GetTilePos(n.X, n.Z));
+                }
+                return true;
             }
             for (int j = 0; j < neighbors.Length; j += 2)
             {
-                var x = node.X + neighbors[j];
-                var z = node.Z + neighbors[j + 1];
-                if (x < 0 || x >= gridX || z < 0 || z >= gridZ)
+                var x = n.X + neighbors[j];
+                var z = n.Z + neighbors[j + 1];
+                if (x < 0 || x >= moveManager || z < 0 || z >= gridZ)
                 {
                     continue;
                 }
