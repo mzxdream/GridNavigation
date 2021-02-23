@@ -89,7 +89,7 @@ public class Game : MonoBehaviour
                     Debug.Assert(false, "unsupported character type:" + type);
                     break;
             }
-            var character = new Character(content, type, hit.point, Vector3.forward, moveManager);
+            var character = new Character(content, type, hit.point, Vector3.forward, 0.6f, moveManager);
             characters.Add(character);
         }
     }
@@ -110,20 +110,17 @@ public class Game : MonoBehaviour
         var index = x + z * xsize;
         if (tiles.TryGetValue(index, out var tile))
         {
-            if (tile.Type == type)
+            if (type == GameTileType.RedDestination)
             {
-                if (type == GameTileType.RedDestination)
-                {
-                    redDestinationIndex = -1;
-                }
-                else if (type == GameTileType.BlueDestination)
-                {
-                    blueDestinationIndex = -1;
-                }
-                tile.Clear();
-                tiles.Remove(index);
-                return;
+                redDestinationIndex = -1;
             }
+            else if (type == GameTileType.BlueDestination)
+            {
+                blueDestinationIndex = -1;
+            }
+            tile.Clear();
+            tiles.Remove(index);
+            return;
         }
     }
             

@@ -10,13 +10,13 @@ public class Character
 
     public CharacterType Type { get => type; }
 
-    public Character(CharacterContent content, CharacterType type, Vector3 position, Vector3 forward, GridMoveManager moveManager)
+    public Character(CharacterContent content, CharacterType type, Vector3 position, Vector3 forward, float radius, GridMoveManager moveManager)
     {
         this.content = content;
         this.type = type;
         content.transform.position = position;
         content.transform.forward = forward;
-        content.transform.localScale = new Vector3(0.6f, 0.6f, 0.6f);
+        content.transform.localScale = new Vector3(radius, radius, radius);
         var param = new GridMoveAgentParam
         {
             teamID = 1,
