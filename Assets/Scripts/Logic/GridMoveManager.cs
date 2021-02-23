@@ -3,56 +3,53 @@ using UnityEngine;
 
 public class GridMoveManager
 {
-    private class Grid
+    class TileInfo
     {
-        public readonly int x;
-        public readonly int z;
+        public int index;
         public bool isBlocked;
         public List<GridMoveAgent> agents = new List<GridMoveAgent>();
-
-        public Grid(int x, int z)
-        {
-            this.x = x;
-            this.z = z;
-        }
     }
 
-    private Vector3 bmin = Vector3.zero;
-    private Vector3 bmax = Vector3.zero;
-    private int gridX = 11;
-    private int gridZ = 11;
-    private float gridSize = 0.2f;
+    private Vector3 bmin;
+    private Vector3 bmax;
+    private int xsize;
+    private int zsize;
+    private float tileSize;
+    private int gameSpeed;
 
-    private Grid[] grids;
-    private List<GridMoveAgent> agents; //TODO optimization
-    private Dictionary<int, int> agentGridIndexes = new Dictionary<int, int>();
+    private TileInfo[] tiles;
+    private List<GridMoveAgent> agents;
     private GridPathFinder pathFinder;
 
-    public float GridSize { get => gridSize; }
-    public float GameSpeed { get => 30; }
+    public int XSize { get => xsize; }
+    public int ZSize { get => zsize; }
+    public float TileSize { get => tileSize; }
+    public float PixelSize { get => tileSize / 8.0f; }
+    public int GameSpeed { get => gameSpeed; }
 
-    public GridMoveManager()
+    public bool Init(Vector3 bmin, Vector3 bmax, float tileSize, int gameSpeed, int maxAgents)
     {
-    }
-    public bool Init(Vector3 pos, int gridX, int gridZ, float gridSize, int maxAgents)
-    {
-        var offset = new Vector3(gridX * gridSize / 2, 0, gridZ * gridSize / 2);
-        this.bmin = pos - offset;
-        this.bmax = pos + offset;
-        this.gridX = gridX;
-        this.gridZ = gridZ;
-        this.gridSize = gridSize;
+        this.bmin = bmin;
+        this.bmax = bmax;
+        this.tileSize = tileSize;
+        xsize = (int)((bmax.x - bmin.x) / tileSize);
+        zsize = (int)((bmax.z - bmin.z) / tileSize);
 
-        this.grids = new Grid[gridX * gridZ];
-        for (int z = 0; z < gridZ; z++)
+        tiles = new TileInfo[xsize * zsize];
+        for (int z = 0; z < zsize; z++)
         {
-            for (int x = 0; x < gridX; x++)
+            for (int x = 0; x < xsize; x++)
             {
-                this.grids[x + z * gridX] = new Grid(x, z);
+                var index = x + z * xsize;
+                tiles[index] = new TileInfo
+                {
+                    index = index,
+                    isBlocked = false,
+                };
             }
         }
         this.agents = new List<GridMoveAgent>();
-        this.pathFinder = new GridPathFinder(gridX, gridZ);
+        this.pathFinder = new GridPathFinder(this);
         return true;
     }
     public void Clear()
@@ -88,35 +85,35 @@ public class GridMoveManager
     }
     public void GetGirdXZ(Vector3 pos, out int x, out int z)
     {
-        x = (int)((pos.x - bmin.x) / gridSize);
-        z = (int)((pos.z - bmin.z) / gridSize);
-        x = Mathf.Clamp(x, 0, gridX - 1);
-        z = Mathf.Clamp(z, 0, gridZ - 1);
+        x = (int)((pos.x - bmin.x) / tileSize);
+        z = (int)((pos.z - bmin.z) / tileSize);
+        x = Mathf.Clamp(x, 0, xsize - 1);
+        z = Mathf.Clamp(z, 0, zsize - 1);
     }
     public int GetGridIndex(Vector3 pos)
     {
-        int x = (int)((pos.x - bmin.x) / gridSize);
-        int z = (int)((pos.z - bmin.z) / gridSize);
-        return Mathf.Clamp(x, 0, gridX - 1) + Mathf.Clamp(z, 0, gridZ - 1) * gridX;
+        int x = (int)((pos.x - bmin.x) / tileSize);
+        int z = (int)((pos.z - bmin.z) / tileSize);
+        return Mathf.Clamp(x, 0, xsize - 1) + Mathf.Clamp(z, 0, zsize - 1) * xsize;
     }
     public Vector3 GetGridPos(int index)
     {
-        Debug.Assert(index >= 0 && index < gridX * gridZ);
-        int z = index / gridX;
-        int x = index - z * gridX;
-        return new Vector3(bmin.x + (x + 0.5f) * gridSize, 0, bmin.z + (z + 0.5f) * gridSize);
+        Debug.Assert(index >= 0 && index < xsize * zsize);
+        int z = index / xsize;
+        int x = index - z * xsize;
+        return new Vector3(bmin.x + (x + 0.5f) * tileSize, 0, bmin.z + (z + 0.5f) * tileSize);
     }
     public Vector3 GetGridPos(int x, int z)
     {
-        return GetGridPos(x + z * gridX);
+        return GetGridPos(x + z * xsize);
     }
     public GridPath FindPath(GridMoveAgent agent, Vector3 goalPos, float goalRadius)
     {
         GetGirdXZ(agent.Pos, out int startX, out int startZ);
         GetGirdXZ(goalPos, out int goalX, out int goalZ);
-        var path = pathFinder.Search(agent.UnitSize, startX, startZ, goalX, goalZ, (int)(goalRadius / gridSize), 8192, 8192, (int x, int z) =>
+        var path = pathFinder.Search(agent.UnitSize, startX, startZ, goalX, goalZ, (int)(goalRadius / tileSize), 8192, 8192, (int x, int z) =>
         {
-            Grid grid = grids[x + z * gridX];
+            Grid grid = grids[x + z * xsize];
             if (grid.isBlocked)
             {
                 return true;
@@ -155,11 +152,11 @@ public class GridMoveManager
     public bool IsGridBlocked(GridMoveAgent agent, Vector3 pos, bool checkAgents)
     {
         GetGirdXZ(pos, out int x, out int z);
-        if (x < 0 || x >= gridX || z < 0 || z >= gridZ)
+        if (x < 0 || x >= xsize || z < 0 || z >= zsize)
         {
             return true;
         }
-        var grid = grids[x + z * gridX];
+        var grid = grids[x + z * xsize];
         if (grid.isBlocked)
         {
             return true;
@@ -178,18 +175,18 @@ public class GridMoveManager
     }
     public bool IsGridBlocked(int x, int z)
     {
-        if (x < 0 || x >= gridX || z < 0 || z >= gridZ)
+        if (x < 0 || x >= xsize || z < 0 || z >= zsize)
         {
             return true;
         }
-        var grid = grids[x + z * gridX];
+        var grid = grids[x + z * xsize];
         return grid.isBlocked;
     }
     public bool TestMoveRange(GridMoveAgent agent, Vector3 rmin, Vector3 rmax, bool checkAgents)
     {
         GetGirdXZ(rmin, out int xmin, out int zmin);
         GetGirdXZ(rmax, out int xmax, out int zmax);
-        if (xmin < 0 || xmax >= gridX || zmin < 0 || zmax >= gridZ)
+        if (xmin < 0 || xmax >= xsize || zmin < 0 || zmax >= zsize)
         {
             return false;
         }
@@ -197,7 +194,7 @@ public class GridMoveManager
         {
             for (int x = xmin; x <= xmax; x++)
             {
-                var grid = grids[x + z * gridX];
+                var grid = grids[x + z * xsize];
                 if (grid.isBlocked)
                 {
                     return false;
@@ -233,16 +230,16 @@ public class GridMoveManager
     {
         if (agentGridIndexes.TryGetValue(agent.ID, out int oldIndex))
         {
-            int oldX = oldIndex % gridX, oldZ = oldIndex / gridX;
+            int oldX = oldIndex % xsize, oldZ = oldIndex / xsize;
             int xmin = Mathf.Max(oldX - agent.UnitSize / 2, 0);
-            int xmax = Mathf.Min(oldX + agent.UnitSize / 2, gridX - 1);
+            int xmax = Mathf.Min(oldX + agent.UnitSize / 2, xsize - 1);
             int zmin = Mathf.Max(oldZ - agent.UnitSize / 2, 0);
-            int zmax = Mathf.Min(oldZ + agent.UnitSize / 2, gridZ - 1);
+            int zmax = Mathf.Min(oldZ + agent.UnitSize / 2, zsize - 1);
             for (int z = zmin; z <= zmax; z++)
             {
                 for (int x = xmin; x <= xmax; x++)
                 {
-                    var grid = grids[x + z * gridX];
+                    var grid = grids[x + z * xsize];
                     grid.agents.Remove(agent);
                 }
             }
@@ -251,16 +248,16 @@ public class GridMoveManager
         {
             var newIndex = GetGridIndex(pos);
             agentGridIndexes.Add(agent.ID, newIndex);
-            int newX = newIndex % gridX, newZ = newIndex / gridX;
+            int newX = newIndex % xsize, newZ = newIndex / xsize;
             int xmin = Mathf.Max(newX - agent.UnitSize / 2, 0);
-            int xmax = Mathf.Min(newX + agent.UnitSize / 2, gridX - 1);
+            int xmax = Mathf.Min(newX + agent.UnitSize / 2, xsize - 1);
             int zmin = Mathf.Max(newZ - agent.UnitSize / 2, 0);
-            int zmax = Mathf.Min(newZ + agent.UnitSize / 2, gridZ - 1);
+            int zmax = Mathf.Min(newZ + agent.UnitSize / 2, zsize - 1);
             for (int z = zmin; z <= zmax; z++)
             {
                 for (int x = xmin; x <= xmax; x++)
                 {
-                    var grid = grids[x + z * gridX];
+                    var grid = grids[x + z * xsize];
                     grid.agents.Add(agent);
                 }
             }

@@ -34,8 +34,9 @@ public class Game : MonoBehaviour
 
         characters = new List<Character>();
 
+        var offset = new Vector3(xsize * tileSize * 0.5f, 0, zsize * tileSize * 0.5f);
         moveManager = new GridMoveManager();
-        moveManager.Init(transform.position, xsize, zsize, tileSize, 1000);
+        moveManager.Init(transform.position - offset, transform.position + offset, tileSize, 30, 1000);
 
         redDestinationIndex = -1;
         blueDestinationIndex = -1;
