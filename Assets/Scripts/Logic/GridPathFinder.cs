@@ -287,6 +287,13 @@ public class GridPathFinder
         }
         return true;
     }
+    private bool GetTileXZ()
+    {
+    }
+    private GridPathNode FindNearestNode(GridMoveAgent agent, Vector3 pos, float radius)
+    {
+
+    }
     public bool Search(GridMoveAgent agent, float searchRadius, int searchMaxNodes, ref GridPath path)
     {
         Debug.Assert(searchRadius > 0 && searchMaxNodes > 0);

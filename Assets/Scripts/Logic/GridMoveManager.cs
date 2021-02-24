@@ -85,11 +85,16 @@ public class GridMoveManager
         z = (int)((pos.z - bmin.z) / tileSize);
         return x >= 0 && x < xsize && z >= 0 && z < zsize;
     }
-    public int GetTileIndex(Vector3 pos)
+    public void GetTileXZ(Vector3 pos, out int x, out int z)
     {
-        int x = (int)((pos.x - bmin.x) / tileSize);
-        int z = (int)((pos.z - bmin.z) / tileSize);
-        return Mathf.Clamp(x, 0, xsize - 1) + Mathf.Clamp(z, 0, zsize - 1) * xsize;
+        GetTileXZUnclamped(pos, out x, out z);
+        x = Mathf.Clamp(x, 0, xsize - 1);
+        z = Mathf.Clamp(z, 0, zsize - 1);
+    }
+    public Vector3 GetTilePos(int x, int z)
+    {
+        Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
+        return new Vector3(bmin.x + (x + 0.5f) * tileSize, 0, bmin.z + (z + 0.5f) * tileSize);
     }
     public Vector3 GetTilePos(int index)
     {
@@ -97,10 +102,6 @@ public class GridMoveManager
         int z = index / xsize;
         int x = index - z * xsize;
         return new Vector3(bmin.x + (x + 0.5f) * tileSize, 0, bmin.z + (z + 0.5f) * tileSize);
-    }
-    public Vector3 GetTilePos(int x, int z)
-    {
-        return GetTilePos(x + z * xsize);
     }
     public bool IsTileCenterBlocked(GridMoveAgent agent, int x, int z, bool checkAgents)
     {
