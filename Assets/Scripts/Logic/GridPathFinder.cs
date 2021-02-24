@@ -238,7 +238,7 @@ public class GridPathFinder
             return true;
         }
     }
-    private bool IsCrossWalkable(int unitSize, GridPathNode snode, GridPathNode enode, Func<int, int, bool> checkBlockedFunc)
+    private bool IsCrossWalkable(GridMoveAgent agent, GridPathNode snode, GridPathNode enode)
     {
         int dx = enode.X - snode.X, dz = enode.Z - snode.Z;
         int nx = Mathf.Abs(dx), nz = Mathf.Abs(dz);
@@ -251,7 +251,7 @@ public class GridPathFinder
             var t2 = (2 * iz + 1) * nx;
             if (t1 < t2) //Horizontal
             {
-                if (!IsNeighborWalkable(unitSize, nodes[x + z * gridX], nodes[x + signX + z * gridX], checkBlockedFunc))
+                if (!IsNeighborWalkable(agent, nodes[x + z * moveManager.XSize], nodes[x + signX + z * moveManager.XSize]))
                 {
                     return false;
                 }
@@ -260,7 +260,7 @@ public class GridPathFinder
             }
             else if (t1 > t2) //Vertical
             {
-                if (!IsNeighborWalkable(unitSize, nodes[x + z * gridX], nodes[x + (z + signZ) * gridX], checkBlockedFunc))
+                if (!IsNeighborWalkable(agent, nodes[x + z * moveManager.XSize], nodes[x + (z + signZ) * moveManager.XSize]))
                 {
                     return false;
                 }
@@ -269,7 +269,7 @@ public class GridPathFinder
             }
             else //Cross
             {
-                if (!IsNeighborWalkable(unitSize, nodes[x + z * gridX], nodes[x + signX + (z + signZ) * gridX], checkBlockedFunc))
+                if (!IsNeighborWalkable(agent, nodes[x + z * moveManager.XSize], nodes[x + signX + (z + signZ) * moveManager.XSize]))
                 {
                     return false;
                 }
