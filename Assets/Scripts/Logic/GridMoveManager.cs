@@ -79,12 +79,11 @@ public class GridMoveManager
     {
         return new Vector3(Mathf.Clamp(pos.x, bmin.x, bmax.x), pos.y, Mathf.Clamp(pos.z, bmin.z, bmax.z));
     }
-    public void GetTileXZ(Vector3 pos, out int x, out int z)
+    public bool GetTileXZUnclamped(Vector3 pos, out int x, out int z)
     {
         x = (int)((pos.x - bmin.x) / tileSize);
         z = (int)((pos.z - bmin.z) / tileSize);
-        x = Mathf.Clamp(x, 0, xsize - 1);
-        z = Mathf.Clamp(z, 0, zsize - 1);
+        return x >= 0 && x < xsize && z >= 0 && z < zsize;
     }
     public int GetTileIndex(Vector3 pos)
     {
@@ -103,63 +102,53 @@ public class GridMoveManager
     {
         return GetTilePos(x + z * xsize);
     }
-    public bool IsTileBlocked(GridMoveAgent agent, int x, int z, bool checkAgents)
+    public bool IsTileCenterBlocked(GridMoveAgent agent, int x, int z, bool checkAgents)
     {
-        var offset = agent.UnitSize / 2;
-        int xmin = x - offset;
-        int xmax = x + offset;
-        int zmin = z - offset;
-        int zmax = z + offset;
-        if (xmin < 0 || xmax >= xsize || zmin < 0 || zmax >= zsize)
-        {
-            return true;
-        }
-        for (int tz = zmin; tz <= zmax; tz++)
-        {
-            for (int tx = xmin; tx <= xmax; tx++)
-            {
-                var tile = tiles[tx + tz * xsize];
-                if (tile.isBlocked)
-                {
-                    return true;
-                }
-                if (checkAgents)
-                {
-                    foreach (var a in tile.agents)
-                    {
-                        if (a.IsBlock(agent))
-                        {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return true;
-    }
-    public bool IsTileBlocked(GridMoveAgent agent, Vector3 pos, bool checkAgents)
-    {
-        GetGirdXZ(pos, out int x, out int z);
         if (x < 0 || x >= xsize || z < 0 || z >= zsize)
         {
             return true;
         }
-        var grid = grids[x + z * xsize];
-        if (grid.isBlocked)
+        var tile = tiles[x + z * xsize];
+        if (tile.isBlocked)
         {
             return true;
         }
         if (checkAgents)
         {
-            foreach (var a in grid.agents)
+            foreach (var a in tile.agents)
             {
-                if (a.IsBlockedOther(agent))
+                if (a.IsBlocked(agent))
                 {
                     return true;
                 }
             }
         }
         return false;
+    }
+    public bool IsTileBlocked(GridMoveAgent agent, int x, int z, bool checkAgents)
+    {
+        int offset = agent.UnitSize / 2;
+        int xmin = x - offset, xmax = x + offset;
+        int zmin = z - offset, zmax = z + offset;
+        for (int j = zmin; j <= zmax; j++)
+        {
+            for (int i = xmin; i <= xmax; i++)
+            {
+                if (IsTileCenterBlocked(agent, i, j, checkAgents))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    public bool IsTileBlocked(GridMoveAgent agent, Vector3 pos, bool checkAgents)
+    {
+        if (!GetTileXZUnclamped(pos, out var x, out var z))
+        {
+            return true;
+        }
+        return IsTileBlocked(agent, x, z, checkAgents);
     }
     public GridPath FindPath(GridMoveAgent agent, Vector3 goalPos, float goalRadius)
     {

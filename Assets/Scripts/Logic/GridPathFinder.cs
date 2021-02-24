@@ -173,7 +173,7 @@ public class GridPathFinder
         if (!node.HasTestBlocked)
         {
             node.HasTestBlocked = true;
-            node.IsBlocked = checkBlockedFunc(node.X, node.Z);
+            node.IsBlocked = moveManager.IsTileBlocked(agent, node.X, node.Z, true);
             testBlockQueue.Add(node);
         }
         return node.IsBlocked;
@@ -191,7 +191,7 @@ public class GridPathFinder
             }
             for (int i = 0; i < agent.UnitSize; i++)
             {
-                if (IsNodeBlocked(nodes[x + (enode.Z - offset + i) * gridX], checkBlockedFunc))
+                if (IsNodeBlocked(agent, nodes[x + (enode.Z - offset + i) * gridX]))
                 {
                     return false;
                 }
