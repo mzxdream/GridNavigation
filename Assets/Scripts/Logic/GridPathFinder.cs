@@ -183,6 +183,31 @@ public class GridPathFinder
         }
         return node.IsBlocked;
     }
+    private bool IsNodeCenterBlocked(GridMoveAgent agent, int x, int z)
+    {
+        if (x < 0 || x >= xsize || z < 0 || z >= zsize)
+        {
+            return true;
+        }
+        return IsNodeCenterBlocked(agent, nodes[x + z * xsize]);
+    }
+    private bool IsNodeBlocked(GridMoveAgent agent, int x, int z)
+    {
+        int offset = agent.UnitSize / 2;
+        int xmin = x - offset, xmax = x + offset;
+        int zmin = z - offset, zmax = z + offset;
+        for (int tz = zmin; tz <= zmax; tz++)
+        {
+            for (int tx = xmin; tx <= xmax; tx++)
+            {
+                if (IsNodeCenterBlocked(agent, tx, tz))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
     private bool IsNeighborWalkable(GridMoveAgent agent, GridPathNode snode, GridPathNode enode)
     {
         Debug.Assert(Mathf.Abs(snode.X - enode.X) <= 1 && Mathf.Abs(snode.Z - enode.Z) <= 1);
@@ -287,12 +312,39 @@ public class GridPathFinder
         }
         return true;
     }
-    private bool GetTileXZ()
-    {
-    }
     private GridPathNode FindNearestNode(GridMoveAgent agent, Vector3 pos, float radius)
     {
+        moveManager.GetTileXZ(pos, out int x, out int z);
+        if (!IsNodeBlocked(agent, x, z))
+        {
+            return nodes[x + z * xsize];
+        }
+        var nearestSize = (int)(radius / tileSize);
 
+
+        for (int i = 0; i < nearestSize; i++)
+        {
+            for (int j = 0; j < nearestSize; j++)
+            {
+                if (!IsNodeBlocked(agent, x + i, z + j))
+                {
+                    return nodes[x + i + (z + j) * xsize];
+                }
+                if (!IsNodeBlocked(agent, x + i, z - j))
+                {
+                    return nodes[x + i + (z - j) * xsize];
+                }
+                if (!IsNodeBlocked(agent, x - i, z + j))
+                {
+                    return nodes[x - i + (z + j) * xsize];
+                }
+                if (!IsNodeBlocked(agent, x - i, z - j))
+                {
+                    return nodes[x - i + (z - j) * xsize];
+                }
+            }
+        }
+        return null;
     }
     public bool Search(GridMoveAgent agent, float searchRadius, int searchMaxNodes, ref GridPath path)
     {
