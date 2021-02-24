@@ -25,7 +25,7 @@ public class GridMoveManager
     public int XSize { get => xsize; }
     public int ZSize { get => zsize; }
     public float TileSize { get => tileSize; }
-    public float PixelSize { get => tileSize / 8.0f; }
+    public float PixelSize { get => pixelSize; }
     public int TilePerPixel { get => 8; }
     public int GameSpeed { get => gameSpeed; }
 
@@ -155,37 +155,10 @@ public class GridMoveManager
         }
         return IsTileBlocked(agent, x, z, checkAgents);
     }
-    public Vector3 NextWayPoint(GridMoveAgent agent, GridPath path, Vector3 pos, float distance)
-    {
-        var h = path.Head.Next;
-        while (h != path.Head)
-        {
-            var waypoint = GetGridPos(h.X, h.Z);
-            h.Erase();
-            if (GridMathUtils.SqrDistance2D(pos, waypoint) >= distance * distance)
-            {
-                return waypoint;
-            }
-            h = path.Head.Next;
-        }
-        return path.goalPos;
-        //return GetGridPos(path.goalNode.X, path.goalNode.Z);
-    }
-
-    public bool IsGridBlocked(int x, int z)
-    {
-        if (x < 0 || x >= xsize || z < 0 || z >= zsize)
-        {
-            return true;
-        }
-        var grid = grids[x + z * xsize];
-        return grid.isBlocked;
-    }
     public bool TestMoveRange(GridMoveAgent agent, Vector3 rmin, Vector3 rmax, bool checkAgents)
     {
-        GetGirdXZ(rmin, out int xmin, out int zmin);
-        GetGirdXZ(rmax, out int xmax, out int zmax);
-        if (xmin < 0 || xmax >= xsize || zmin < 0 || zmax >= zsize)
+        if (!GetTileXZUnclamped(rmin, out var xmin, out var zmin)
+            || !GetTileXZUnclamped(rmax, out var xmax, out var zmax))
         {
             return false;
         }
