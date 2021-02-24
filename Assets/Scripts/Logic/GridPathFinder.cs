@@ -135,6 +135,20 @@ public class GridPath
     public Vector3 goalPos;
     public float goalRadius;
     public List<Vector3> positions;
+    public Vector3 NextWayPoint(GridMoveAgent agent, Vector3 pos, float distance)
+    {
+        var sqrDistance = distance * distance;
+        for (int i = positions.Count - 1; i >= 0; i--)
+        {
+            var nextPos = positions[i];
+            var sqrMag = (nextPos.x - pos.x) * (nextPos.x - pos.x) + (nextPos.z - pos.z) * (nextPos.z - pos.z);
+            if (sqrMag >= sqrDistance)
+            {
+                return nextPos;
+            }
+        }
+        return goalPos;
+    }
 }
 
 public class GridPathFinder
