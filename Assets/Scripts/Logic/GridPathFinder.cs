@@ -168,7 +168,7 @@ public class GridPathFinder
         int z = Mathf.Abs(toZ - fromZ);
         return x > z ? 14 * z + 10 * (x - z) : 14 * x + 10 * (z - x);
     }
-    private bool IsNodeBlocked(GridMoveAgent agent, GridPathNode node)
+    private bool IsNodeCenterBlocked(GridMoveAgent agent, GridPathNode node)
     {
         if (!node.HasTestBlocked)
         {
@@ -191,7 +191,7 @@ public class GridPathFinder
             }
             for (int i = 0; i < agent.UnitSize; i++)
             {
-                if (IsNodeBlocked(agent, nodes[x + (enode.Z - offset + i) * gridX]))
+                if (IsNodeCenterBlocked(agent, nodes[x + (enode.Z - offset + i) * moveManager.XSize]))
                 {
                     return false;
                 }
@@ -201,13 +201,13 @@ public class GridPathFinder
         if (snode.X == enode.X) //Vertical
         {
             int z = enode.Z + offset * (enode.Z - snode.Z);
-            if (z < 0 || z >= gridZ)
+            if (z < 0 || z >= moveManager.ZSize)
             {
                 return false;
             }
-            for (int i = 0; i < unitSize; i++)
+            for (int i = 0; i < agent.UnitSize; i++)
             {
-                if (IsNodeBlocked(nodes[enode.X - offset + i + z * gridX], checkBlockedFunc))
+                if (IsNodeCenterBlocked(agent, nodes[enode.X - offset + i + z * moveManager.XSize]))
                 {
                     return false;
                 }
@@ -217,20 +217,20 @@ public class GridPathFinder
         { //Cross
             int x = enode.X + offset * (enode.X - snode.X);
             int z = enode.Z + offset * (enode.Z - snode.Z);
-            if (x < 0 || x >= gridX || z < 0 || z >= gridZ)
+            if (x < 0 || x >= moveManager.XSize || z < 0 || z >= moveManager.ZSize)
             {
                 return false;
             }
-            for (int i = 0; i <= unitSize; i++)
+            for (int i = 0; i <= agent.UnitSize; i++)
             {
-                if (IsNodeBlocked(nodes[x - i * (enode.X - snode.X) + z * gridX], checkBlockedFunc))
+                if (IsNodeCenterBlocked(agent, nodes[x - i * (enode.X - snode.X) + z * moveManager.XSize]))
                 {
                     return false;
                 }
             }
-            for (int i = 1; i <= unitSize; i++)
+            for (int i = 1; i <= agent.UnitSize; i++)
             {
-                if (IsNodeBlocked(nodes[x + (z - i * (enode.Z - snode.Z)) * gridX], checkBlockedFunc))
+                if (IsNodeCenterBlocked(agent, nodes[x + (z - i * (enode.Z - snode.Z)) * moveManager.XSize]))
                 {
                     return false;
                 }
