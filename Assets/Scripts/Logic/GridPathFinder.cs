@@ -173,6 +173,10 @@ public class GridPathFinder
         int z = Mathf.Abs(toZ - fromZ);
         return x > z ? 14 * z + 10 * (x - z) : 14 * x + 10 * (z - x);
     }
+    private static int CalcDistanceApproximately(GridPathNode fromNode, GridPathNode toNode)
+    {
+        return CalcDistanceApproximately(fromNode.X, fromNode.Z, toNode.X, toNode.Z);
+    }
     private bool IsNodeCenterBlocked(GridMoveAgent agent, GridPathNode node)
     {
         if (!node.HasTestBlocked)
@@ -382,8 +386,8 @@ public class GridPathFinder
         {
             return false;
         }
-        var endNode = FindNearestNode(agent, path.goalPos, agent.GetRadius());
-        if (endNode == null)
+        var goalNode = FindNearestNode(agent, path.goalPos, agent.GetRadius());
+        if (goalNode == null)
         {
             return false;
         }
@@ -400,7 +404,7 @@ public class GridPathFinder
             {
                 return false;
             }
-            if (CalcDistanceApproximately(node.X, node.Z, goalX, goalZ) <= goalDistance)
+            if (CalcDistanceApproximately(node, goalNode) <= goalDistance)
             {
                 var nodes = new List<GridPathNode>();
                 while (node != startNode)
@@ -432,7 +436,7 @@ public class GridPathFinder
                 }
                 n.IsClosed = true;
                 closedQueue.Add(n);
-                if (CalcDistanceApproximately(startX, startZ, x, z) > searchDistance)
+                if (CalcDistanceApproximately(startNode, n) > searchDistance)
                 {
                     continue;
                 }
@@ -441,7 +445,7 @@ public class GridPathFinder
                     continue;
                 }
                 n.GCost = node.GCost + CalcDistanceApproximately(node.X, node.Z, x, z);
-                n.HCost = CalcDistanceApproximately(x, z, goalX, goalZ);
+                n.HCost = CalcDistanceApproximately(n, goalNode);
                 n.Parent = node;
                 openQueue.Push(n);
             }
