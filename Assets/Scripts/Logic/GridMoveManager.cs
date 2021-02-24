@@ -5,7 +5,7 @@ class GridTileInfo
 {
     public int index;
     public bool isBlocked;
-    public List<GridMoveAgent> agents = new List<GridMoveAgent>();
+    public List<GridMoveAgent> agents;
 }
 
 public class GridMoveManager
@@ -15,6 +15,7 @@ public class GridMoveManager
     private int xsize;
     private int zsize;
     private float tileSize;
+    private float pixelSize;
     private int gameSpeed;
 
     private GridTileInfo[] tiles;
@@ -25,6 +26,7 @@ public class GridMoveManager
     public int ZSize { get => zsize; }
     public float TileSize { get => tileSize; }
     public float PixelSize { get => tileSize / 8.0f; }
+    public int TilePerPixel { get => 8; }
     public int GameSpeed { get => gameSpeed; }
 
     public bool Init(Vector3 bmin, Vector3 bmax, float tileSize, int gameSpeed, int maxAgents)
@@ -32,6 +34,8 @@ public class GridMoveManager
         this.bmin = bmin;
         this.bmax = bmax;
         this.tileSize = tileSize;
+        this.pixelSize = tileSize / TilePerPixel;
+        this.gameSpeed = gameSpeed;
         xsize = (int)((bmax.x - bmin.x) / tileSize);
         zsize = (int)((bmax.z - bmin.z) / tileSize);
 
@@ -41,11 +45,11 @@ public class GridMoveManager
             for (int x = 0; x < xsize; x++)
             {
                 var index = x + z * xsize;
-                tiles[index] = new GridTileInfo { index = index, isBlocked = false, };
+                tiles[index] = new GridTileInfo { index = index, isBlocked = false, agents = new List<GridMoveAgent>() };
             }
         }
-        this.agents = new List<GridMoveAgent>();
-        this.pathFinder = new GridPathFinder(this);
+        agents = new List<GridMoveAgent>();
+        pathFinder = new GridPathFinder(this);
         return true;
     }
     public void Clear()
