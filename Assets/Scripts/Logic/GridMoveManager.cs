@@ -1,11 +1,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-class GridTileInfo
+class GridTile
 {
     public int index;
     public bool isBlocked;
     public List<GridMoveAgent> agents;
+}
+
+public class GridPath
+{
+    public Vector3 startPos;
+    public Vector3 goalPos;
+    public float goalRadius;
+    public List<Vector3> positions;
 }
 
 public class GridMoveManager
@@ -18,7 +26,7 @@ public class GridMoveManager
     private float pixelSize;
     private int gameSpeed;
 
-    private GridTileInfo[] tiles;
+    private GridTile[] tiles;
     private List<GridMoveAgent> agents;
     private GridPathFinder pathFinder;
 
@@ -33,11 +41,11 @@ public class GridMoveManager
     {
         this.bmin = bmin;
         this.bmax = bmax;
+        xsize = (int)((bmax.x - bmin.x) / tileSize);
+        zsize = (int)((bmax.z - bmin.z) / tileSize);
         this.tileSize = tileSize;
         this.pixelSize = tileSize / TilePerPixel;
         this.gameSpeed = gameSpeed;
-        xsize = (int)((bmax.x - bmin.x) / tileSize);
-        zsize = (int)((bmax.z - bmin.z) / tileSize);
 
         tiles = new GridTileInfo[xsize * zsize];
         for (int z = 0; z < zsize; z++)
@@ -49,7 +57,7 @@ public class GridMoveManager
             }
         }
         agents = new List<GridMoveAgent>();
-        pathFinder = new GridPathFinder(this);
+        pathFinder = new GridPathFinder();
         return true;
     }
     public void Clear()
