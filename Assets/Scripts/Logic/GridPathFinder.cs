@@ -141,6 +141,7 @@ public class GridPath
         for (int i = positions.Count - 1; i >= 0; i--)
         {
             var nextPos = positions[i];
+            positions.RemoveAt(i);
             var sqrMag = (nextPos.x - pos.x) * (nextPos.x - pos.x) + (nextPos.z - pos.z) * (nextPos.z - pos.z);
             if (sqrMag >= sqrDistance)
             {
@@ -420,19 +421,13 @@ public class GridPathFinder
             }
             if (CalcDistanceApproximately(node, goalNode) <= goalDistance)
             {
-                var nodes = new List<GridPathNode>();
+                path.positions = new List<Vector3>();
                 while (node != startNode)
                 {
-                    nodes.Add(node);
+                    path.positions.Add(moveManager.GetTilePos(node.X, node.Z));
                     node = node.Parent;
                 }
-                nodes.Add(startNode);
-                path.positions = new List<Vector3>();
-                for (int t = nodes.Count - 1; t >= 0; t--)
-                {
-                    var n = nodes[t];
-                    path.positions.Add(moveManager.GetTilePos(n.X, n.Z));
-                }
+                path.positions.Add(moveManager.GetTilePos(startNode.X, startNode.Z));
                 return true;
             }
             for (int j = 0; j < neighbors.Length; j += 2)
