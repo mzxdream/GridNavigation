@@ -357,10 +357,8 @@ public class GridPathFinder
         }
         return null;
     }
-    public bool Search(GridMoveAgent agent, float searchRadius, int searchMaxNodes, ref GridPath path)
+    private void ClearCache()
     {
-        Debug.Assert(searchRadius > 0 && searchMaxNodes > 0);
-
         openQueue.Clear();
         foreach (var n in closedQueue)
         {
@@ -371,15 +369,27 @@ public class GridPathFinder
         {
             n.HasTestBlocked = false;
         }
+        testBlockQueue.Clear();
+    }
+    public bool Search(GridMoveAgent agent, float searchRadius, int searchMaxNodes, ref GridPath path)
+    {
+        Debug.Assert(searchRadius > 0 && searchMaxNodes > 0);
 
-        moveManager.GetTileXZUnclamped(path.startPos, out var startX, out var startZ);
-        moveManager.GetTileXZUnclamped(path.goalPos, out var goalX, out var goalZ);
+        ClearCache();
 
+        var startNode = FindNearestNode(agent, path.startPos, agent.GetRadius());
+        if (startNode == null)
+        {
+            return false;
+        }
+        var endNode = FindNearestNode(agent, path.goalPos, agent.GetRadius());
+        if (endNode == null)
+        {
+            return false;
+        }
         int goalDistance = (int)(path.goalRadius / tileSize) * 10;
         int searchDistance = (int)(searchRadius / tileSize) * 10;
 
-        var startIndex = startX + startZ * xsize;
-        var startNode = nodes[startIndex];
         startNode.IsClosed = true;
         closedQueue.Add(startNode);
         openQueue.Push(startNode);
