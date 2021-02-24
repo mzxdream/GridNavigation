@@ -134,13 +134,16 @@ public class GridPath
     public Vector3 startPos;
     public Vector3 goalPos;
     public float goalRadius;
-    public List<Vector3> positions = new List<Vector3>();
+    public List<Vector3> positions;
 }
 
 public class GridPathFinder
 {
     private int[] neighbors = { 0, 1, 0, -1, 1, 0, -1, 0, -1, 1, 1, 1, -1, -1, 1, -1 };
     private GridMoveManager moveManager;
+    private int xsize;
+    private int zsize;
+    private float tileSize;
     private GridPathNode[] nodes;
     private GridPathPriorityQueue openQueue;
     private List<GridPathNode> closedQueue;
@@ -149,13 +152,15 @@ public class GridPathFinder
     public GridPathFinder(GridMoveManager moveManager)
     {
         this.moveManager = moveManager;
-        nodes = new GridPathNode[moveManager.XSize * moveManager.ZSize];
-        for (int z = 0; z < moveManager.ZSize; z++)
+        xsize = moveManager.XSize;
+        zsize = moveManager.ZSize;
+        tileSize = moveManager.TileSize;
+        nodes = new GridPathNode[xsize * zsize];
+        for (int z = 0; z < zsize; z++)
         {
-            for (int x = 0; x < moveManager.XSize; x++)
+            for (int x = 0; x < xsize; x++)
             {
-                var index = x + z * moveManager.XSize;
-                nodes[index] = new GridPathNode(x, z);
+                nodes[x + z * xsize] = new GridPathNode(x, z);
             }
         }
         openQueue = new GridPathPriorityQueue();
@@ -181,17 +186,18 @@ public class GridPathFinder
     private bool IsNeighborWalkable(GridMoveAgent agent, GridPathNode snode, GridPathNode enode)
     {
         Debug.Assert(Mathf.Abs(snode.X - enode.X) <= 1 && Mathf.Abs(snode.Z - enode.Z) <= 1);
+
         var offset = agent.UnitSize / 2;
         if (snode.Z == enode.Z) //Horizontal
         {
             int x = enode.X + offset * (enode.X - snode.X);
-            if (x < 0 || x >= moveManager.XSize)
+            if (x < 0 || x >= xsize)
             {
                 return false;
             }
             for (int i = 0; i < agent.UnitSize; i++)
             {
-                if (IsNodeCenterBlocked(agent, nodes[x + (enode.Z - offset + i) * moveManager.XSize]))
+                if (IsNodeCenterBlocked(agent, nodes[x + (enode.Z - offset + i) * xsize]))
                 {
                     return false;
                 }
@@ -201,13 +207,13 @@ public class GridPathFinder
         if (snode.X == enode.X) //Vertical
         {
             int z = enode.Z + offset * (enode.Z - snode.Z);
-            if (z < 0 || z >= moveManager.ZSize)
+            if (z < 0 || z >= zsize)
             {
                 return false;
             }
             for (int i = 0; i < agent.UnitSize; i++)
             {
-                if (IsNodeCenterBlocked(agent, nodes[enode.X - offset + i + z * moveManager.XSize]))
+                if (IsNodeCenterBlocked(agent, nodes[enode.X - offset + i + z * xsize]))
                 {
                     return false;
                 }
@@ -217,20 +223,20 @@ public class GridPathFinder
         { //Cross
             int x = enode.X + offset * (enode.X - snode.X);
             int z = enode.Z + offset * (enode.Z - snode.Z);
-            if (x < 0 || x >= moveManager.XSize || z < 0 || z >= moveManager.ZSize)
+            if (x < 0 || x >= xsize || z < 0 || z >= zsize)
             {
                 return false;
             }
             for (int i = 0; i <= agent.UnitSize; i++)
             {
-                if (IsNodeCenterBlocked(agent, nodes[x - i * (enode.X - snode.X) + z * moveManager.XSize]))
+                if (IsNodeCenterBlocked(agent, nodes[x - i * (enode.X - snode.X) + z * xsize]))
                 {
                     return false;
                 }
             }
             for (int i = 1; i <= agent.UnitSize; i++)
             {
-                if (IsNodeCenterBlocked(agent, nodes[x + (z - i * (enode.Z - snode.Z)) * moveManager.XSize]))
+                if (IsNodeCenterBlocked(agent, nodes[x + (z - i * (enode.Z - snode.Z)) * xsize]))
                 {
                     return false;
                 }
@@ -251,7 +257,7 @@ public class GridPathFinder
             var t2 = (2 * iz + 1) * nx;
             if (t1 < t2) //Horizontal
             {
-                if (!IsNeighborWalkable(agent, nodes[x + z * moveManager.XSize], nodes[x + signX + z * moveManager.XSize]))
+                if (!IsNeighborWalkable(agent, nodes[x + z * xsize], nodes[x + signX + z * xsize]))
                 {
                     return false;
                 }
@@ -260,7 +266,7 @@ public class GridPathFinder
             }
             else if (t1 > t2) //Vertical
             {
-                if (!IsNeighborWalkable(agent, nodes[x + z * moveManager.XSize], nodes[x + (z + signZ) * moveManager.XSize]))
+                if (!IsNeighborWalkable(agent, nodes[x + z * xsize], nodes[x + (z + signZ) * xsize]))
                 {
                     return false;
                 }
@@ -269,7 +275,7 @@ public class GridPathFinder
             }
             else //Cross
             {
-                if (!IsNeighborWalkable(agent, nodes[x + z * moveManager.XSize], nodes[x + signX + (z + signZ) * moveManager.XSize]))
+                if (!IsNeighborWalkable(agent, nodes[x + z * xsize], nodes[x + signX + (z + signZ) * xsize]))
                 {
                     return false;
                 }
@@ -281,9 +287,10 @@ public class GridPathFinder
         }
         return true;
     }
-    public bool Search(GridMoveAgent agent, float searchSize, float searchExtraSize, int searchMaxNodes, ref GridPath path)
+    public bool Search(GridMoveAgent agent, float searchRadius, int searchMaxNodes, ref GridPath path)
     {
-        Debug.Assert(searchSize > 0 && searchMaxNodes > 0);
+        Debug.Assert(searchRadius > 0 && searchMaxNodes > 0);
+
         openQueue.Clear();
         foreach (var n in closedQueue)
         {
@@ -295,12 +302,13 @@ public class GridPathFinder
             n.HasTestBlocked = false;
         }
 
-        moveManager.GetTileXZ(path.startPos, out var startX, out var startZ);
-        moveManager.GetTileXZ(path.goalPos, out var goalX, out var goalZ);
-        int goalDistance = (int)(path.goalRadius / moveManager.TileSize) * 10;
-        int searchDistance = (int)(searchSize * CalcDistanceApproximately(startX, startZ, goalX, goalZ)) + (int)(searchExtraSize / moveManager.TileSize) * 10;
+        moveManager.GetTileXZUnclamped(path.startPos, out var startX, out var startZ);
+        moveManager.GetTileXZUnclamped(path.goalPos, out var goalX, out var goalZ);
 
-        var startIndex = startX + startZ * moveManager.XSize;
+        int goalDistance = (int)(path.goalRadius / tileSize) * 10;
+        int searchDistance = (int)(searchRadius / tileSize) * 10;
+
+        var startIndex = startX + startZ * xsize;
         var startNode = nodes[startIndex];
         startNode.IsClosed = true;
         closedQueue.Add(startNode);
@@ -321,7 +329,7 @@ public class GridPathFinder
                     node = node.Parent;
                 }
                 nodes.Add(startNode);
-                path.positions.Clear();
+                path.positions = new List<Vector3>();
                 for (int t = nodes.Count - 1; t >= 0; t--)
                 {
                     var n = nodes[t];
@@ -333,11 +341,11 @@ public class GridPathFinder
             {
                 var x = node.X + neighbors[j];
                 var z = node.Z + neighbors[j + 1];
-                if (x < 0 || x >= moveManager.XSize || z < 0 || z >= moveManager.ZSize)
+                if (x < 0 || x >= xsize || z < 0 || z >= zsize)
                 {
                     continue;
                 }
-                var n = nodes[x + z * moveManager.XSize];
+                var n = nodes[x + z * xsize];
                 if (n.IsClosed)
                 {
                     continue;
