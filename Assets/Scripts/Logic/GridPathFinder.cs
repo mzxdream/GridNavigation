@@ -312,36 +312,47 @@ public class GridPathFinder
         }
         return true;
     }
-    private GridPathNode FindNearestNode(GridMoveAgent agent, Vector3 pos, float radius)
+    private GridPathNode FindNearestNode(GridMoveAgent agent, Vector3 pos, float searchRadius)
     {
         moveManager.GetTileXZ(pos, out int x, out int z);
         if (!IsNodeBlocked(agent, x, z))
         {
             return nodes[x + z * xsize];
         }
-        var nearestSize = (int)(radius / tileSize);
-
-
-        for (int i = 0; i < nearestSize; i++)
+        var searchSize = (int)(searchRadius / tileSize);
+        for (int i = 0; i < searchSize; i++)
         {
-            for (int j = 0; j < nearestSize; j++)
+            if (!IsNodeBlocked(agent, x + i, z))
             {
-                if (!IsNodeBlocked(agent, x + i, z + j))
-                {
-                    return nodes[x + i + (z + j) * xsize];
-                }
-                if (!IsNodeBlocked(agent, x + i, z - j))
-                {
-                    return nodes[x + i + (z - j) * xsize];
-                }
-                if (!IsNodeBlocked(agent, x - i, z + j))
-                {
-                    return nodes[x - i + (z + j) * xsize];
-                }
-                if (!IsNodeBlocked(agent, x - i, z - j))
-                {
-                    return nodes[x - i + (z - j) * xsize];
-                }
+                return nodes[x + i + z * xsize];
+            }
+            if (!IsNodeBlocked(agent, x - i, z))
+            {
+                return nodes[x - i + z * xsize];
+            }
+            if (!IsNodeBlocked(agent, x, z + i))
+            {
+                return nodes[x + (z + i) * xsize];
+            }
+            if (!IsNodeBlocked(agent, x, z - i))
+            {
+                return nodes[x + (z - i) * xsize];
+            }
+            if (!IsNodeBlocked(agent, x + i, z + i))
+            {
+                return nodes[x + i + (z + i) * xsize];
+            }
+            if (!IsNodeBlocked(agent, x + i, z - i))
+            {
+                return nodes[x + i + (z - i) * xsize];
+            }
+            if (!IsNodeBlocked(agent, x - i, z + i))
+            {
+                return nodes[x - i + (z + i) * xsize];
+            }
+            if (!IsNodeBlocked(agent, x - i, z - i))
+            {
+                return nodes[x - i + (z - i) * xsize];
             }
         }
         return null;
