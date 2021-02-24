@@ -762,7 +762,7 @@ public class GridMoveAgent
         StopEngine(callScript, hardStop);
         progressState = ProgressState.Done;
     }
-    public bool IsBlockedOther(GridMoveAgent a)
+    public bool IsBlocked(GridMoveAgent a)
     {
         if (this == a)
         {
