@@ -16,51 +16,51 @@ public class GridPath
     public List<Vector3> positions;
 }
 
- private GridPathNode FindNearestNode(GridMoveAgent agent, Vector3 pos, float searchRadius)
-    {
-        moveManager.GetTileXZ(pos, out int x, out int z);
-        if (!IsNodeBlocked(agent, x, z))
-        {
-            return nodes[x + z * xsize];
-        }
-        var searchSize = (int)(searchRadius / tileSize);
-        for (int i = 0; i < searchSize; i++)
-        {
-            if (!IsNodeBlocked(agent, x + i, z))
-            {
-                return nodes[x + i + z * xsize];
-            }
-            if (!IsNodeBlocked(agent, x - i, z))
-            {
-                return nodes[x - i + z * xsize];
-            }
-            if (!IsNodeBlocked(agent, x, z + i))
-            {
-                return nodes[x + (z + i) * xsize];
-            }
-            if (!IsNodeBlocked(agent, x, z - i))
-            {
-                return nodes[x + (z - i) * xsize];
-            }
-            if (!IsNodeBlocked(agent, x + i, z + i))
-            {
-                return nodes[x + i + (z + i) * xsize];
-            }
-            if (!IsNodeBlocked(agent, x + i, z - i))
-            {
-                return nodes[x + i + (z - i) * xsize];
-            }
-            if (!IsNodeBlocked(agent, x - i, z + i))
-            {
-                return nodes[x - i + (z + i) * xsize];
-            }
-            if (!IsNodeBlocked(agent, x - i, z - i))
-            {
-                return nodes[x - i + (z - i) * xsize];
-            }
-        }
-        return null;
-    }
+ //private GridPathNode FindNearestNode(GridMoveAgent agent, Vector3 pos, float searchRadius)
+ //   {
+ //       moveManager.GetTileXZ(pos, out int x, out int z);
+ //       if (!IsNodeBlocked(agent, x, z))
+ //       {
+ //           return nodes[x + z * xsize];
+ //       }
+ //       var searchSize = (int)(searchRadius / tileSize);
+ //       for (int i = 0; i < searchSize; i++)
+ //       {
+ //           if (!IsNodeBlocked(agent, x + i, z))
+ //           {
+ //               return nodes[x + i + z * xsize];
+ //           }
+ //           if (!IsNodeBlocked(agent, x - i, z))
+ //           {
+ //               return nodes[x - i + z * xsize];
+ //           }
+ //           if (!IsNodeBlocked(agent, x, z + i))
+ //           {
+ //               return nodes[x + (z + i) * xsize];
+ //           }
+ //           if (!IsNodeBlocked(agent, x, z - i))
+ //           {
+ //               return nodes[x + (z - i) * xsize];
+ //           }
+ //           if (!IsNodeBlocked(agent, x + i, z + i))
+ //           {
+ //               return nodes[x + i + (z + i) * xsize];
+ //           }
+ //           if (!IsNodeBlocked(agent, x + i, z - i))
+ //           {
+ //               return nodes[x + i + (z - i) * xsize];
+ //           }
+ //           if (!IsNodeBlocked(agent, x - i, z + i))
+ //           {
+ //               return nodes[x - i + (z + i) * xsize];
+ //           }
+ //           if (!IsNodeBlocked(agent, x - i, z - i))
+ //           {
+ //               return nodes[x - i + (z - i) * xsize];
+ //           }
+ //       }
+ //       return null;
+ //   }
 public class GridMoveManager
 {
     private Vector3 bmin;

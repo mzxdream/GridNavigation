@@ -320,6 +320,11 @@ public class GridPathFinder
         }
         testBlockQueue.Clear();
     }
+    public bool FindNearestNode(int unitSize, int x, int z, int searchRadius, Func<int, int, bool> blockedFunc)
+    {
+        Debug.Assert(unitSize > 0);
+        return false;
+    }
     public List<int> FindPath(int unitSize, int startX, int startZ, int goalX, int goalZ, int goalRadius, int searchRadius, int searchMaxNodes, Func<int, int, bool> blockedFunc)
     {
         Debug.Assert(unitSize > 0 && startX >= 0 && startX < xsize && startZ >= 0 && startZ <= zsize && goalX >= 0 && goalX < xsize && goalZ >= 0 && goalZ < zsize);
@@ -372,7 +377,7 @@ public class GridPathFinder
                 }
                 n.IsClosed = true;
                 closedQueue.Add(n);
-                if (CalcDistanceApproximately(startNode, n) > searchDistance)
+                if (searchDistance > 0 && CalcDistanceApproximately(startNode, n) > searchDistance)
                 {
                     continue;
                 }
