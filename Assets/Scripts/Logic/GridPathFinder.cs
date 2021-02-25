@@ -320,9 +320,50 @@ public class GridPathFinder
         }
         testBlockQueue.Clear();
     }
-    public bool FindNearestNode(int unitSize, int x, int z, int searchRadius, Func<int, int, bool> blockedFunc)
+    public bool FindNearestNode(int unitSize, int x, int z, int searchRadius, Func<int, int, bool> blockedFunc, out int nearestX, out int nearestZ)
     {
-        Debug.Assert(unitSize > 0);
+        Debug.Assert(unitSize > 0 && searchRadius > 0 && blockedFunc != null);
+
+        ClearCache();
+
+        nearestX = Mathf.Clamp(x, 0, xsize - 1);
+        nearestZ = Mathf.Clamp(z, 0, zsize - 1);
+        if (!IsNodeBlocked(unitSize, nearestX, nearestZ, blockedFunc))
+        {
+            return true;
+        }
+        var startNode = nodes[x + z * xsize];
+        int searchDistance = searchRadius * 10;
+
+        var node = startNode;
+        node.IsClosed = true;
+        closedQueue.Add(node);
+        while (node != null)
+        {
+            for (int i = 0; i < neighbors.Length; i += 2)
+            {
+                nearestX = node.X + neighbors[i];
+                nearestZ = node.Z + neighbors[i + 1];
+                var n = nodes[nearestX + nearestZ * xsize];
+                if (n.IsClosed)
+                {
+                    continue;
+                }
+                n.IsClosed = true;
+                closedQueue.Add(n);
+                if (CalcDistanceApproximately(startNode, n) > searchDistance)
+                {
+                    continue;
+                }
+                if (!IsNodeBlocked(unitSize, nearestX, nearestZ, blockedFunc))
+                {
+                    return true;
+                }
+                
+                openQueue.Push(n);
+            }
+            node = openQueue.Pop();
+        }
         return false;
     }
     public List<int> FindPath(int unitSize, int startX, int startZ, int goalX, int goalZ, int goalRadius, int searchRadius, int searchMaxNodes, Func<int, int, bool> blockedFunc)
