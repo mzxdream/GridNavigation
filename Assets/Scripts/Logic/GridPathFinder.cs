@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-class GridPathNode
+public class GridPathNode
 {
     private enum Mask { TestBlocked = 1, Blocked = 2, Closed = 4 };
 
@@ -320,18 +320,24 @@ public class GridPathFinder
         }
         testBlockQueue.Clear();
     }
-    public bool FindNearestNode(int unitSize, int x, int z, int searchRadius, Func<int, int, bool> blockedFunc, out int nearestX, out int nearestZ)
+    public GridPathNode GetNode(int x, int z)
     {
-        Debug.Assert(unitSize > 0 && searchRadius > 0 && blockedFunc != null);
+        Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
+        return nodes[x + z * xsize];
+    }
+    public GridPathNode FindNearestNode(int unitSize, int x, int z, int searchRadius, Func<int, int, bool> blockedFunc)
+    {
+        Debug.Assert(unitSize > 0 && blockedFunc != null);
 
         ClearCache();
 
-        nearestX = Mathf.Clamp(x, 0, xsize - 1);
-        nearestZ = Mathf.Clamp(z, 0, zsize - 1);
-        if (!IsNodeBlocked(unitSize, nearestX, nearestZ, blockedFunc))
+        x = Mathf.Clamp(x, 0, xsize - 1);
+        z = Mathf.Clamp(z, 0, zsize - 1);
+        if (!IsNodeBlocked(unitSize, x, z, blockedFunc))
         {
-            return true;
+            return nodes[x + z * xsize];
         }
+
         var startNode = nodes[x + z * xsize];
         int searchDistance = searchRadius * 10;
 
@@ -342,39 +348,42 @@ public class GridPathFinder
         {
             for (int i = 0; i < neighbors.Length; i += 2)
             {
-                nearestX = node.X + neighbors[i];
-                nearestZ = node.Z + neighbors[i + 1];
-                var n = nodes[nearestX + nearestZ * xsize];
+                var neighborX = node.X + neighbors[i];
+                var neighborZ = node.Z + neighbors[i + 1];
+                var n = nodes[neighborX + neighborZ * xsize];
                 if (n.IsClosed)
                 {
                     continue;
                 }
                 n.IsClosed = true;
                 closedQueue.Add(n);
-                if (CalcDistanceApproximately(startNode, n) > searchDistance)
+                if (searchDistance >= 0 && CalcDistanceApproximately(startNode, n) > searchDistance)
                 {
                     continue;
                 }
-                if (!IsNodeBlocked(unitSize, nearestX, nearestZ, blockedFunc))
+                if (!IsNodeBlocked(unitSize, neighborX, neighborZ, blockedFunc))
                 {
-                    return true;
+                    return n;
                 }
-                
                 openQueue.Push(n);
             }
             node = openQueue.Pop();
         }
-        return false;
+        return null;
     }
-    public List<int> FindPath(int unitSize, int startX, int startZ, int goalX, int goalZ, int goalRadius, int searchRadius, int searchMaxNodes, Func<int, int, bool> blockedFunc)
+    public bool FindPath(int unitSize, int startX, int startZ, int goalX, int goalZ, int goalRadius, int searchRadius, int searchMaxNodes, Func<int, int, bool> blockedFunc, out List<int> path)
     {
         Debug.Assert(unitSize > 0 && startX >= 0 && startX < xsize && startZ >= 0 && startZ <= zsize && goalX >= 0 && goalX < xsize && goalZ >= 0 && goalZ < zsize);
         Debug.Assert(goalRadius >= 0 && blockedFunc != null);
 
-        ClearCache();
+
 
         if (IsNodeBlocked(unitSize, startX, startZ, blockedFunc))
         {
+            path = new List<int>();
+            path.AddRange(startX);
+            path.AddRange(startZ);
+            path.AddRange()
             return null;
         }
         var startNode = nodes[startX + startZ * xsize];
@@ -382,9 +391,14 @@ public class GridPathFinder
         int goalDistance = goalRadius * 10;
         int searchDistance = searchRadius * 10;
 
+        startNode.GCost = 0;
+        startNode.HCost = CalcDistanceApproximately(startNode, goalNode);
+
+        var nearestNode = startNode;
+        var nearestHCost = 
+
         startNode.IsClosed = true;
         closedQueue.Add(startNode);
-
         var node = startNode;
         int searchNodeCount = 0;
         while (node != null && (searchMaxNodes < 0 || searchNodeCount++ < searchMaxNodes))
