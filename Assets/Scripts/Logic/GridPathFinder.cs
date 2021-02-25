@@ -371,23 +371,17 @@ public class GridPathFinder
         }
         return null;
     }
-    public bool FindPath(int unitSize, int startX, int startZ, int goalX, int goalZ, int goalRadius, int searchRadius, int searchMaxNodes, Func<int, int, bool> blockedFunc, out List<int> path)
+    public bool FindPath(int unitSize, GridPathNode startNode, GridPathNode goalNode, int goalRadius, int searchRadius, int searchMaxNodes, Func<int, int, bool> blockedFunc, out List<GridPathNode> path)
     {
-        Debug.Assert(unitSize > 0 && startX >= 0 && startX < xsize && startZ >= 0 && startZ <= zsize && goalX >= 0 && goalX < xsize && goalZ >= 0 && goalZ < zsize);
-        Debug.Assert(goalRadius >= 0 && blockedFunc != null);
+        Debug.Assert(unitSize > 0 && startNode != null && goalNode != null && goalRadius >= 0 && blockedFunc != null);
 
-
-
-        if (IsNodeBlocked(unitSize, startX, startZ, blockedFunc))
+        if (IsNodeBlocked(unitSize, startNode.X, startNode.Z, blockedFunc))
         {
-            path = new List<int>();
-            path.AddRange(startX);
-            path.AddRange(startZ);
-            path.AddRange()
-            return null;
+            path = new List<GridPathNode>();
+            path.Add(startNode);
+            path.Add(startNode);
+            return false;
         }
-        var startNode = nodes[startX + startZ * xsize];
-        var goalNode = nodes[goalX + goalZ * xsize];
         int goalDistance = goalRadius * 10;
         int searchDistance = searchRadius * 10;
 
