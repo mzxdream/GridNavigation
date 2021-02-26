@@ -20,7 +20,7 @@ public class Character
         var param = new GridMoveAgentParam
         {
             teamID = 1,
-            unitSize = 3,
+            radius = 0.6f,
             mass = 1.0f,
             maxSpeed = 1.0f,
             isPushResistant = true,

@@ -190,7 +190,7 @@ public class GridMoveManager
         var arr = new List<GridMoveAgent>();
         foreach (var agent in agents)
         {
-            float r = radius + agent.GetRadius();
+            float r = radius + agent.Radius;
             if (GridMathUtils.SqrDistance2D(pos, agent.Pos) <= r * r)
             {
                 if (!func(agent))
@@ -255,6 +255,14 @@ public class GridMoveManager
     }
     public Vector3 NextWayPoint(GridMoveAgent agent, ref GridPath path, Vector3 pos, float distance)
     {
-        return Vector3.zero;
+        while (path.positions.Count > 1)
+        {
+            if ((pos - path.positions[0]).sqrMagnitude > distance)
+            {
+                break;
+            }
+            path.positions.RemoveAt(0);
+        }
+        return path.positions[0];
     }
 }
