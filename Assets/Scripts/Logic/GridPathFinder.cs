@@ -371,12 +371,74 @@ public class GridPathFinder
         }
         return null;
     }
+    public bool FindStraightPath(int unitSize, GridPathNode startNode, GridPathNode goalNode, int goalRadius, Func<int, int, bool> blockedFunc, out List<GridPathNode> path)
+    {
+        Debug.Assert(unitSize > 0 && startNode != null && goalNode != null && goalRadius >= 0 && blockedFunc != null);
+
+        ClearCache();
+
+        path = new List<GridPathNode>();
+        if (IsNodeBlocked(unitSize, startNode.X, startNode.Z, blockedFunc))
+        {
+            return false;
+        }
+        int goalDistance = goalRadius * 10;
+        int dx = goalNode.X - startNode.X;
+        int dz = goalNode.Z - startNode.Z;
+        int nx = Mathf.Abs(dx);
+        int nz = Mathf.Abs(dz);
+        int signX = dx > 0 ? 1 : -1;
+        int signZ = dz > 0 ? 1 : -1;
+        int x = startNode.X;
+        int z = startNode.Z;
+        for (int ix = 0, iz = 0; ix < nx || iz < nz;)
+        {
+            var t1 = (2 * ix + 1) * nz;
+            var t2 = (2 * iz + 1) * nx;
+            if (t1 < t2) //Horizontal
+            {
+                if (!IsNeighborWalkable(unitSize, nodes[x + z * xsize], nodes[x + signX + z * xsize], blockedFunc))
+                {
+                    return false;
+                }
+                x += signX;
+                ix++;
+            }
+            else if (t1 > t2) //Vertical
+            {
+                if (!IsNeighborWalkable(unitSize, nodes[x + z * xsize], nodes[x + (z + signZ) * xsize], blockedFunc))
+                {
+                    return false;
+                }
+                z += signZ;
+                iz++;
+            }
+            else //Cross
+            {
+                if (!IsNeighborWalkable(unitSize, nodes[x + z * xsize], nodes[x + signX + (z + signZ) * xsize], blockedFunc))
+                {
+                    return false;
+                }
+                x += signX;
+                z += signZ;
+                ix++;
+                iz++;
+            }
+            path.Add(nodes[x + z * xsize]);
+        }
+        return true;
+    }
     public bool FindPath(int unitSize, GridPathNode startNode, GridPathNode goalNode, int goalRadius, int searchRadius, int searchMaxNodes, Func<int, int, bool> blockedFunc, out List<GridPathNode> path)
     {
         Debug.Assert(unitSize > 0 && startNode != null && goalNode != null && goalRadius >= 0 && blockedFunc != null);
 
         ClearCache();
 
+        path = new List<GridPathNode>();
+        if (IsNodeBlocked(unitSize, startNode.X, startNode.Z, blockedFunc))
+        {
+            return false;
+        }
         int goalDistance = goalRadius * 10;
         int searchDistance = searchRadius * 10;
         startNode.GCost = 0;
@@ -411,7 +473,7 @@ public class GridPathFinder
                 }
                 n.IsClosed = true;
                 closedQueue.Add(n);
-                if (searchDistance > 0 && CalcDistanceApproximately(startNode, n) > searchDistance)
+                if (searchDistance >= 0 && CalcDistanceApproximately(startNode, n) > searchDistance)
                 {
                     continue;
                 }
@@ -431,12 +493,11 @@ public class GridPathFinder
             node = openQueue.Pop();
         }
         path = new List<GridPathNode>();
-        while (node != startNode)
+        while (nearestNode != startNode)
         {
-            path.Add(node);
-            node = node.Parent;
+            path.Add(nearestNode);
+            nearestNode = nearestNode.Parent;
         }
-        path.Add(startNode);
         path.Reverse();
         return isFound;
     }
