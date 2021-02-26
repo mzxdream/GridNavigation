@@ -47,17 +47,17 @@ public class GridMoveManager
         this.pixelSize = tileSize / TilePerPixel;
         this.gameSpeed = gameSpeed;
 
-        tiles = new GridTileInfo[xsize * zsize];
+        tiles = new GridTile[xsize * zsize];
         for (int z = 0; z < zsize; z++)
         {
             for (int x = 0; x < xsize; x++)
             {
                 var index = x + z * xsize;
-                tiles[index] = new GridTileInfo { index = index, isBlocked = false, agents = new List<GridMoveAgent>() };
+                tiles[index] = new GridTile { index = index, isBlocked = false, agents = new List<GridMoveAgent>() };
             }
         }
         agents = new List<GridMoveAgent>();
-        pathFinder = new GridPathFinder();
+        pathFinder = new GridPathFinder(xsize, zsize);
         return true;
     }
     public void Clear()
@@ -163,13 +163,17 @@ public class GridMoveManager
         }
         return IsTileBlocked(agent, x, z, checkAgents);
     }
+    public bool IsTileCrossBlocked(GridMoveAgent agent, Vector3 startPos, Vector3 endPos, bool checkAgents)
+    {
+        if (!GetTileXZUnclamped(startPos, out var startX, out var startZ)
+            || !GetTileXZUnclamped(endPos, out var endX, out var endZ))
+        {
+            return true;
+        }
+    }
     public bool TestMoveRange(GridMoveAgent agent, Vector3 rmin, Vector3 rmax, bool checkAgents)
     {
-        if (!GetTileXZUnclamped(rmin, out var xmin, out var zmin)
-            || !GetTileXZUnclamped(rmax, out var xmax, out var zmax))
-        {
-            return false;
-        }
+
         for (int z = zmin; z <= zmax; z++)
         {
             for (int x = xmin; x <= xmax; x++)
