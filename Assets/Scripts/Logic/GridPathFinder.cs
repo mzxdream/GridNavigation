@@ -354,10 +354,7 @@ public class GridPathFinder
         Debug.Assert(unitSize > 0 && startNode != null && goalNode != null && goalRadius >= 0 && blockedFunc != null);
 
         path = new List<GridPathNode>();
-        if (IsNodeBlocked(unitSize, startNode.X, startNode.Z, blockedFunc))
-        {
-            return false;
-        }
+        path.Add(startNode);
         int goalDistance = goalRadius * 10;
         int dx = goalNode.X - startNode.X;
         int dz = goalNode.Z - startNode.Z;
@@ -408,13 +405,13 @@ public class GridPathFinder
     {
         Debug.Assert(unitSize > 0 && startNode != null && goalNode != null && goalRadius >= 0 && blockedFunc != null);
 
-        ClearCache();
-
-        path = new List<GridPathNode>();
-        if (IsNodeBlocked(unitSize, startNode.X, startNode.Z, blockedFunc))
+        foreach (var n in closedQueue)
         {
-            return false;
+            n.IsClosed = false;
         }
+        closedQueue.Clear();
+        openQueue.Clear();
+
         int goalDistance = goalRadius * 10;
         int searchDistance = searchRadius * 10;
         startNode.GCost = 0;
@@ -474,6 +471,7 @@ public class GridPathFinder
             path.Add(nearestNode);
             nearestNode = nearestNode.Parent;
         }
+        path.Add(startNode);
         path.Reverse();
         return isFound;
     }
