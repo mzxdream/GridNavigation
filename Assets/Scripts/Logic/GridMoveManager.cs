@@ -101,6 +101,11 @@ public class GridMoveManager
         x = Mathf.Clamp(x, 0, xsize - 1);
         z = Mathf.Clamp(z, 0, zsize - 1);
     }
+    public int GetTileIndex(Vector3 pos)
+    {
+        GetTileXZ(pos, out int x, out int z);
+        return x + z * xsize;
+    }
     public Vector3 GetTilePos(int x, int z)
     {
         Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
@@ -247,5 +252,9 @@ public class GridMoveManager
             path.positions.Add(GetTilePos(n.X, n.Z));
         }
         return true;
+    }
+    public Vector3 NextWayPoint(GridMoveAgent agent, ref GridPath path, Vector3 pos, float distance)
+    {
+        return Vector3.zero;
     }
 }

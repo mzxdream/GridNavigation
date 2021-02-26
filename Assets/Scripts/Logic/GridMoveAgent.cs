@@ -16,6 +16,8 @@ public class GridMoveAgent
     private enum ProgressState { Done = 0, Active = 1, Failed = 2 };
     GridMoveManager manager;
     private int id;
+    private Vector3 pos;
+    private Vector3 forward;
     private float teamID;
     private float mass;
     private float radius;
@@ -23,37 +25,34 @@ public class GridMoveAgent
     private float accRate;
     private float decRate;
     private bool isPushResistant;
-    private Vector3 pos;
-    private Vector3 forward;
-
-    private Vector3 currentVelocity;
-    private float currentSpeed;
-    private float deltaSpeed;
-
-    private float turnRate;
-    private float turnAcc;
-
-    private Vector3 goalPos;
-    private float goalRadius;
-    private bool atGoal;
-    private bool atEndOfPath;
+    private int unitSize;
+    private int x;
+    private int z;
 
     private ProgressState progressState;
+    private Vector3 goalPos;
+    private float goalRadius;
     private bool isWantRepath;
     private GridPath path;
     private Vector3 currWayPoint;
     private Vector3 nextWayPoint;
+    private Vector3 currentVelocity;
+    private float currentSpeed;
     private bool idling;
     private int numIdlingUpdates;
     private int numIdlingSlowUpdates;
-    private Vector3 waypointDir;
+    private bool atGoal;
+    private bool atEndOfPath;
     private Vector3 oldPos;
+    private Vector3 waypointDir;
+    private float deltaSpeed;
 
     public int ID { get => id; }
     public Vector3 Pos { get => pos; }
     public Vector3 Forward { get => forward; }
-    public int UnitSize { get => param.unitSize; }
-    public bool WantToStop { get => path == null && atEndOfPath; }
+    public float Radius { get => radius; }
+    public int UnitSize { get => unitSize; }
+    private bool WantToStop { get => path == null && atEndOfPath; }
 
     public GridMoveAgent(GridMoveManager manager)
     {
@@ -62,30 +61,31 @@ public class GridMoveAgent
     public bool Init(int id, Vector3 pos, Vector3 forward, GridMoveAgentParam param)
     {
         this.id = id;
-        this.param = param;
         this.pos = manager.ClampInBounds(pos);
         this.forward = forward;
-
+        this.teamID = param.teamID;
+        this.mass = param.mass;
+        this.radius = param.radius;
         this.maxSpeed = param.maxSpeed / manager.GameSpeed;
-        this.accRate = Mathf.Max(0.01f, param.maxAcc);
-        this.decRate = Mathf.Max(0.01f, param.maxDec);
-        this.currentVelocity = Vector3.zero;
-        this.currentSpeed = 0f;
-        this.deltaSpeed = 0f;
-
-        this.turnRate = 0f;
-        this.turnAcc = 0f;
-
-        this.goalPos = this.pos;
-        this.goalRadius = 0.01f;
-        this.atGoal = true;
-        this.atEndOfPath = true;
+        this.accRate = Mathf.Max(0.001f, param.maxAcc / manager.GameSpeed);
+        this.decRate = Mathf.Max(0.001f, param.maxDec / manager.GameSpeed);
+        this.isPushResistant = param.isPushResistant;
+        this.unitSize = Mathf.CeilToInt(this.radius / manager.TileSize);
+        manager.GetTileXZ(this.pos, out this.x, out this.z);
 
         this.progressState = ProgressState.Done;
+        this.goalPos = this.pos;
+        this.goalRadius = 0.0f;
         this.isWantRepath = false;
-        this.currWayPoint = new Vector3();
-        this.nextWayPoint = new Vector3();
-
+        this.path = null;
+        this.currWayPoint = Vector3.zero;
+        this.nextWayPoint = Vector3.zero;
+        this.currentVelocity = Vector3.zero;
+        this.currentSpeed = 0f;
+        this.idling = true;
+        this.numIdlingUpdates = 0;
+        this.numIdlingSlowUpdates = 0;
+        this.oldPos = this.pos;
         return true;
     }
     public void Clear()
@@ -96,18 +96,16 @@ public class GridMoveAgent
         //todo turn rate
         forward = newWantedForward;
     }
-    private static float BrakingDistance(float speed, float rate)
+    private static float BrakingDistance(float speed, float decRate)
     {
-        float t = speed / Mathf.Max(rate, 0.001f);
-        float d = 0.5f * rate * t * t;
-        return d;
+        float t = speed / Mathf.Max(decRate, 0.0001f);
+        return 0.5f * decRate * t * t;
     }
     private void ChangeSpeed(float newWantedSpeed)
     {
         if (newWantedSpeed <= 0.0f && currentSpeed < 0.01f)
         {
             currentSpeed = 0.0f;
-            deltaSpeed = 0.0f;
             return;
         }
         float targetSpeed = maxSpeed;
@@ -162,13 +160,11 @@ public class GridMoveAgent
         }
         float currWayPointDist = GridMathUtils.Distance2D(pos, currWayPoint);
         //TODO check turn rate
-        if (currWayPointDist > Mathf.Max(currentSpeed * 1.05f, manager.GridSize) && Vector3.Dot(waypointDir, forward) >= 0.995f)
+        if (currWayPointDist > Mathf.Max(currentSpeed * 1.05f, manager.TileSize) && Vector3.Dot(waypointDir, forward) >= 0.995f)
         {
             return false;
         }
-        ;
-        if (currWayPointDist > manager.GridSize
-            && !manager.TestMoveRange(this, Vector3.Min(pos, currWayPoint), Vector3.Max(pos, currWayPoint), true))
+        if (currWayPointDist > manager.TileSize && !manager.IsCrossWalkable(this, pos, currWayPoint, true))
         {
             return false;
         }
@@ -185,14 +181,14 @@ public class GridMoveAgent
         if (CanSetNextWayPoint())
         {
             currWayPoint = nextWayPoint;
-            nextWayPoint = manager.NextWayPoint(this, this.path, currWayPoint, Mathf.Max(currentSpeed * 1.05f, 1.25f * manager.GridSize));
+            nextWayPoint = manager.NextWayPoint(this, ref this.path, currWayPoint, Mathf.Max(currentSpeed * 1.05f, 1.25f * manager.TileSize));
             //check nextwaypoint is success
             //if ()
             //{
             //    Fail(false);
             //}
         }
-        if (manager.IsGridBlocked(this, currWayPoint, true) || manager.IsGridBlocked(this, nextWayPoint, true))
+        if (manager.IsTileBlocked(this, currWayPoint, true) || manager.IsTileBlocked(this, nextWayPoint, true))
         {
             ReRequestPath(false);
         }
@@ -214,13 +210,13 @@ public class GridMoveAgent
     {
         if (path == null)
         {
-            path = manager.FindPath(this, this.goalPos, this.goalRadius);
+            manager.FindPath(this, this.pos, this.goalPos, this.goalRadius, out this.path);
             if (path != null)
             {
                 atGoal = false;
                 atEndOfPath = false;
-                currWayPoint = manager.NextWayPoint(this, this.path, pos, Mathf.Max(currentSpeed * 1.05f, 1.25f * manager.GridSize));
-                nextWayPoint = manager.NextWayPoint(this, this.path, currWayPoint, Mathf.Max(currentSpeed * 1.05f, 1.25f * manager.GridSize));
+                currWayPoint = manager.NextWayPoint(this, ref this.path, pos, Mathf.Max(currentSpeed * 1.05f, 1.25f * manager.TileSize));
+                nextWayPoint = manager.NextWayPoint(this, ref this.path, currWayPoint, Mathf.Max(currentSpeed * 1.05f, 1.25f * manager.TileSize));
             }
             else
             {
@@ -266,46 +262,47 @@ public class GridMoveAgent
         var avoidanceVec = Vector3.zero;
         var avoidanceDir = desiredDir;
 
-        float avoidanceRadius = Mathf.Max(avoider.currentSpeed, 1.0f) * (avoider.GetRadius() * 2.0f);
-        float avoiderRadius = avoider.GetMinExteriorRadius();
+        float avoidanceRadius = Mathf.Max(avoider.currentSpeed, 1.0f) * (avoider.radius * 2.0f);
+        float avoiderRadius = avoider.radius;
 
-        foreach (var avoidee in manager.GetUnitsExact(avoider.pos, avoidanceRadius))
+        //foreach (var avoidee in manager.GetUnitsExact(avoider.pos, avoidanceRadius))
+        manager.ForeachAgents(avoider.pos, avoidanceRadius, (GridMoveAgent avoidee) =>
         {
             if (avoidee == avoider)
             {
-                continue;
+                return true;
             }
             bool avoideeMobile = true;
-            bool avoideeMovable = !avoidee.param.isPushResistant;
+            bool avoideeMovable = !avoidee.isPushResistant;
 
             Vector3 avoideeVector = (avoider.pos + avoider.currentVelocity) - (avoidee.pos + avoidee.currentVelocity);
 
-            float avoideeRadius = avoidee.GetMinExteriorRadius();
+            float avoideeRadius = avoidee.radius;
             float avoidanceRadiusSum = avoiderRadius + avoideeRadius;
-            float avoidanceMassSum = avoider.param.mass + avoidee.param.mass;
-            float avoideeMassScale = avoideeMobile ? (avoidee.param.mass / avoidanceMassSum) : 1.0f;
+            float avoidanceMassSum = avoider.mass + avoidee.mass;
+            float avoideeMassScale = avoideeMobile ? (avoidee.mass / avoidanceMassSum) : 1.0f;
             float avoideeDistSq = avoideeVector.sqrMagnitude;
             float avoideeDist = Mathf.Sqrt(avoideeDistSq) + 0.01f;
 
             if (avoideeMobile && avoideeMovable)
             {
-                if (!avoidee.IsMoving() && avoidee.param.teamID == avoider.param.teamID)
+                if (!avoidee.IsMoving() && avoidee.teamID == avoider.teamID)
                 {
-                    continue;
+                    return true;
                 }
             }
             if (Vector3.Dot(avoider.forward, -avoideeVector / avoideeDist) < Mathf.Cos(120.0f * Mathf.Deg2Rad))
             {
-                continue;
+                return true;
             }
             float t = Mathf.Max(avoider.currentSpeed, 1.0f) * manager.GameSpeed + avoidanceRadiusSum;
             if (avoideeDistSq >= t * t)
             {
-                continue;
+                return true;
             }
             if (avoideeDistSq >= GridMathUtils.SqrDistance2D(avoider.pos, avoider.goalPos))
             {
-                continue;
+                return true;
             }
 
             float avoiderTurnSign = Vector3.Dot(avoidee.pos, avoider.GetRightDir()) - Vector3.Dot(avoider.pos, avoider.GetRightDir()) > 0.0f ? -1 : 1;
@@ -321,7 +318,8 @@ public class GridMoveAgent
             }
             avoidanceDir = avoider.GetRightDir() * avoiderTurnSign;
             avoidanceVec += (avoidanceDir * avoidanceResponse * avoidanceFallOff * avoideeMassScale);
-        }
+            return true;
+        });
         avoidanceDir = Vector3.Lerp(desiredDir, avoidanceVec, 0.5f).normalized;
         avoidanceDir = Vector3.Lerp(avoidanceDir, desiredDir, 0.7f).normalized;
         return avoidanceDir;
@@ -384,19 +382,19 @@ public class GridMoveAgent
         if (newVelocity != Vector3.zero)
         {
             Vector3 newPos = pos + newVelocity;
-            if (!manager.TestMoveRange(this, newPos, newPos, false))
+            if (!manager.IsTileBlocked(this, newPos, false))
             {
                 Vector3 rightDir = Vector3.Cross(forward, Vector3.up);
                 for (int n = 8; n > 0; n--)
                 {
-                    Vector3 testPos = newPos + rightDir * (manager.GridSize / n);
-                    if (manager.TestMoveRange(this, testPos, testPos, false))
+                    Vector3 testPos = newPos + rightDir * (manager.TileSize / n);
+                    if (!manager.IsTileBlocked(this, testPos, false))
                     {
                         pos = testPos;
                         break;
                     }
-                    testPos = newPos - rightDir * (manager.GridSize / n);
-                    if (manager.TestMoveRange(this, testPos, testPos, false))
+                    testPos = newPos - rightDir * (manager.TileSize / n);
+                    if (!manager.IsTileBlocked(this, testPos, false))
                     {
                         pos = testPos;
                         break;
@@ -431,7 +429,7 @@ public class GridMoveAgent
             var rightDir2D = new Vector3(rgt.x, 0, rgt.z).normalized;
             var speedDir2D = new Vector3(vel.x, 0, vel.z).normalized;
 
-            manager.GetGirdXZ(pos + vel, out int xmid, out int zmid);
+            manager.GetTileXZ(pos + vel, out int xmid, out int zmid);
             int xsh = collider.UnitSize / 2;
             int zsh = collider.UnitSize / 2;
 
@@ -452,18 +450,18 @@ public class GridMoveAgent
                 {
                     int xabs = xmid + x;
                     int zabs = zmid + z;
-                    if (checkTerrain && !manager.IsGridBlocked(xabs, zabs))
+                    if (checkTerrain && !manager.IsTileBlocked(collider, xabs, zabs, false))
                     {
                         continue;
                     }
-                    Vector3 squarePos = manager.GetGridPos(xabs, zabs);
+                    Vector3 squarePos = manager.GetTilePos(xabs, zabs);
                     Vector3 squareVec = pos - squarePos;
                     if (Vector3.Dot(squareVec, vel) > 0.0f)
                     {
                         continue;
                     }
-                    float squareRadius = Mathf.Sqrt(2 * (manager.GridSize / 2) * (manager.GridSize / 2));
-                    float squareColRadiusSum = collider.GetRadius() + squareRadius;
+                    float squareRadius = Mathf.Sqrt(2 * (manager.TileSize / 2) * (manager.TileSize / 2));
+                    float squareColRadiusSum = collider.radius + squareRadius;
                     float squareSepDistance = squareVec.magnitude + 0.1f;
                     float squarePenDistance = Mathf.Min(squareSepDistance - squareColRadiusSum, 0.0f);
 
@@ -481,11 +479,11 @@ public class GridMoveAgent
 
                 float strafeSign = Vector3.Dot(sqrSumPosition, rightDir2D) - Vector3.Dot(pos, rightDir2D) > 0 ? -1 : 1;
                 float bounceSign = Vector3.Dot(rightDir2D, bounceVec) > 0 ? 1 : -1;
-                float strafeScale = Mathf.Min(collider.param.maxSpeed, Mathf.Max(0.1f, -sqrPenDistanceSum * 0.5f));
-                float bounceScale = Mathf.Min(collider.param.maxSpeed, Mathf.Max(0.1f, -sqrPenDistanceSum * 0.5f));
+                float strafeScale = Mathf.Min(collider.maxSpeed, Mathf.Max(0.1f, -sqrPenDistanceSum * 0.5f));
+                float bounceScale = Mathf.Min(collider.maxSpeed, Mathf.Max(0.1f, -sqrPenDistanceSum * 0.5f));
 
-                float fpsStrafeScale = (strafeScale / (strafeScale + bounceScale)) * collider.param.maxSpeed;
-                float fpsBounceScale = (bounceScale / (strafeScale + bounceScale)) * collider.param.maxSpeed;
+                float fpsStrafeScale = (strafeScale / (strafeScale + bounceScale)) * collider.maxSpeed;
+                float fpsBounceScale = (bounceScale / (strafeScale + bounceScale)) * collider.maxSpeed;
 
                 // bounceVec always points along rightDir by construction
                 strafeVec = (rightDir2D * strafeSign) * strafeScale;
@@ -493,7 +491,7 @@ public class GridMoveAgent
                 summedVec = strafeVec + bounceVec;
 
                 // if checkTerrain is true, test only the center square
-                if (manager.TestMoveRange(collider, pos + summedVec, pos + summedVec, false))
+                if (!manager.IsTileBlocked(collider, pos + summedVec, false))
                 {
                     collider.pos = collider.pos + summedVec;
                     collider.currWayPoint += summedVec;
@@ -508,7 +506,7 @@ public class GridMoveAgent
         }
         else
         {
-            float colRadiusSum = collider.GetRadius() + collidee.GetRadius();
+            float colRadiusSum = collider.radius + collidee.radius;
             float sepDistance = separationVec.magnitude + 0.1f;
             float penDistance = Mathf.Min(sepDistance - colRadiusSum, 0.0f);
             float colSlideSign = Vector3.Dot(collidee.pos, rgt) - Vector3.Dot(pos, rgt) > 0.0f ? -1 : 1;
@@ -520,7 +518,7 @@ public class GridMoveAgent
             Vector3 bounceVec = (separationVec / sepDistance) * bounceScale;
             Vector3 summedVec = strafeVec + bounceVec;
 
-            if (manager.TestMoveRange(collider, pos + summedVec, pos + summedVec, true))
+            if (!manager.IsTileBlocked(collider, pos + summedVec, true))
             {
                 collider.pos = collider.pos + summedVec;
                 collider.currWayPoint += summedVec;
@@ -563,7 +561,7 @@ public class GridMoveAgent
                         collider.currWayPoint.y = -1.0f;
                         return;
                     }
-                    if (GridMathUtils.SqrDistance2D(collider.pos, collider.goalPos) >= collider.GetRadius() * collider.GetRadius())
+                    if (GridMathUtils.SqrDistance2D(collider.pos, collider.goalPos) >= collider.radius * collider.radius)
                     {
                         return;
                     }
@@ -580,23 +578,23 @@ public class GridMoveAgent
     private static void HandleUnitCollisions(GridMoveAgent collider, float colliderSpeed, float colliderRadius)
     {
         var manager = collider.manager;
-        foreach (var collidee in manager.GetUnitsExact(collider.pos, colliderSpeed + colliderRadius * 2.0f))
+        manager.ForeachAgents(collider.pos, colliderSpeed + colliderRadius * 2.0f, (GridMoveAgent collidee) =>
         {
             if (collider == collidee)
             {
-                continue;
+                return true;
             }
             //TODO filter
             HandleUnitCollisionsAux(collider, collidee);
-            bool pushCollider = !collider.param.isPushResistant;
-            bool pushCollidee = !collidee.param.isPushResistant;
-            if (collider.param.teamID != collidee.param.teamID)
+            bool pushCollider = !collider.isPushResistant;
+            bool pushCollidee = !collidee.isPushResistant;
+            if (collider.teamID != collidee.teamID)
             {
                 pushCollidee = false;
                 pushCollider = false;
             }
             Vector3 separationVec = collider.pos - collidee.pos;
-            float collideeRadius = collidee.GetRadius();
+            float collideeRadius = collidee.radius;
             if (!pushCollider && !pushCollidee)
             {
                 bool allowNewPath = !collider.atEndOfPath && !collider.atGoal;
@@ -604,20 +602,20 @@ public class GridMoveAgent
                 {
                     collider.ReRequestPath(false);
                 }
-                continue;
+                return true;
             }
             //float colliderRelRadius = colliderRadius / (colliderRadius + collideeRadius);
             //float collideeRelRadius = collideeRadius / (colliderRadius + collideeRadius);
             float collisionRadiusSum = colliderRadius + collideeRadius;
             float sepDistance = separationVec.magnitude + 0.1f;
             float penDistance = Mathf.Max(collisionRadiusSum - sepDistance, 1.0f);
-            float sepResponse = Mathf.Min(manager.GridSize * 2.0f, penDistance * 0.5f);
+            float sepResponse = Mathf.Min(manager.TileSize * 2.0f, penDistance * 0.5f);
 
             Vector3 sepDirection = separationVec / sepDistance;
             Vector3 colResponseVec = new Vector3(sepDirection.x, 0, sepDirection.z) * sepResponse;
 
-            float m1 = collider.param.mass;
-            float m2 = collidee.param.mass;
+            float m1 = collider.mass;
+            float m2 = collidee.mass;
             float v1 = Mathf.Max(1.0f, colliderSpeed);
             float v2 = Mathf.Max(1.0f, collidee.currentSpeed);
             float c1 = 1.0f + (1.0f - Mathf.Abs(Vector3.Dot(collider.forward, -sepDirection))) * 5.0f;
@@ -633,7 +631,7 @@ public class GridMoveAgent
             float colliderSlideSign = Vector3.Dot(separationVec, collider.GetRightDir()) > 0 ? 1 : -1;
             float collideeSlideSign = Vector3.Dot(-separationVec, collidee.GetRightDir()) > 0 ? 1 : -1;
 
-            bool ignoreCollidee = collider.param.teamID == collidee.param.teamID && collider.IsMoving() && !collidee.IsMoving();
+            bool ignoreCollidee = collider.teamID == collidee.teamID && collider.IsMoving() && !collidee.IsMoving();
             Vector3 colliderPushVec = colResponseVec * colliderMassScale * (!ignoreCollidee ? 1 : 0);
             Vector3 collideePushVec = -colResponseVec * collideeMassScale;
             Vector3 colliderSlideVec = collider.GetRightDir() * colliderSlideSign * (1.0f / penDistance) * r2;
@@ -644,29 +642,21 @@ public class GridMoveAgent
             bool moveCollider = pushCollider || !pushCollidee;
             bool moveCollidee = pushCollidee || !pushCollider;
 
-            if (moveCollider && manager.TestMoveRange(collider, collider.pos + colliderMoveVec, collider.pos + colliderMoveVec, true))
+            if (moveCollider && !manager.IsTileBlocked(collider, collider.pos + colliderMoveVec, true))
             {
                 collider.pos = collider.pos + colliderMoveVec;
             }
-            if (moveCollidee && manager.TestMoveRange(collidee, collidee.pos + collideeMoveVec, collidee.pos + collideeMoveVec, true))
+            if (moveCollidee && !manager.IsTileBlocked(collidee, collidee.pos + collideeMoveVec, true))
             {
                 collidee.pos = collidee.pos + collideeMoveVec;
             }
-        }
-    }
-    public float GetRadius()
-    {
-        return param.unitSize * manager.GridSize / 2.0f;
-    }
-    public float GetMinExteriorRadius()
-    {
-        return Mathf.Sqrt(2 * GetRadius() * GetRadius());
+            return true;
+        });
     }
     private void HandleObjectCollision()
     {
-        float radius = GetRadius();
         HandleUnitCollisions(this, currentSpeed, radius);
-        if (manager.GetGridIndex(pos + currentVelocity) != manager.GetGridIndex(pos))
+        if (manager.GetTileIndex(pos + currentVelocity) != manager.GetTileIndex(pos))
         {
             if (HandleStaticObjectCollision(this, this, radius, 0.0f, Vector3.zero, true, true))
             {
@@ -736,7 +726,10 @@ public class GridMoveAgent
                 ReRequestPath(true);
             }
         }
-        manager.OnPositionChange(this, pos);
+        int oldX = x;
+        int oldZ = z;
+        manager.GetTileXZ(pos, out this.x, out this.z);
+        manager.OnTileChange(this, oldX, oldZ, x, z);
     }
     public bool StartMoving(Vector3 goalPos, float goalRadius = 0.1f)
     {
@@ -771,10 +764,10 @@ public class GridMoveAgent
         {
             return false;
         }
-        if (param.isPushResistant)
+        if (isPushResistant)
         {
             return true;
         }
-        return param.teamID != a.param.teamID;
+        return teamID != a.teamID;
     }
 }
