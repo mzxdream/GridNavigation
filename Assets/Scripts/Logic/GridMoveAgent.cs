@@ -3,8 +3,8 @@ using UnityEngine;
 public class GridMoveAgentParam
 {
     public int teamID; //enemy can't push
-    public int unitSize;
     public float mass; //calc push distance
+    public float radius;
     public float maxSpeed;
     public float maxAcc;
     public float maxDec;
@@ -16,13 +16,16 @@ public class GridMoveAgent
     private enum ProgressState { Done = 0, Active = 1, Failed = 2 };
     GridMoveManager manager;
     private int id;
-    private GridMoveAgentParam param;
-    private Vector3 pos;
-    private Vector3 forward;
-
+    private float teamID;
+    private float mass;
+    private float radius;
     private float maxSpeed;
     private float accRate;
     private float decRate;
+    private bool isPushResistant;
+    private Vector3 pos;
+    private Vector3 forward;
+
     private Vector3 currentVelocity;
     private float currentSpeed;
     private float deltaSpeed;
