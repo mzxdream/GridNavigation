@@ -183,7 +183,7 @@ public class GridMoveManager
         }
         return pathFinder.IsCrossWalkable(agent.UnitSize, snode, enode, (int x, int z) => { return IsTileCenterBlocked(agent, x, z, checkAgents); });
     }
-    public List<GridMoveAgent> GetUnitsExact(Vector3 pos, float radius)
+    public void ForeachAgents(Vector3 pos, float radius, Func<GridMoveAgent, bool> func)
     {
         var arr = new List<GridMoveAgent>();
         foreach (var agent in agents)
@@ -191,45 +191,41 @@ public class GridMoveManager
             float r = radius + agent.GetRadius();
             if (GridMathUtils.SqrDistance2D(pos, agent.Pos) <= r * r)
             {
-                arr.Add(agent);
+                if (!func(agent))
+                {
+                    return;
+                }
             }
         }
-        return arr;
     }
-    public void OnPositionChange(GridMoveAgent agent, Vector3 pos)
+    public void OnTileChange(GridMoveAgent agent, int oldX, int oldZ, int newX, int newZ)
     {
-        if (agentGridIndexes.TryGetValue(agent.ID, out int oldIndex))
+        if (oldX == newX && oldZ == newZ)
         {
-            int oldX = oldIndex % xsize, oldZ = oldIndex / xsize;
-            int xmin = Mathf.Max(oldX - agent.UnitSize / 2, 0);
-            int xmax = Mathf.Min(oldX + agent.UnitSize / 2, xsize - 1);
-            int zmin = Mathf.Max(oldZ - agent.UnitSize / 2, 0);
-            int zmax = Mathf.Min(oldZ + agent.UnitSize / 2, zsize - 1);
-            for (int z = zmin; z <= zmax; z++)
-            {
-                for (int x = xmin; x <= xmax; x++)
-                {
-                    var grid = grids[x + z * xsize];
-                    grid.agents.Remove(agent);
-                }
-            }
-            agentGridIndexes.Remove(agent.ID);
+            return;
         }
+        int offset = (agent.UnitSize >> 1);
+
+        int xmin = Mathf.Max(oldX - offset, 0);
+        int xmax = Mathf.Min(oldX + offset, xsize - 1);
+        int zmin = Mathf.Max(oldZ - offset, 0);
+        int zmax = Mathf.Min(oldZ + offset, zsize - 1);
+        for (int z = zmin; z <= zmax; z++)
         {
-            var newIndex = GetGridIndex(pos);
-            agentGridIndexes.Add(agent.ID, newIndex);
-            int newX = newIndex % xsize, newZ = newIndex / xsize;
-            int xmin = Mathf.Max(newX - agent.UnitSize / 2, 0);
-            int xmax = Mathf.Min(newX + agent.UnitSize / 2, xsize - 1);
-            int zmin = Mathf.Max(newZ - agent.UnitSize / 2, 0);
-            int zmax = Mathf.Min(newZ + agent.UnitSize / 2, zsize - 1);
-            for (int z = zmin; z <= zmax; z++)
+            for (int x = xmin; x <= xmax; x++)
             {
-                for (int x = xmin; x <= xmax; x++)
-                {
-                    var grid = grids[x + z * xsize];
-                    grid.agents.Add(agent);
-                }
+                tiles[x + z * xsize].agents.Remove(agent);
+            }
+        }
+        xmin = Mathf.Max(newX - offset, 0);
+        xmax = Mathf.Min(newX + offset, xsize - 1);
+        zmin = Mathf.Max(newZ - offset, 0);
+        zmax = Mathf.Min(newZ + offset, zsize - 1);
+        for (int z = zmin; z <= zmax; z++)
+        {
+            for (int x = xmin; x <= xmax; x++)
+            {
+                tiles[x + z * xsize].agents.Add(agent);
             }
         }
     }
