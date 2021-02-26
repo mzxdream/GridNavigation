@@ -17,7 +17,7 @@ public class GridPathNode
     public int Z { get => z; }
     public int FCost { get => gCost + hCost; }
     public int GCost { get => gCost; set => gCost = value; }
-    public int HCost { set => hCost = value; }
+    public int HCost { get => hCost; set => hCost = value; }
     public GridPathNode Parent { get => parent; set => parent = value; }
     public bool HasTestBlocked
     {
@@ -375,41 +375,26 @@ public class GridPathFinder
     {
         Debug.Assert(unitSize > 0 && startNode != null && goalNode != null && goalRadius >= 0 && blockedFunc != null);
 
-        if (IsNodeBlocked(unitSize, startNode.X, startNode.Z, blockedFunc))
-        {
-            path = new List<GridPathNode>();
-            path.Add(startNode);
-            path.Add(startNode);
-            return false;
-        }
+        ClearCache();
+
         int goalDistance = goalRadius * 10;
         int searchDistance = searchRadius * 10;
-
         startNode.GCost = 0;
         startNode.HCost = CalcDistanceApproximately(startNode, goalNode);
-
-        var nearestNode = startNode;
-        var nearestHCost = 
-
         startNode.IsClosed = true;
         closedQueue.Add(startNode);
-        var node = startNode;
+
+        var nearestNode = startNode;
         int searchNodeCount = 0;
+        bool isFound = false;
+        var node = startNode;
         while (node != null && (searchMaxNodes < 0 || searchNodeCount++ < searchMaxNodes))
         {
-            if (CalcDistanceApproximately(node, goalNode) <= goalDistance)
+            if (node.HCost <= goalDistance)
             {
-                var path = new List<int>();
-                while (node != startNode)
-                {
-                    path.Add(node.Z);
-                    path.Add(node.X);
-                    node = node.Parent;
-                }
-                path.Add(startNode.Z);
-                path.Add(startNode.X);
-                path.Reverse();
-                return path;
+                nearestNode = node;
+                isFound = true;
+                break;
             }
             for (int j = 0; j < neighbors.Length; j += 2)
             {
@@ -434,13 +419,25 @@ public class GridPathFinder
                 {
                     continue;
                 }
-                n.GCost = node.GCost + CalcDistanceApproximately(node.X, node.Z, x, z);
+                n.GCost = node.GCost + CalcDistanceApproximately(node, n);
                 n.HCost = CalcDistanceApproximately(n, goalNode);
                 n.Parent = node;
                 openQueue.Push(n);
+                if (node.HCost < nearestNode.HCost)
+                {
+                    nearestNode = node;
+                }
             }
             node = openQueue.Pop();
         }
-        return null;
+        path = new List<GridPathNode>();
+        while (node != startNode)
+        {
+            path.Add(node);
+            node = node.Parent;
+        }
+        path.Add(startNode);
+        path.Reverse();
+        return isFound;
     }
 }
