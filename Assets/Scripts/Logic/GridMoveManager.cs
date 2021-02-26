@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -163,39 +164,24 @@ public class GridMoveManager
         }
         return IsTileBlocked(agent, x, z, checkAgents);
     }
-    public bool IsTileCrossBlocked(GridMoveAgent agent, Vector3 startPos, Vector3 endPos, bool checkAgents)
+    public bool IsCrossWalkable(GridMoveAgent agent, Vector3 startPos, Vector3 endPos, bool checkAgents)
     {
         if (!GetTileXZUnclamped(startPos, out var startX, out var startZ)
             || !GetTileXZUnclamped(endPos, out var endX, out var endZ))
         {
+            return false;
+        }
+        if (IsTileBlocked(agent, startX, startZ, checkAgents))
+        {
+            return false;
+        }
+        var snode = pathFinder.GetNode(startX, startZ);
+        var enode = pathFinder.GetNode(endX, endZ);
+        if (snode == null || enode == null)
+        {
             return true;
         }
-    }
-    public bool TestMoveRange(GridMoveAgent agent, Vector3 rmin, Vector3 rmax, bool checkAgents)
-    {
-
-        for (int z = zmin; z <= zmax; z++)
-        {
-            for (int x = xmin; x <= xmax; x++)
-            {
-                var grid = grids[x + z * xsize];
-                if (grid.isBlocked)
-                {
-                    return false;
-                }
-                if (checkAgents)
-                {
-                    foreach (var a in grid.agents)
-                    {
-                        if (a.IsBlockedOther(agent))
-                        {
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-        return true;
+        return pathFinder.IsCrossWalkable(agent.UnitSize, snode, enode, (int x, int z) => { return IsTileCenterBlocked(agent, x, z, checkAgents); });
     }
     public List<GridMoveAgent> GetUnitsExact(Vector3 pos, float radius)
     {
