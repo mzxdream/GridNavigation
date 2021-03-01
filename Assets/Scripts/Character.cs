@@ -23,6 +23,8 @@ public class Character
             radius = 0.6f,
             mass = 1.0f,
             maxSpeed = 1.0f,
+            maxAcc = 1.0f,
+            maxDec = 1.0f,
             isPushResistant = true,
         };
         moveAgent = moveManager.CreateAgent(position, forward, param);
