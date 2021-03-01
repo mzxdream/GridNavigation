@@ -86,6 +86,14 @@ public class GridMoveManager
         agents.Add(agent);
         return agent;
     }
+    public void SetTileBlocked(int x, int z, bool blocked)
+    {
+        if (x < 0 || x >= xsize || z < 0 || z >= zsize)
+        {
+            return;
+        }
+        tiles[x + z * xsize].isBlocked = blocked;
+    }
     public Vector3 ClampInBounds(Vector3 pos)
     {
         return new Vector3(Mathf.Clamp(pos.x, bmin.x, bmax.x), pos.y, Mathf.Clamp(pos.z, bmin.z, bmax.z));

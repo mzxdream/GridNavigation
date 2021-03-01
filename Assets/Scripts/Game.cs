@@ -100,6 +100,7 @@ public class Game : MonoBehaviour
         {
             if (tile.Type == GameTileType.Wall)
             {
+                moveManager.SetTileBlocked(index % xsize, index / xsize, false);
             }
             else if (tile.Type == GameTileType.RedDestination)
             {
@@ -133,6 +134,7 @@ public class Game : MonoBehaviour
         if (type == GameTileType.Wall)
         {
             prefab = wallPrefab;
+            moveManager.SetTileBlocked(index % xsize, index / xsize, true);
         }
         else if (type == GameTileType.RedDestination)
         {
