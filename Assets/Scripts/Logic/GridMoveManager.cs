@@ -68,9 +68,6 @@ public class GridMoveManager
         {
             agent.Update();
         }
-    }
-    public void LateUpdate()
-    {
         foreach (var agent in agents)
         {
             agent.LateUpdate();
