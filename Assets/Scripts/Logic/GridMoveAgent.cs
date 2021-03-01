@@ -469,7 +469,7 @@ public class GridMoveAgent
                     {
                         continue;
                     }
-                    float squareRadius = Mathf.Sqrt(2 * (manager.TileSize / 2) * (manager.TileSize / 2));
+                    float squareRadius = 1.414f * (manager.TileSize / 2);
                     float squareColRadiusSum = collider.radius + squareRadius;
                     float squareSepDistance = squareVec.magnitude + 0.1f;
                     float squarePenDistance = Mathf.Min(squareSepDistance - squareColRadiusSum, 0.0f);
@@ -482,17 +482,17 @@ public class GridMoveAgent
             }
             if (sqrPenDistanceCount > 0.0f)
             {
-                sqrSumPosition *= (1.0f / sqrPenDistanceCount);
-                sqrPenDistanceSum *= (1.0f / sqrPenDistanceCount);
-                sqrPenDistanceCount *= (1.0f / sqrPenDistanceCount);
+                sqrSumPosition /= sqrPenDistanceCount;
+                sqrPenDistanceSum /= sqrPenDistanceCount;
+                sqrPenDistanceCount /= sqrPenDistanceCount;
 
                 float strafeSign = Vector3.Dot(sqrSumPosition, rightDir2D) - Vector3.Dot(pos, rightDir2D) > 0 ? -1 : 1;
                 float bounceSign = Vector3.Dot(rightDir2D, bounceVec) > 0 ? 1 : -1;
                 float strafeScale = Mathf.Min(collider.maxSpeed, Mathf.Max(0.1f, -sqrPenDistanceSum * 0.5f));
                 float bounceScale = Mathf.Min(collider.maxSpeed, Mathf.Max(0.1f, -sqrPenDistanceSum * 0.5f));
 
-                float fpsStrafeScale = (strafeScale / (strafeScale + bounceScale)) * collider.maxSpeed;
-                float fpsBounceScale = (bounceScale / (strafeScale + bounceScale)) * collider.maxSpeed;
+                //float fpsStrafeScale = (strafeScale / (strafeScale + bounceScale)) * collider.maxSpeed;
+                //float fpsBounceScale = (bounceScale / (strafeScale + bounceScale)) * collider.maxSpeed;
 
                 // bounceVec always points along rightDir by construction
                 strafeVec = (rightDir2D * strafeSign) * strafeScale;
