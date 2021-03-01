@@ -51,6 +51,7 @@ public class GridMoveAgent
     public Vector3 Pos { get => pos; }
     public Vector3 Forward { get => forward; }
     public float Radius { get => radius; }
+    public float MinExteriorRadius { get => unitSize * manager.TileSize * 0.5f * 1.414f; }
     public int UnitSize { get => unitSize; }
     private bool WantToStop { get => path == null && atEndOfPath; }
 
@@ -272,7 +273,7 @@ public class GridMoveAgent
         var avoidanceDir = desiredDir;
 
         float avoidanceRadius = Mathf.Max(avoider.currentSpeed, 1.0f) * (avoider.radius * 2.0f);
-        float avoiderRadius = avoider.radius;
+        float avoiderRadius = avoider.MinExteriorRadius;
 
         //foreach (var avoidee in manager.GetUnitsExact(avoider.pos, avoidanceRadius))
         manager.ForeachAgents(avoider.pos, avoidanceRadius, (GridMoveAgent avoidee) =>
@@ -281,19 +282,18 @@ public class GridMoveAgent
             {
                 return true;
             }
-            bool avoideeMobile = true;
             bool avoideeMovable = !avoidee.isPushResistant;
 
             Vector3 avoideeVector = (avoider.pos + avoider.currentVelocity) - (avoidee.pos + avoidee.currentVelocity);
 
-            float avoideeRadius = avoidee.radius;
+            float avoideeRadius = avoidee.MinExteriorRadius;
             float avoidanceRadiusSum = avoiderRadius + avoideeRadius;
             float avoidanceMassSum = avoider.mass + avoidee.mass;
-            float avoideeMassScale = avoideeMobile ? (avoidee.mass / avoidanceMassSum) : 1.0f;
+            float avoideeMassScale = avoidee.mass / avoidanceMassSum;
             float avoideeDistSq = avoideeVector.sqrMagnitude;
             float avoideeDist = Mathf.Sqrt(avoideeDistSq) + 0.01f;
 
-            if (avoideeMobile && avoideeMovable)
+            if (avoideeMovable)
             {
                 if (!avoidee.IsMoving() && avoidee.teamID == avoider.teamID)
                 {
@@ -318,7 +318,7 @@ public class GridMoveAgent
             float avoideeTurnSign = Vector3.Dot(avoider.pos, avoidee.GetRightDir()) - Vector3.Dot(avoidee.pos, avoidee.GetRightDir()) > 0.0f ? -1 : 1;
 
             float avoidanceCosAngle = Mathf.Clamp(Vector3.Dot(avoider.forward, avoidee.forward), -1.0f, 1.0f);
-            float avoidanceResponse = (1.0f - avoidanceCosAngle * (avoideeMobile ? 1 : 0)) + 0.1f;
+            float avoidanceResponse = (1.0f - avoidanceCosAngle) + 0.1f;
             float avoidanceFallOff = (1.0f - Mathf.Min(1.0f, avoideeDist / (5.0f * avoidanceRadiusSum)));
 
             if (avoidanceCosAngle < 0.0f)
