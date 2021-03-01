@@ -515,7 +515,7 @@ public class GridMoveAgent
         }
         else
         {
-            float colRadiusSum = collider.radius + collidee.radius;
+            float colRadiusSum = colliderRadius + collideeRadius;
             float sepDistance = separationVec.magnitude + 0.1f;
             float penDistance = Mathf.Min(sepDistance - colRadiusSum, 0.0f);
             float colSlideSign = Vector3.Dot(collidee.pos, rgt) - Vector3.Dot(pos, rgt) > 0.0f ? -1 : 1;
