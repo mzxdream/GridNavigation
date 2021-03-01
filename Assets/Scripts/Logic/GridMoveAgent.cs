@@ -543,11 +543,12 @@ public class GridMoveAgent
     }
     private static void HandleUnitCollisionsAux(GridMoveAgent collider, GridMoveAgent collidee)
     {
+        var manager = collider.manager;
         if (!collider.IsMoving() || collider.progressState != ProgressState.Active)
         {
             return;
         }
-        if (GridMathUtils.SqrDistance2D(collider.pos, collidee.pos) >= Mathf.PI * Mathf.PI)
+        if (GridMathUtils.SqrDistance2D(collidee.goalPos, collider.goalPos) >= Mathf.PI * Mathf.PI * manager.PixelSize * manager.PixelSize)
         {
             return;
         }
@@ -584,16 +585,18 @@ public class GridMoveAgent
     {
         return Vector3.Cross(forward, Vector3.up);
     }
-    private static void HandleUnitCollisions(GridMoveAgent collider, float colliderSpeed, float colliderRadius)
+    private static void HandleUnitCollisions(GridMoveAgent collider)
     {
+        var colliderSpeed = collider.currentSpeed;
+        var colliderRadius = collider.radius;
         var manager = collider.manager;
-        manager.ForeachAgents(collider.pos, colliderSpeed + colliderRadius * 2.0f, (GridMoveAgent collidee) =>
+
+        manager.ForeachAgents(collider.pos, colliderRadius + 0.01f, (GridMoveAgent collidee) =>
         {
             if (collider == collidee)
             {
                 return true;
             }
-            //TODO filter
             HandleUnitCollisionsAux(collider, collidee);
             bool pushCollider = !collider.isPushResistant;
             bool pushCollidee = !collidee.isPushResistant;
@@ -664,7 +667,7 @@ public class GridMoveAgent
     }
     private void HandleObjectCollision()
     {
-        HandleUnitCollisions(this, currentSpeed, radius);
+        HandleUnitCollisions(this);
         if (manager.GetTileIndex(pos + currentVelocity) != manager.GetTileIndex(pos))
         {
             if (HandleStaticObjectCollision(this, this, radius, 0.0f, Vector3.zero, true, true))
@@ -696,7 +699,7 @@ public class GridMoveAgent
         Vector3 oldForward = forward;
         UpdateOwnerAccelAndHeading();
         UpdateOwnerPos(currentVelocity, this.forward * (currentSpeed + deltaSpeed));
-        //HandleObjectCollision();
+        HandleObjectCollision();
         this.pos.y = 0.0f;
         OwnerMoved(oldPos, oldForward);
     }
