@@ -731,11 +731,11 @@ public class GridMoveAgent
         manager.GetTileXZ(pos, out this.x, out this.z);
         manager.OnTileChange(this, oldX, oldZ, x, z);
     }
-    public bool StartMoving(Vector3 goalPos, float goalRadius = 0.1f)
+    public bool StartMoving(Vector3 moveGoalPos, float moveGoalRadius)
     {
-        this.goalPos = new Vector3(goalPos.x, 0, goalPos.z);
-        this.goalRadius = goalRadius;
-        if ((this.goalPos - pos).sqrMagnitude < goalRadius * goalRadius)
+        goalPos = new Vector3(moveGoalPos.x, 0, moveGoalPos.z);
+        goalRadius = moveGoalRadius;
+        if ((goalPos - pos).sqrMagnitude < goalRadius * goalRadius)
         {
             return true;
         }
