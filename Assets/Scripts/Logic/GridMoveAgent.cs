@@ -85,7 +85,11 @@ public class GridMoveAgent
         this.idling = true;
         this.numIdlingUpdates = 0;
         this.numIdlingSlowUpdates = 0;
+        this.atGoal = true;
+        this.atEndOfPath = true;
         this.oldPos = this.pos;
+        this.waypointDir = forward;
+        this.deltaSpeed = 0.0f;
         return true;
     }
     public void Clear()
