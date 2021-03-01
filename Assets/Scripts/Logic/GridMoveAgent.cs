@@ -71,7 +71,7 @@ public class GridMoveAgent
         this.accRate = Mathf.Max(0.001f, param.maxAcc / manager.GameSpeed);
         this.decRate = Mathf.Max(0.001f, param.maxDec / manager.GameSpeed);
         this.isPushResistant = param.isPushResistant;
-        this.unitSize = Mathf.CeilToInt(this.radius / manager.TileSize);
+        this.unitSize = Mathf.CeilToInt(this.radius / manager.TileSize) * 2;
         manager.GetTileXZ(this.pos, out this.x, out this.z);
 
         this.progressState = ProgressState.Done;
