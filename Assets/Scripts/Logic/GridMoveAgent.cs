@@ -382,7 +382,7 @@ public class GridMoveAgent
         if (newVelocity != Vector3.zero)
         {
             Vector3 newPos = pos + newVelocity;
-            if (!manager.IsTileBlocked(this, newPos, false))
+            if (manager.IsTileBlocked(this, newPos, false))
             {
                 Vector3 rightDir = Vector3.Cross(forward, Vector3.up);
                 for (int n = 8; n > 0; n--)
@@ -687,7 +687,7 @@ public class GridMoveAgent
         Vector3 oldForward = forward;
         UpdateOwnerAccelAndHeading();
         UpdateOwnerPos(currentVelocity, this.forward * (currentSpeed + deltaSpeed));
-        HandleObjectCollision();
+        //HandleObjectCollision();
         this.pos.y = 0.0f;
         OwnerMoved(oldPos, oldForward);
     }

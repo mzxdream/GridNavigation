@@ -12,6 +12,7 @@ class GridTile
 public class GridPath
 {
     public List<Vector3> positions;
+    public Vector3 goalPos;
 }
 
 public class GridMoveManager
@@ -236,7 +237,7 @@ public class GridMoveManager
         GetTileXZ(startPos, out var startX, out var startZ);
         GetTileXZ(goalPos, out var goalX, out var goalZ);
 
-        path = new GridPath();
+        path = new GridPath { positions = new List<Vector3>(), goalPos = goalPos };
 
         Func<int, int, bool> func = (int x, int z) => { return IsTileCenterBlocked(agent, x, z, true); };
         var startNode = pathFinder.FindNearestNode(agent.UnitSize, startX, startZ, agent.UnitSize * 3, func);
@@ -255,14 +256,15 @@ public class GridMoveManager
     }
     public Vector3 NextWayPoint(GridMoveAgent agent, ref GridPath path, Vector3 pos, float distance)
     {
-        while (path.positions.Count > 1)
+        distance *= distance;
+        while (path.positions.Count > 0)
         {
             if ((pos - path.positions[0]).sqrMagnitude > distance)
             {
-                break;
+                return path.positions[0];
             }
             path.positions.RemoveAt(0);
         }
-        return path.positions[0];
+        return path.goalPos;
     }
 }
