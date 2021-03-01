@@ -110,6 +110,7 @@ public class GridMoveAgent
         if (newWantedSpeed <= 0.0f && currentSpeed < 0.01f)
         {
             currentSpeed = 0.0f;
+            deltaSpeed = 0.0f;
             return;
         }
         float targetSpeed = maxSpeed;
@@ -162,21 +163,25 @@ public class GridMoveAgent
         {
             return false;
         }
-        float currWayPointDist = GridMathUtils.Distance2D(pos, currWayPoint);
-        //TODO check turn rate
-        if (currWayPointDist > Mathf.Max(currentSpeed * 1.05f, manager.TileSize) && Vector3.Dot(waypointDir, forward) >= 0.995f)
+        if (currWayPoint.y != -1.0f && nextWayPoint.y != -1.0f)
         {
-            return false;
-        }
-        if (currWayPointDist > manager.TileSize && !manager.IsCrossWalkable(this, pos, currWayPoint, true))
-        {
-            return false;
-        }
-        atEndOfPath = GridMathUtils.SqrDistance2D(currWayPoint, goalPos) <= goalRadius * goalRadius;
-        if (atEndOfPath)
-        {
-            currWayPoint = goalPos;
-            nextWayPoint = goalPos;
+            float currWayPointDist = GridMathUtils.Distance2D(pos, currWayPoint);
+            //TODO check turn rate
+            if (currWayPointDist > Mathf.Max(currentSpeed * 1.05f, manager.TileSize) && Vector3.Dot(waypointDir, forward) >= 0.995f)
+            {
+                return false;
+            }
+            if (currWayPointDist > manager.TileSize && !manager.IsCrossWalkable(this, pos, currWayPoint, true))
+            {
+                return false;
+            }
+            atEndOfPath = GridMathUtils.SqrDistance2D(currWayPoint, goalPos) <= goalRadius * goalRadius;
+            if (atEndOfPath)
+            {
+                currWayPoint = goalPos;
+                nextWayPoint = goalPos;
+                return false;
+            }
         }
         return true;
     }
