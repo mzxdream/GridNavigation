@@ -411,8 +411,8 @@ public class GridPathFinder
     }
     private bool IsNodeCenterBlocked(GridPathNode node, Func<int, int, bool> blockedFunc)
     {
-        Debug.Assert(node != null && blockedFunc != null);
-        return node.IsBlocked || blockedFunc(node.X, node.Z);
+        Debug.Assert(node != null);
+        return node.IsBlocked || (blockedFunc != null && blockedFunc(node.X, node.Z));
     }
     private bool IsNodeBlocked(int unitSize, int x, int z, Func<int, int, bool> blockedFunc)
     {
@@ -441,6 +441,7 @@ public class GridPathFinder
     }
     private bool IsNeighborWalkable(int unitSize, GridPathNode snode, GridPathNode enode, Func<int, int, bool> blockedFunc)
     {
+        Debug.Assert(unitSize > 0 && snode != null && enode != null && (snode.X != enode.X || snode.Z != enode.Z));
         Debug.Assert(Mathf.Abs(snode.X - enode.X) <= 1 && Mathf.Abs(snode.Z - enode.Z) <= 1);
 
         var offset = (unitSize >> 1);
