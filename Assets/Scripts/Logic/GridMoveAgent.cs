@@ -51,7 +51,7 @@ public class GridMoveAgent
     public Vector3 Pos { get => pos; }
     public Vector3 Forward { get => forward; }
     public float Radius { get => radius; }
-    public float MinExteriorRadius { get => unitSize * manager.TileSize * 0.5f * 1.414f; }
+    public float MinExteriorRadius { get => radius; }
     public int UnitSize { get => unitSize; }
     private bool WantToStop { get => path == null && atEndOfPath; }
 
@@ -71,7 +71,7 @@ public class GridMoveAgent
         this.accRate = Mathf.Max(0.001f, param.maxAcc / manager.GameSpeed);
         this.decRate = Mathf.Max(0.001f, param.maxDec / manager.GameSpeed);
         this.isPushResistant = param.isPushResistant;
-        this.unitSize = Mathf.CeilToInt(this.radius / manager.TileSize) * 2;
+        this.unitSize = Mathf.CeilToInt(this.radius / manager.TileSize) * 2 + 1;
         manager.GetTileXZ(this.pos, out this.x, out this.z);
 
         this.progressState = ProgressState.Done;
@@ -330,7 +330,7 @@ public class GridMoveAgent
             return true;
         });
         avoidanceDir = Vector3.Lerp(desiredDir, avoidanceVec, 0.5f).normalized;
-        avoidanceDir = Vector3.Lerp(avoidanceDir, desiredDir, 0.7f).normalized;
+        //avoidanceDir = Vector3.Lerp(avoidanceDir, desiredDir, 0.7f).normalized;
         return avoidanceDir;
     }
     private void UpdateOwnerAccelAndHeading()
@@ -597,7 +597,7 @@ public class GridMoveAgent
             {
                 return true;
             }
-            HandleUnitCollisionsAux(collider, collidee);
+            //HandleUnitCollisionsAux(collider, collidee);
             bool pushCollider = !collider.isPushResistant;
             bool pushCollidee = !collidee.isPushResistant;
             if (collider.teamID != collidee.teamID)
