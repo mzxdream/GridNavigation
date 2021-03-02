@@ -419,7 +419,7 @@ public class GridMoveAgent
         currentSpeed = newVelocity.magnitude;
         deltaSpeed = 0.0f;
     }
-    private bool IsMoving()
+    public bool IsMoving()
     {
         return currentSpeed < 0.001f;
     }

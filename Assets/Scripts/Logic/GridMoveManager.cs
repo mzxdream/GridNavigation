@@ -244,7 +244,26 @@ public class GridMoveManager
 
         path = new GridPath { positions = new List<Vector3>(), goalPos = goalPos };
 
-        Func<int, int, bool> func = (int x, int z) => { return IsTileCenterBlocked(agent, x, z, true); };
+        Func<int, int, bool> func = (int x, int z) =>
+        {
+            if (x < 0 || x >= xsize || z < 0 || z >= zsize)
+            {
+                return true;
+            }
+            var tile = tiles[x + z * xsize];
+            if (tile.isBlocked)
+            {
+                return true;
+            }
+            foreach (var a in tile.agents)
+            {
+                if (!a.IsMoving() && a.IsBlocked(agent))
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
         var startNode = pathFinder.FindNearestNode(agent.UnitSize, startX, startZ, agent.UnitSize * 3, func);
         var goalNode = pathFinder.GetNode(goalX, goalZ);
         if (startNode == null || goalNode == null)
