@@ -166,10 +166,10 @@ public class GridPathFinder
         }
         for (int k = 1; k <= extent; k++)
         {
-            int xmin = Mathf.Max(x - k);
-            int xmax = Mathf.Min(x + k);
-            int zmin = Mathf.Max(z - k);
-            int zmax = Mathf.Min(z + k);
+            int xmin = x - k;
+            int xmax = x + k;
+            int zmin = z - k;
+            int zmax = z + k;
             if (!IsNodeBlocked(unitSize, x, zmax, blockedFunc)) //up
             {
                 return nodes[x + zmax * xsize];
@@ -188,35 +188,35 @@ public class GridPathFinder
             }
             for (int t = 1; t < k; t++)
             {
-                if (!IsNodeBlocked(unitSize, x - t, zmax, blockedFunc))
+                if (!IsNodeBlocked(unitSize, x - t, zmax, blockedFunc)) //up left
                 {
                     return nodes[x - t + zmax * xsize];
                 }
-                if (!IsNodeBlocked(unitSize, x + t, zmax, blockedFunc))
+                if (!IsNodeBlocked(unitSize, x + t, zmax, blockedFunc)) //up right
                 {
                     return nodes[x + t + zmax * xsize];
                 }
-                if (!IsNodeBlocked(unitSize, x - t, zmin, blockedFunc))
+                if (!IsNodeBlocked(unitSize, x - t, zmin, blockedFunc)) //down left
                 {
                     return nodes[x - t + zmin * xsize];
                 }
-                if (!IsNodeBlocked(unitSize, x + t, zmin, blockedFunc))
+                if (!IsNodeBlocked(unitSize, x + t, zmin, blockedFunc)) //down right
                 {
                     return nodes[x + t + zmin * xsize];
                 }
-                if (!IsNodeBlocked(unitSize, xmin, z - t, blockedFunc))
+                if (!IsNodeBlocked(unitSize, xmin, z - t, blockedFunc)) //left up
                 {
                     return nodes[xmin + (z - t) * xsize];
                 }
-                if (!IsNodeBlocked(unitSize, xmin, z + t, blockedFunc))
+                if (!IsNodeBlocked(unitSize, xmin, z + t, blockedFunc)) //left down
                 {
                     return nodes[xmin + (z + t) * xsize];
                 }
-                if (!IsNodeBlocked(unitSize, xmax, z - t, blockedFunc))
+                if (!IsNodeBlocked(unitSize, xmax, z - t, blockedFunc)) //right up
                 {
                     return nodes[xmax + (z - t) * xsize];
                 }
-                if (!IsNodeBlocked(unitSize, xmax, z + t, blockedFunc))
+                if (!IsNodeBlocked(unitSize, xmax, z + t, blockedFunc)) //right down
                 {
                     return nodes[xmax + (z + t) * xsize];
                 }
