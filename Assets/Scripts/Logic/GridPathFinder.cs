@@ -39,66 +39,26 @@ public class GridPathNode
 
 class GridPathPriorityQueue
 {
-    private GridPathNode[] nodeHeap;
+    private GridPathNode[] heap;
     private int count;
     private int capacity;
 
     public GridPathPriorityQueue(int capacity = 256)
     {
-        this.nodeHeap = new GridPathNode[capacity];
+        this.heap = new GridPathNode[capacity];
         this.count = 0;
         this.capacity = capacity;
-    }
-    private void Grow()
-    {
-        capacity <<= 1;
-        var newNodeHeap = new GridPathNode[capacity];
-        nodeHeap.CopyTo(newNodeHeap, 0);
-        nodeHeap = newNodeHeap;
-    }
-    private void HeapifyDown(int i, int length)
-    {
-        int lowest = i;
-        int left = i * 2 + 1;
-        int right = i * 2 + 2;
-        if (left < length && nodeHeap[left].FCost < nodeHeap[lowest].FCost)
-        {
-            lowest = left;
-        }
-        if (right < length && nodeHeap[right].FCost < nodeHeap[lowest].FCost)
-        {
-            lowest = right;
-        }
-        if (lowest != i)
-        {
-            var tmp = nodeHeap[i];
-            nodeHeap[i] = nodeHeap[lowest];
-            nodeHeap[lowest] = tmp;
-            HeapifyDown(lowest, length);
-        }
-    }
-    private void HeapifyUp(int i)
-    {
-        while (i > 0)
-        {
-            int j = (i - 1) / 2; //parent
-            if (nodeHeap[j].FCost <= nodeHeap[i].FCost)
-            {
-                break;
-            }
-            var tmp = nodeHeap[j];
-            nodeHeap[j] = nodeHeap[i];
-            nodeHeap[i] = tmp;
-            i = j;
-        }
     }
     public void Push(GridPathNode node)
     {
         if (count == capacity)
         {
-            Grow();
+            capacity <<= 1;
+            var newHeap = new GridPathNode[capacity];
+            heap.CopyTo(newHeap, 0);
+            heap = newHeap;
         }
-        nodeHeap[count] = node;
+        heap[count] = node;
         HeapifyUp(count);
         count++;
     }
@@ -109,8 +69,8 @@ class GridPathPriorityQueue
             return null;
         }
         count--;
-        var node = nodeHeap[0];
-        nodeHeap[0] = nodeHeap[count];
+        var node = heap[0];
+        heap[0] = heap[count];
         HeapifyDown(0, count);
         return node;
     }
@@ -118,9 +78,45 @@ class GridPathPriorityQueue
     {
         for (int i = 0; i < count; i++)
         {
-            nodeHeap[i] = null;
+            heap[i] = null;
         }
         count = 0;
+    }
+    private void HeapifyUp(int i)
+    {
+        while (i > 0)
+        {
+            int j = (i - 1) / 2; //parent
+            if (heap[j].FCost <= heap[i].FCost)
+            {
+                break;
+            }
+            var tmp = heap[j];
+            heap[j] = heap[i];
+            heap[i] = tmp;
+            i = j;
+        }
+    }
+    private void HeapifyDown(int i, int length)
+    {
+        int lowest = i;
+        int left = i * 2 + 1;
+        int right = i * 2 + 2;
+        if (left < length && heap[left].FCost < heap[lowest].FCost)
+        {
+            lowest = left;
+        }
+        if (right < length && heap[right].FCost < heap[lowest].FCost)
+        {
+            lowest = right;
+        }
+        if (lowest != i)
+        {
+            var tmp = heap[i];
+            heap[i] = heap[lowest];
+            heap[lowest] = tmp;
+            HeapifyDown(lowest, length);
+        }
     }
 }
 
