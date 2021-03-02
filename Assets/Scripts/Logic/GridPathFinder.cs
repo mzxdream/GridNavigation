@@ -8,16 +8,16 @@ public class GridPathNode
 
     private readonly int x;
     private readonly int z;
-    private int gCost;
-    private int hCost;
+    private float gCost;
+    private float hCost;
     private GridPathNode parent;
     private Mask mask;
 
     public int X { get => x; }
     public int Z { get => z; }
-    public int FCost { get => gCost + hCost; }
-    public int GCost { get => gCost; set => gCost = value; }
-    public int HCost { get => hCost; set => hCost = value; }
+    public float FCost { get => gCost + hCost; }
+    public float GCost { get => gCost; set => gCost = value; }
+    public float HCost { get => hCost; set => hCost = value; }
     public GridPathNode Parent { get => parent; set => parent = value; }
     public bool IsClosed
     {
