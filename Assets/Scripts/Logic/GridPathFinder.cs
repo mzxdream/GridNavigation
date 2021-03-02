@@ -156,7 +156,7 @@ public class GridPathFinder
     }
     public GridPathNode FindNearestNode(int unitSize, int x, int z, int extent, Func<int, int, bool> blockedFunc)
     {
-        Debug.Assert(unitSize > 0 && extent >= 0 && blockedFunc != null);
+        Debug.Assert(unitSize > 0 && extent >= 0);
 
         x = Mathf.Clamp(x, 0, xsize - 1);
         z = Mathf.Clamp(z, 0, zsize - 1);
@@ -416,6 +416,8 @@ public class GridPathFinder
     }
     private bool IsNodeBlocked(int unitSize, int x, int z, Func<int, int, bool> blockedFunc)
     {
+        Debug.Assert(unitSize > 0);
+
         int offset = (unitSize >> 1);
         int xmin = x - offset;
         int xmax = x + offset;
