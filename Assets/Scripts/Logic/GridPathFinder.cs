@@ -149,98 +149,6 @@ public class GridPathFinder
         Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
         nodes[x + z * xsize].IsBlocked = isBlocked;
     }
-    private bool IsNodeCenterBlocked(GridPathNode node, Func<int, int, bool> blockedFunc)
-    {
-        return node.IsBlocked || blockedFunc(node.X, node.Z);
-    }
-    private bool IsNodeBlocked(int unitSize, int x, int z, Func<int, int, bool> blockedFunc)
-    {
-        int offset = (unitSize >> 1);
-        int xmin = x - offset;
-        int xmax = x + offset;
-        int zmin = z - offset;
-        int zmax = z + offset;
-        if (xmin < 0 || xmax >= xsize || zmin < 0 || zmax >= zsize)
-        {
-            return true;
-        }
-        for (int tz = zmin; tz <= zmax; tz++)
-        {
-            for (int tx = xmin; tx <= xmax; tx++)
-            {
-                if (IsNodeCenterBlocked(nodes[tx + tz * xsize], blockedFunc))
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-    private bool IsNodeBlocked(int unitSize, GridPathNode node, Func<int, int, bool> blockedFunc)
-    {
-        return IsNodeBlocked(unitSize, node.X, node.Z, blockedFunc);
-    }
-    private bool IsNeighborWalkable(int unitSize, GridPathNode snode, GridPathNode enode, Func<int, int, bool> blockedFunc)
-    {
-        Debug.Assert(Mathf.Abs(snode.X - enode.X) <= 1 && Mathf.Abs(snode.Z - enode.Z) <= 1);
-
-        var offset = (unitSize >> 1);
-        if (snode.Z == enode.Z) //Horizontal
-        {
-            int x = enode.X + offset * (enode.X - snode.X);
-            if (x < 0 || x >= xsize)
-            {
-                return false;
-            }
-            for (int i = 0; i < unitSize; i++)
-            {
-                if (IsNodeCenterBlocked(nodes[x + (enode.Z - offset + i) * xsize], blockedFunc))
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-        if (snode.X == enode.X) //Vertical
-        {
-            int z = enode.Z + offset * (enode.Z - snode.Z);
-            if (z < 0 || z >= zsize)
-            {
-                return false;
-            }
-            for (int i = 0; i < unitSize; i++)
-            {
-                if (IsNodeCenterBlocked(nodes[enode.X - offset + i + z * xsize], blockedFunc))
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-        { //Cross
-            int x = enode.X + offset * (enode.X - snode.X);
-            int z = enode.Z + offset * (enode.Z - snode.Z);
-            if (x < 0 || x >= xsize || z < 0 || z >= zsize)
-            {
-                return false;
-            }
-            for (int i = 0; i <= unitSize; i++)
-            {
-                if (IsNodeCenterBlocked(nodes[x - i * (enode.X - snode.X) + z * xsize], blockedFunc))
-                {
-                    return false;
-                }
-            }
-            for (int i = 1; i <= unitSize; i++)
-            {
-                if (IsNodeCenterBlocked(nodes[x + (z - i * (enode.Z - snode.Z)) * xsize], blockedFunc))
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-    }
     public bool IsCrossWalkable(int unitSize, GridPathNode snode, GridPathNode enode, Func<int, int, bool> blockedFunc)
     {
         int dx = enode.X - snode.X, dz = enode.Z - snode.Z;
@@ -471,14 +379,103 @@ public class GridPathFinder
         path.Reverse();
         return isFound;
     }
-    private static int CalcDistanceApproximately(int fromX, int fromZ, int toX, int toZ)
+    private bool IsNodeCenterBlocked(GridPathNode node, Func<int, int, bool> blockedFunc)
     {
-        int x = Mathf.Abs(toX - fromX);
-        int z = Mathf.Abs(toZ - fromZ);
-        return x > z ? 14 * z + 10 * (x - z) : 14 * x + 10 * (z - x);
+        Debug.Assert(node != null && blockedFunc != null);
+        return node.IsBlocked || blockedFunc(node.X, node.Z);
     }
-    private static int CalcDistanceApproximately(GridPathNode fromNode, GridPathNode toNode)
+    private bool IsNodeBlocked(int unitSize, int x, int z, Func<int, int, bool> blockedFunc)
     {
-        return CalcDistanceApproximately(fromNode.X, fromNode.Z, toNode.X, toNode.Z);
+        int offset = (unitSize >> 1);
+        int xmin = x - offset;
+        int xmax = x + offset;
+        int zmin = z - offset;
+        int zmax = z + offset;
+        if (xmin < 0 || xmax >= xsize || zmin < 0 || zmax >= zsize)
+        {
+            return true;
+        }
+        for (int tz = zmin; tz <= zmax; tz++)
+        {
+            for (int tx = xmin; tx <= xmax; tx++)
+            {
+                if (IsNodeCenterBlocked(nodes[tx + tz * xsize], blockedFunc))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    private bool IsNodeBlocked(int unitSize, GridPathNode node, Func<int, int, bool> blockedFunc)
+    {
+        return IsNodeBlocked(unitSize, node.X, node.Z, blockedFunc);
+    }
+    private bool IsNeighborWalkable(int unitSize, GridPathNode snode, GridPathNode enode, Func<int, int, bool> blockedFunc)
+    {
+        Debug.Assert(Mathf.Abs(snode.X - enode.X) <= 1 && Mathf.Abs(snode.Z - enode.Z) <= 1);
+
+        var offset = (unitSize >> 1);
+        if (snode.Z == enode.Z) //Horizontal
+        {
+            int x = enode.X + offset * (enode.X - snode.X);
+            if (x < 0 || x >= xsize)
+            {
+                return false;
+            }
+            for (int i = 0; i < unitSize; i++)
+            {
+                if (IsNodeCenterBlocked(nodes[x + (enode.Z - offset + i) * xsize], blockedFunc))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        if (snode.X == enode.X) //Vertical
+        {
+            int z = enode.Z + offset * (enode.Z - snode.Z);
+            if (z < 0 || z >= zsize)
+            {
+                return false;
+            }
+            for (int i = 0; i < unitSize; i++)
+            {
+                if (IsNodeCenterBlocked(nodes[enode.X - offset + i + z * xsize], blockedFunc))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        { //Cross
+            int x = enode.X + offset * (enode.X - snode.X);
+            int z = enode.Z + offset * (enode.Z - snode.Z);
+            if (x < 0 || x >= xsize || z < 0 || z >= zsize)
+            {
+                return false;
+            }
+            for (int i = 0; i <= unitSize; i++)
+            {
+                if (IsNodeCenterBlocked(nodes[x - i * (enode.X - snode.X) + z * xsize], blockedFunc))
+                {
+                    return false;
+                }
+            }
+            for (int i = 1; i <= unitSize; i++)
+            {
+                if (IsNodeCenterBlocked(nodes[x + (z - i * (enode.Z - snode.Z)) * xsize], blockedFunc))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+    private static float HeuristicDistance(int sx, int sz, int ex, int ez)
+    {
+        int dx = Mathf.Abs(ex - sx);
+        int dz = Mathf.Abs(ez - sz);
+        return (dx + dz) * 1.0f + Mathf.Min(dx, dz) * (1.4142f - 2.0f);
     }
 }
