@@ -144,10 +144,101 @@ public class GridPathFinder
         openQueue = new GridPathPriorityQueue();
         closedQueue = new List<GridPathNode>();
     }
+    public GridPathNode GetNode(int x, int z)
+    {
+        Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
+        return nodes[x + z * xsize];
+    }
     public void SetNodeBlocked(int x, int z, bool isBlocked)
     {
         Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
         nodes[x + z * xsize].IsBlocked = isBlocked;
+    }
+    public GridPathNode FindNearestNode(int unitSize, int x, int z, int extent, Func<int, int, bool> blockedFunc)
+    {
+        Debug.Assert(unitSize > 0 && extent >= 0 && blockedFunc != null);
+
+        x = Mathf.Clamp(x, 0, xsize - 1);
+        z = Mathf.Clamp(z, 0, zsize - 1);
+        if (!IsNodeBlocked(unitSize, x, z, blockedFunc))
+        {
+            return nodes[x + z * xsize];
+        }
+        for (int k = 1; k <= extent; k++)
+        {
+            int xmin = Mathf.Max(x - k);
+            int xmax = Mathf.Min(x + k);
+            int zmin = Mathf.Max(z - k);
+            int zmax = Mathf.Min(z + k);
+            if (!IsNodeBlocked(unitSize, x, zmax, blockedFunc)) //up
+            {
+                return nodes[x + zmax * xsize];
+            }
+            if (!IsNodeBlocked(unitSize, x, zmin, blockedFunc)) //down
+            {
+                return nodes[x + zmin * xsize];
+            }
+            if (!IsNodeBlocked(unitSize, xmin, z, blockedFunc)) //left
+            {
+                return nodes[xmin + z * xsize];
+            }
+            if (!IsNodeBlocked(unitSize, xmax, z, blockedFunc)) //right
+            {
+                return nodes[xmax + z * xsize];
+            }
+            for (int t = 1; t < k; t++)
+            {
+                if (!IsNodeBlocked(unitSize, x - t, zmax, blockedFunc))
+                {
+                    return nodes[x - t + zmax * xsize];
+                }
+                if (!IsNodeBlocked(unitSize, x + t, zmax, blockedFunc))
+                {
+                    return nodes[x + t + zmax * xsize];
+                }
+                if (!IsNodeBlocked(unitSize, x - t, zmin, blockedFunc))
+                {
+                    return nodes[x - t + zmin * xsize];
+                }
+                if (!IsNodeBlocked(unitSize, x + t, zmin, blockedFunc))
+                {
+                    return nodes[x + t + zmin * xsize];
+                }
+                if (!IsNodeBlocked(unitSize, xmin, z - t, blockedFunc))
+                {
+                    return nodes[xmin + (z - t) * xsize];
+                }
+                if (!IsNodeBlocked(unitSize, xmin, z + t, blockedFunc))
+                {
+                    return nodes[xmin + (z + t) * xsize];
+                }
+                if (!IsNodeBlocked(unitSize, xmax, z - t, blockedFunc))
+                {
+                    return nodes[xmax + (z - t) * xsize];
+                }
+                if (!IsNodeBlocked(unitSize, xmax, z + t, blockedFunc))
+                {
+                    return nodes[xmax + (z + t) * xsize];
+                }
+            }
+            if (!IsNodeBlocked(unitSize, xmin, zmax, blockedFunc)) //left up
+            {
+                return nodes[xmin + zmax * xsize];
+            }
+            if (!IsNodeBlocked(unitSize, xmax, zmax, blockedFunc)) //right up
+            {
+                return nodes[xmax + zmax * xsize];
+            }
+            if (!IsNodeBlocked(unitSize, xmin, zmin, blockedFunc)) //left down
+            {
+                return nodes[xmin + zmin * xsize];
+            }
+            if (!IsNodeBlocked(unitSize, xmax, zmin, blockedFunc)) //right down
+            {
+                return nodes[xmax + zmin * xsize];
+            }
+        }
+        return null;
     }
     public bool IsCrossWalkable(int unitSize, GridPathNode snode, GridPathNode enode, Func<int, int, bool> blockedFunc)
     {
@@ -191,67 +282,6 @@ public class GridPathFinder
             }
         }
         return true;
-    }
-    public GridPathNode GetNode(int x, int z)
-    {
-        Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
-        return nodes[x + z * xsize];
-    }
-    public GridPathNode FindNearestNode(int unitSize, int x, int z, int searchRadius, Func<int, int, bool> blockedFunc)
-    {
-        Debug.Assert(unitSize > 0 && blockedFunc != null);
-
-        x = Mathf.Clamp(x, 0, xsize - 1);
-        z = Mathf.Clamp(z, 0, zsize - 1);
-        if (!IsNodeBlocked(unitSize, x, z, blockedFunc))
-        {
-            return nodes[x + z * xsize];
-        }
-
-        foreach (var n in closedQueue)
-        {
-            n.IsClosed = false;
-        }
-        closedQueue.Clear();
-        openQueue.Clear();
-
-        int searchDistance = searchRadius * 10;
-        var startNode = nodes[x + z * xsize];
-        startNode.GCost = 0;
-        startNode.HCost = 0;
-        startNode.IsClosed = true;
-        closedQueue.Add(startNode);
-
-        var node = startNode;
-        while (node != null)
-        {
-            if (!IsNodeBlocked(unitSize, node, blockedFunc))
-            {
-                return node;
-            }
-            for (int i = 0; i < neighbors.Length; i += 2)
-            {
-                var neighborX = node.X + neighbors[i];
-                var neighborZ = node.Z + neighbors[i + 1];
-                var n = nodes[neighborX + neighborZ * xsize];
-                if (n.IsClosed)
-                {
-                    continue;
-                }
-                n.IsClosed = true;
-                closedQueue.Add(n);
-
-                n.GCost = CalcDistanceApproximately(startNode, n);
-                n.HCost = 0;
-                if (searchDistance >= 0 && n.GCost > searchDistance)
-                {
-                    continue;
-                }
-                openQueue.Push(n);
-            }
-            node = openQueue.Pop();
-        }
-        return null;
     }
     public bool FindStraightPath(int unitSize, GridPathNode startNode, GridPathNode goalNode, int goalRadius, Func<int, int, bool> blockedFunc, out List<GridPathNode> path)
     {
@@ -406,10 +436,6 @@ public class GridPathFinder
             }
         }
         return false;
-    }
-    private bool IsNodeBlocked(int unitSize, GridPathNode node, Func<int, int, bool> blockedFunc)
-    {
-        return IsNodeBlocked(unitSize, node.X, node.Z, blockedFunc);
     }
     private bool IsNeighborWalkable(int unitSize, GridPathNode snode, GridPathNode enode, Func<int, int, bool> blockedFunc)
     {
