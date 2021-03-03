@@ -122,7 +122,7 @@ class GridPathPriorityQueue
 
 public class GridPathFinder
 {
-    private int[] neighbors = { 0, 1, 0, -1, 1, 0, -1, 0, -1, 1, 1, 1, -1, -1, 1, -1 };
+    private static readonly int[] neighbors = { 0, 1, 0, -1, 1, 0, -1, 0, -1, 1, 1, 1, -1, -1, 1, -1 };
     private int xsize;
     private int zsize;
     private GridPathNode[] nodes;
@@ -242,12 +242,20 @@ public class GridPathFinder
     }
     public bool IsCrossWalkable(int unitSize, GridPathNode snode, GridPathNode enode, Func<int, int, bool> blockedFunc)
     {
-        int dx = enode.X - snode.X, dz = enode.Z - snode.Z;
-        int nx = Mathf.Abs(dx), nz = Mathf.Abs(dz);
-        int signX = dx > 0 ? 1 : -1, signZ = dz > 0 ? 1 : -1;
+        Debug.Assert(unitSize > 0 && snode != null && enode != null);
 
-        int x = snode.X, z = snode.Z;
-        for (int ix = 0, iz = 0; ix < nx || iz < nz;)
+        int dx = enode.X - snode.X;
+        int dz = enode.Z - snode.Z;
+        int nx = Mathf.Abs(dx);
+        int nz = Mathf.Abs(dz);
+        int signX = dx > 0 ? 1 : -1;
+        int signZ = dz > 0 ? 1 : -1;
+
+        int x = snode.X;
+        int z = snode.Z;
+        int ix = 0;
+        int iz = 0;
+        while (ix < nx || iz < nz)
         {
             var t1 = (2 * ix + 1) * nz;
             var t2 = (2 * iz + 1) * nx;
