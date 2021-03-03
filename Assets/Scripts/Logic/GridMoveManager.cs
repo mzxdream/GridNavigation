@@ -4,14 +4,26 @@ using UnityEngine;
 
 class GridTile
 {
-    public int index;
-    public bool isBlocked;
-    public List<GridMoveAgent> agents;
+    private readonly int x;
+    private readonly int z;
+    private bool isBlocked;
+    private List<GridMoveAgent> agents = new List<GridMoveAgent>();
+
+    public int X { get => x; }
+    public int Z { get => z; }
+    public bool IsBlocked { get => isBlocked; set => isBlocked = value; }
+    public List<GridMoveAgent> Agents { get => agents; }
+
+    public GridTile(int x, int z)
+    {
+        this.x = x;
+        this.z = z;
+    }
 }
 
 public class GridPath
 {
-    public List<Vector3> positions;
+    public List<GridPathNode> nodes;
     public Vector3 goalPos;
 }
 
