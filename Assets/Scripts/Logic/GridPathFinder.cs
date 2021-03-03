@@ -291,22 +291,24 @@ public class GridPathFinder
         }
         return true;
     }
-    public bool FindStraightPath(int unitSize, GridPathNode startNode, GridPathNode goalNode, int goalRadius, Func<int, int, bool> blockedFunc, out List<GridPathNode> path)
+    public bool FindStraightPath(int unitSize, GridPathNode startNode, GridPathNode goalNode, float goalRadius, Func<int, int, bool> blockedFunc, out List<GridPathNode> path)
     {
         Debug.Assert(unitSize > 0 && startNode != null && goalNode != null && goalRadius >= 0 && blockedFunc != null);
 
         path = new List<GridPathNode>();
-        path.Add(startNode);
-        int goalDistance = goalRadius * 10;
+
         int dx = goalNode.X - startNode.X;
         int dz = goalNode.Z - startNode.Z;
         int nx = Mathf.Abs(dx);
         int nz = Mathf.Abs(dz);
         int signX = dx > 0 ? 1 : -1;
         int signZ = dz > 0 ? 1 : -1;
+
         int x = startNode.X;
         int z = startNode.Z;
-        for (int ix = 0, iz = 0; ix < nx || iz < nz;)
+        int ix = 0;
+        int iz = 0;
+        while (ix < nx || iz < nz)
         {
             var t1 = (2 * ix + 1) * nz;
             var t2 = (2 * iz + 1) * nx;
