@@ -63,8 +63,7 @@ public class GridMoveManager
         {
             for (int x = 0; x < xsize; x++)
             {
-                var index = x + z * xsize;
-                tiles[index] = new GridTile { index = index, isBlocked = false, agents = new List<GridMoveAgent>() };
+                tiles[x + z * xsize] = new GridTile(x, z);
             }
         }
         agents = new List<GridMoveAgent>();

@@ -1,14 +1,15 @@
 using UnityEngine;
 
-public class GridMoveAgentParam
+public struct GridMoveAgentParam
 {
-    public int teamID; //enemy can't push
-    public float mass; //calc push distance
     public float radius;
     public float maxSpeed;
     public float maxAcc;
     public float maxDec;
     public bool isPushResistant;
+    public bool isEnemyPushResistant;
+    public int teamID;
+    public float mass;
 }
 
 public class GridMoveAgent
