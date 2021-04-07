@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-class GridTile
+class GridNode
 {
     private readonly int x;
     private readonly int z;
@@ -14,17 +14,29 @@ class GridTile
     public bool IsBlocked { get => isBlocked; set => isBlocked = value; }
     public List<GridMoveAgent> Agents { get => agents; }
 
-    public GridTile(int x, int z)
+    public GridNode(int x, int z)
     {
         this.x = x;
         this.z = z;
     }
 }
 
-public class GridPath
+public struct GridMoveAgentParam
 {
-    public List<GridPathNode> nodes;
-    public Vector3 goalPos;
+    public int teamID;
+    public float mass;
+    public float radius;
+    public float maxSpeed;
+    public float maxAcc;
+    public float maxDec;
+    public bool isPushResistant;
+    public bool isEnemyPushResistant;
+}
+
+public class GridMoveAgent
+{
+    public enum State { Invalid, Walking }
+    public enum TargetState { None, Valid, Requesting, WaitForPath }
 }
 
 public class GridMoveManager

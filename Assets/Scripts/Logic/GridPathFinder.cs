@@ -4,14 +4,13 @@ using UnityEngine;
 
 public class GridPathNode
 {
-    private enum Mask { Closed = 1, Blocked = 2 };
-
+    private enum Flags { Open = 0x01, Closed = 0x02 };
     private readonly int x;
     private readonly int z;
     private float gCost;
     private float hCost;
     private GridPathNode parent;
-    private Mask mask;
+    private int flags;
 
     public int X { get => x; }
     public int Z { get => z; }
@@ -19,15 +18,15 @@ public class GridPathNode
     public float GCost { get => gCost; set => gCost = value; }
     public float HCost { get => hCost; set => hCost = value; }
     public GridPathNode Parent { get => parent; set => parent = value; }
+    public bool IsOpen
+    {
+        get { return (flags & (int)Flags.Open) != 0; }
+        set { if (value) { flags |= (int)Flags.Open; } else { flags &= ~(int)Flags.Open; } }
+    }
     public bool IsClosed
     {
-        get { return (mask & Mask.Closed) != 0; }
-        set { if (value) { mask |= Mask.Closed; } else { mask &= ~Mask.Closed; } }
-    }
-    public bool IsBlocked
-    {
-        get { return (mask & Mask.Blocked) != 0; }
-        set { if (value) { mask |= Mask.Blocked; } else { mask &= ~Mask.Blocked; } }
+        get { return (flags & (int)Flags.Closed) != 0; }
+        set { if (value) { flags |= (int)Flags.Closed; } else { flags &= ~(int)Flags.Closed; } }
     }
 
     public GridPathNode(int x, int z)
@@ -122,7 +121,7 @@ class GridPathPriorityQueue
 
 public class GridPathFinder
 {
-    private static readonly int[] neighbors = { 0, 1, 0, -1, 1, 0, -1, 0, -1, 1, 1, 1, -1, -1, 1, -1 };
+    private static readonly int[] neighbors = { 1, 0, -1, 0, 0, 1, 0, -1, -1, -1, 1, 1, -1, 1, 1, -1 };
     private int xsize;
     private int zsize;
     private GridPathNode[] nodes;
@@ -144,17 +143,8 @@ public class GridPathFinder
         openQueue = new GridPathPriorityQueue();
         closedQueue = new List<GridPathNode>();
     }
-    public GridPathNode GetNode(int x, int z)
-    {
-        Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
-        return nodes[x + z * xsize];
-    }
-    public void SetNodeBlocked(int x, int z, bool isBlocked)
-    {
-        Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
-        nodes[x + z * xsize].IsBlocked = isBlocked;
-    }
-    public GridPathNode FindNearestNode(int unitSize, int x, int z, int extent, Func<int, int, bool> blockedFunc)
+
+    public int FindNearestNode(int unitSize, int x, int z, int extent, Func<int, int, bool> blockedFunc)
     {
         Debug.Assert(unitSize > 0 && extent >= 0);
 
@@ -417,36 +407,7 @@ public class GridPathFinder
         path.Reverse();
         return isFound;
     }
-    private bool IsNodeCenterBlocked(GridPathNode node, Func<int, int, bool> blockedFunc)
-    {
-        Debug.Assert(node != null);
-        return node.IsBlocked || (blockedFunc != null && blockedFunc(node.X, node.Z));
-    }
-    private bool IsNodeBlocked(int unitSize, int x, int z, Func<int, int, bool> blockedFunc)
-    {
-        Debug.Assert(unitSize > 0);
 
-        int offset = (unitSize >> 1);
-        int xmin = x - offset;
-        int xmax = x + offset;
-        int zmin = z - offset;
-        int zmax = z + offset;
-        if (xmin < 0 || xmax >= xsize || zmin < 0 || zmax >= zsize)
-        {
-            return true;
-        }
-        for (int tz = zmin; tz <= zmax; tz++)
-        {
-            for (int tx = xmin; tx <= xmax; tx++)
-            {
-                if (IsNodeCenterBlocked(nodes[tx + tz * xsize], blockedFunc))
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
     private bool IsNeighborWalkable(int unitSize, GridPathNode snode, GridPathNode enode, Func<int, int, bool> blockedFunc)
     {
         Debug.Assert(unitSize > 0 && snode != null && enode != null && (snode.X != enode.X || snode.Z != enode.Z));
@@ -509,10 +470,43 @@ public class GridPathFinder
             return true;
         }
     }
+
+    private bool IsNodeBlocked(int unitSize, int x, int z, Func<int, int, bool> blockedFunc)
+    {
+        Debug.Assert(unitSize > 0);
+
+        int offset = (unitSize >> 1);
+        int xmin = x - offset;
+        int xmax = x + offset;
+        int zmin = z - offset;
+        int zmax = z + offset;
+        if (xmin < 0 || xmax >= xsize || zmin < 0 || zmax >= zsize)
+        {
+            return true;
+        }
+        for (int tz = zmin; tz <= zmax; tz++)
+        {
+            for (int tx = xmin; tx <= xmax; tx++)
+            {
+                if (IsNodeCenterBlocked(nodes[tx + tz * xsize], blockedFunc))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private bool IsNodeCenterBlocked(GridPathNode node, Func<int, int, bool> blockedFunc)
+    {
+        Debug.Assert(node != null && blockedFunc != null);
+        return node.IsBlocked || (blockedFunc != null && blockedFunc(node.X, node.Z));
+    }
+
     private static float HeuristicDistance(int sx, int sz, int ex, int ez)
     {
         int dx = Mathf.Abs(ex - sx);
         int dz = Mathf.Abs(ez - sz);
-        return (dx + dz) * 1.0f + Mathf.Min(dx, dz) * (1.4142f - 2.0f);
+        return (dx + dz) + Mathf.Min(dx, dz) * (1.4142f - 2.0f);
     }
 }

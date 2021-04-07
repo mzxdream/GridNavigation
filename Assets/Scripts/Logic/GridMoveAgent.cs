@@ -1,17 +1,29 @@
 using UnityEngine;
 
+public enum GridMovePushFlags { EnemyResistant = 0x01, FriendResistant = 0x02 }
+
 public struct GridMoveAgentParam
 {
+    public int teamID;
+    public float mass;
     public float radius;
     public float maxSpeed;
     public float maxAcc;
-    public float maxDec;
-    public bool isPushResistant;
-    public bool isEnemyPushResistant;
-    public int teamID;
-    public float mass;
+    public float maxTurnAngle;
+    public int pushFlags;
 }
 
+public class GridMoveAgent
+{
+    public enum State { Invalid, Walking }
+    public enum MoveState { None, Failed, Valid, Requesting, WaitForQueue, WaitForPath }
+
+    private bool isActive;
+    private int state;
+    private GridMoveAgentParam param;
+
+}
+    /*
 public class GridMoveAgent
 {
     private enum ProgressState { Done = 0, Active = 1, Failed = 2 };
@@ -784,3 +796,4 @@ public class GridMoveAgent
         return teamID != a.teamID;
     }
 }
+    */
