@@ -6,7 +6,7 @@ public class Character
 {
     private readonly CharacterAsset asset;
     private readonly CharacterType type;
-    private GridMoveAgent moveAgent;
+    //private GridMoveAgent moveAgent;
 
     public CharacterType Type { get => type; }
 

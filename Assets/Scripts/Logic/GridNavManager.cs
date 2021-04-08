@@ -1,10 +1,11 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum GridMovePushFlags { EnemyResistant = 0x01, FriendResistant = 0x02 }
+public enum GridNavAgentFlags { EnemyPushResistant = 0x01, FriendPushResistant = 0x02 }
+public enum GridNavAgentState { NotActive, Walking }
+public enum GridNavAgentMoveState { None, Failed, Valid, Requesting, WaitForQueue, WaitForPath }
 
-public struct GridMoveAgentParam
+public struct GridNavAgentParam
 {
     public int teamID;
     public float mass;
@@ -12,24 +13,22 @@ public struct GridMoveAgentParam
     public float maxSpeed;
     public float maxAcc;
     public float maxTurnAngle;
-    public int pushFlags;
+    public int Flags;
 }
 
-public class GridMoveAgent
+public class GridNavAgent
 {
-    public enum State { Invalid, Walking }
-    public enum MoveState { None, Failed, Valid, Requesting, WaitForQueue, WaitForPath }
-
-    private bool isActive;
-    private int state;
-    private GridMoveAgentParam param;
-
-}
-public class GridNavAgent 
-{ 
-    public void Update(float deltaTime)
-    {
-    }
+    public GridNavAgentParam param;
+    public GridNavAgentState state;
+    public GridNavAgentMoveState moveState;
+    public int unitSize;
+    public int mapIndex;
+    public Vector3 position;
+    public int targetMapIndex;
+    public Vector3 targetPosition;
+    public Vector3 velocity;
+    public Vector3 desireVelocity;
+    public List<GridPathNode> path;
 }
 
 class GridNavNode
@@ -118,11 +117,41 @@ public class GridNavManager
         Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
         return new Vector3(bmin.x + (x + 0.5f) * nodeSize, 0, bmin.z + (z + 0.5f) * nodeSize);
     }
+    public GridNavAgent AddAgent(Vector3 pos, GridNavAgentParam param)
+    {
+        var unitSize = Mathf.Max(1, (int)(param.radius / nodeSize));
+        if ((unitSize & 1) == 0)
+        {
+            unitSize++;
+        }
+        var agent = new GridNavAgent
+        {
+            param = param,
+            state = GridNavAgentState.Walking,
+            moveState = GridNavAgentMoveState.None,
+            unitSize = unitSize,
+            position = pos,
+            targetPosition = Vector3.zero,
+            velocity = Vector3.zero,
+            desireVelocity = Vector3.zero,
+            path = new List<GridPathNode>(),
+        };
+        if (GetNodeXZUnclamped(agent.position, out int x, out int z))
+        {
+            agent.mapIndex = x + z * xsize;
+        }
+        else
+        {
+            x = Mathf.Clamp(x, 0, xsize - 1);
+            z = Mathf.Clamp(z, 0, zsize - 1);
+            agent.mapIndex = x + z * xsize;
+            agent.position = new Vector3(bmin.x + (x + 0.5f) * nodeSize, 0, bmin.z + (z + 0.5f) * nodeSize);
+        }
+        agents.Add(agent);
+        //todo
+        return agent;
+    }
     public void Update(float deltaTime)
     {
-        foreach (var agent in agents)
-        {
-            agent.Update(deltaTime);
-        }
     }
 }
