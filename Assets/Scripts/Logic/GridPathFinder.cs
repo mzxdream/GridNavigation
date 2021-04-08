@@ -131,7 +131,7 @@ class GridPathPriorityQueue
     }
 }
 
-public enum GridPathStatus { Success = 1 << 31, Failure = 1 << 30, InProgress = 1 << 29 }
+public enum GridPathStatus { Success = 1 << 31, Failure = 1 << 30, InProgress = 1 << 29, PartialResult = 1, }
 
 public class GridPathFinder
 {
@@ -386,7 +386,20 @@ public class GridPathFinder
                 }
             }
         }
-        return GridPathStatus.Success;
+        var curNode = lastBestNode;
+        do
+        {
+            path.Add(curNode);
+            curNode = curNode.Parent;
+        } while (curNode != null);
+        path.Reverse();
+
+        var status = GridPathStatus.Success;
+        if (lastBestNode != enode)
+        {
+            status |= GridPathStatus.PartialResult;
+        }
+        return status;
     }
     public bool FindStraightPath(int unitSize, GridPathNode startNode, GridPathNode goalNode, float goalRadius, Func<int, int, bool> blockedFunc, out List<GridPathNode> path)
     {
