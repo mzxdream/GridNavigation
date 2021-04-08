@@ -28,6 +28,7 @@ public class GridPathNode
         get { return (flags & (int)Flags.Closed) != 0; }
         set { if (value) { flags |= (int)Flags.Closed; } else { flags &= ~(int)Flags.Closed; } }
     }
+    public bool IsOpenOrClosed { get => (flags & (int)(Flags.Open | Flags.Closed)) != 0; }
 
     public GridPathNode(int x, int z)
     {
@@ -60,6 +61,17 @@ class GridPathPriorityQueue
         heap[count] = node;
         HeapifyUp(count);
         count++;
+    }
+    public void Modify(GridPathNode node)
+    {
+        for (int i = 0; i < count; ++i)
+        {
+            if (heap[i] == node)
+            {
+                HeapifyUp(i);
+                return;
+            }
+        }
     }
     public GridPathNode Pop()
     {
@@ -119,14 +131,16 @@ class GridPathPriorityQueue
     }
 }
 
+public enum GridPathStatus { Success = 1 << 31, Failure = 1 << 30, InProgress = 1 << 29 }
+
 public class GridPathFinder
 {
-    private static readonly int[] neighbors = { 1, 0, -1, 0, 0, 1, 0, -1, -1, -1, 1, 1, -1, 1, 1, -1 };
+    private static readonly int[] neighbours = { 1, 0, -1, 0, 0, 1, 0, -1, -1, -1, 1, 1, -1, 1, 1, -1 };
     private int xsize;
     private int zsize;
     private GridPathNode[] nodes;
     private GridPathPriorityQueue openQueue;
-    private List<GridPathNode> closedQueue;
+    private List<GridPathNode> dirtyQueue;
 
     public GridPathFinder(int xsize, int zsize)
     {
@@ -141,10 +155,9 @@ public class GridPathFinder
             }
         }
         openQueue = new GridPathPriorityQueue();
-        closedQueue = new List<GridPathNode>();
+        dirtyQueue = new List<GridPathNode>();
     }
-
-    public int FindNearestNode(int unitSize, int x, int z, int extent, Func<int, int, bool> blockedFunc)
+    public GridPathNode FindNearestNode(int unitSize, int x, int z, int extent, Func<int, int, bool> blockedFunc)
     {
         Debug.Assert(unitSize > 0 && extent >= 0);
 
@@ -281,6 +294,100 @@ public class GridPathFinder
         }
         return true;
     }
+    public GridPathStatus FindPath(int unitSize, GridPathNode snode, GridPathNode enode, float searchRadiusScale, float searchRadiusExtra, Func<int, int, bool> blockedFunc, out List<GridPathNode> path)
+    {
+        Debug.Assert(unitSize > 0 && snode != null && enode != null);
+
+        path = new List<GridPathNode>();
+        if (IsNodeBlocked(unitSize, snode.X, snode.Z, blockedFunc) || IsNodeBlocked(unitSize, enode.X, enode.Z, blockedFunc))
+        {
+            return GridPathStatus.Failure;
+        }
+        if (snode == enode)
+        {
+            path.Add(snode);
+            return GridPathStatus.Success;
+        }
+
+        foreach (var n in dirtyQueue)
+        {
+            n.IsOpen = false;
+            n.IsClosed = false;
+        }
+        dirtyQueue.Clear();
+        openQueue.Clear();
+
+        int midX = (snode.X + enode.X) / 2;
+        int midZ = (snode.Z + enode.Z) / 2;
+        float searchRadius = HeuristicDistance(snode.X, snode.Z, midX, midZ) * searchRadiusScale + searchRadiusExtra;
+
+        snode.GCost = 0;
+        snode.HCost = HeuristicDistance(snode.X, snode.Z, enode.X, enode.Z);
+        snode.Parent = null;
+        snode.IsOpen = true;
+        dirtyQueue.Add(snode);
+        openQueue.Push(snode);
+
+        var lastBestNode = snode;
+        var lastBestNodeCost = snode.HCost;
+        GridPathNode bestNode = null;
+        while ((bestNode = openQueue.Pop()) != null)
+        {
+            bestNode.IsOpen = false;
+            bestNode.IsClosed = true;
+            if (bestNode == enode)
+            {
+                lastBestNode = bestNode;
+                break;
+            }
+            for (int i = 0; i < neighbours.Length - 1; i += 2)
+            {
+                var neighbourX = bestNode.X + neighbours[i];
+                var neighbourZ = bestNode.Z + neighbours[i + 1];
+                if (neighbourX < 0 || neighbourX >= xsize || neighbourZ < 0 || neighbourZ >= zsize)
+                {
+                    continue;
+                }
+                if (HeuristicDistance(neighbourX, neighbourZ, midX, midZ) > searchRadius)
+                {
+                    continue;
+                }
+                var neighbourNode = nodes[neighbourX + neighbourZ * xsize];
+                float gCost = bestNode.GCost + HeuristicDistance(bestNode.X, bestNode.Z, neighbourNode.X, neighbourNode.Z);
+                float hCost = HeuristicDistance(neighbourX, neighbourZ, enode.X, enode.Z);
+                if (neighbourNode.IsOpenOrClosed)
+                {
+                    if (hCost + gCost >= neighbourNode.FCost)
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    dirtyQueue.Add(neighbourNode);
+                }
+                neighbourNode.GCost = gCost;
+                neighbourNode.HCost = hCost;
+                neighbourNode.Parent = bestNode;
+                neighbourNode.IsClosed = false;
+                if (neighbourNode.IsOpen)
+                {
+                    openQueue.Modify(neighbourNode);
+                }
+                else
+                {
+                    neighbourNode.IsOpen = true;
+                    openQueue.Push(neighbourNode);
+                }
+                if (hCost < lastBestNodeCost)
+                {
+                    lastBestNode = neighbourNode;
+                    lastBestNodeCost = hCost;
+                }
+            }
+        }
+        return GridPathStatus.Success;
+    }
     public bool FindStraightPath(int unitSize, GridPathNode startNode, GridPathNode goalNode, float goalRadius, Func<int, int, bool> blockedFunc, out List<GridPathNode> path)
     {
         Debug.Assert(unitSize > 0 && startNode != null && goalNode != null && goalRadius >= 0 && blockedFunc != null);
@@ -335,79 +442,6 @@ public class GridPathFinder
         }
         return true;
     }
-    public bool FindPath(int unitSize, GridPathNode startNode, GridPathNode goalNode, float goalRadius, float searchRadius, int searchMaxNodes, Func<int, int, bool> blockedFunc, out List<GridPathNode> path)
-    {
-        Debug.Assert(unitSize > 0 && startNode != null && goalNode != null && goalRadius >= 0);
-
-        foreach (var n in closedQueue)
-        {
-            n.IsClosed = false;
-        }
-        closedQueue.Clear();
-        openQueue.Clear();
-        path = new List<GridPathNode>();
-
-        startNode.GCost = 0;
-        startNode.HCost = HeuristicDistance(startNode.X, startNode.Z, goalNode.X, goalNode.Z);
-        startNode.Parent = null;
-        startNode.IsClosed = true;
-        closedQueue.Add(startNode);
-
-        var nearestNode = startNode;
-        int searchNodeCount = 0;
-        bool isFound = false;
-        var node = startNode;
-        while (node != null && (searchMaxNodes < 0 || searchNodeCount++ < searchMaxNodes))
-        {
-            if (node.HCost <= goalRadius)
-            {
-                nearestNode = node;
-                isFound = true;
-                break;
-            }
-            for (int i = 0; i < neighbors.Length - 1; i += 2)
-            {
-                var x = node.X + neighbors[i];
-                var z = node.Z + neighbors[i + 1];
-                if (x < 0 || x >= xsize || z < 0 || z >= zsize)
-                {
-                    continue;
-                }
-                var n = nodes[x + z * xsize];
-                if (n.IsClosed)
-                {
-                    continue;
-                }
-                n.IsClosed = true;
-                closedQueue.Add(n);
-                if (searchRadius > 0.0f && HeuristicDistance(startNode.X, startNode.Z, n.X, n.Z) > searchRadius)
-                {
-                    continue;
-                }
-                if (!IsNeighborWalkable(unitSize, node, n, blockedFunc))
-                {
-                    continue;
-                }
-                n.GCost = node.GCost + HeuristicDistance(node.X, node.Z, n.X, n.Z);
-                n.HCost = HeuristicDistance(n.X, n.Z, goalNode.X, goalNode.Z);
-                n.Parent = node;
-                openQueue.Push(n);
-                if (node.HCost < nearestNode.HCost)
-                {
-                    nearestNode = node;
-                }
-            }
-            node = openQueue.Pop();
-        }
-        while (nearestNode != startNode)
-        {
-            path.Add(nearestNode);
-            nearestNode = nearestNode.Parent;
-        }
-        path.Reverse();
-        return isFound;
-    }
-
     private bool IsNeighborWalkable(int unitSize, GridPathNode snode, GridPathNode enode, Func<int, int, bool> blockedFunc)
     {
         Debug.Assert(unitSize > 0 && snode != null && enode != null && (snode.X != enode.X || snode.Z != enode.Z));

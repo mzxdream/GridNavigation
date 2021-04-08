@@ -21,23 +21,7 @@ class GridNode
     }
 }
 
-public struct GridMoveAgentParam
-{
-    public int teamID;
-    public float mass;
-    public float radius;
-    public float maxSpeed;
-    public float maxAcc;
-    public float maxDec;
-    public bool isPushResistant;
-    public bool isEnemyPushResistant;
-}
 
-public class GridMoveAgent
-{
-    public enum State { Invalid, Walking }
-    public enum TargetState { None, Valid, Requesting, WaitForPath }
-}
 
 public class GridMoveManager
 {
