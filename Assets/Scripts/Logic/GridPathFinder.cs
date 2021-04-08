@@ -28,7 +28,6 @@ public class GridPathNode
         get { return (flags & (int)Flags.Closed) != 0; }
         set { if (value) { flags |= (int)Flags.Closed; } else { flags &= ~(int)Flags.Closed; } }
     }
-    public bool IsOpenOrClosed { get => (flags & (int)(Flags.Open | Flags.Closed)) != 0; }
 
     public GridPathNode(int x, int z)
     {
@@ -131,7 +130,7 @@ class GridPathPriorityQueue
     }
 }
 
-public enum GridPathStatus { Success = 1 << 31, Failure = 1 << 30, InProgress = 1 << 29, PartialResult = 1, }
+public enum GridPathStatus { Success = 0x01, Failure = 0x02, InProgress = 0x04, PartialResult = 0x08, }
 
 public class GridPathFinder
 {
@@ -317,19 +316,18 @@ public class GridPathFinder
         dirtyQueue.Clear();
         openQueue.Clear();
 
-        int midX = (snode.X + enode.X) / 2;
-        int midZ = (snode.Z + enode.Z) / 2;
-        float searchRadius = HeuristicDistance(snode.X, snode.Z, midX, midZ) * searchRadiusScale + searchRadiusExtra;
+        int middleX = (snode.X + enode.X) / 2;
+        int middleZ = (snode.Z + enode.Z) / 2;
+        float searchRadius = GridMathUtils.GridDistanceApproximately(snode.X, snode.Z, middleX, middleZ) * searchRadiusScale + searchRadiusExtra;
 
         snode.GCost = 0;
-        snode.HCost = HeuristicDistance(snode.X, snode.Z, enode.X, enode.Z);
+        snode.HCost = GridMathUtils.GridDistanceApproximately(snode.X, snode.Z, enode.X, enode.Z);
         snode.Parent = null;
         snode.IsOpen = true;
         dirtyQueue.Add(snode);
         openQueue.Push(snode);
 
         var lastBestNode = snode;
-        var lastBestNodeCost = snode.HCost;
         GridPathNode bestNode = null;
         while ((bestNode = openQueue.Pop()) != null)
         {
@@ -348,28 +346,27 @@ public class GridPathFinder
                 {
                     continue;
                 }
-                if (HeuristicDistance(neighbourX, neighbourZ, midX, midZ) > searchRadius)
+                if (GridMathUtils.GridDistanceApproximately(neighbourX, neighbourZ, middleX, middleZ) > searchRadius)
                 {
                     continue;
                 }
                 var neighbourNode = nodes[neighbourX + neighbourZ * xsize];
-                float gCost = bestNode.GCost + HeuristicDistance(bestNode.X, bestNode.Z, neighbourNode.X, neighbourNode.Z);
-                float hCost = HeuristicDistance(neighbourX, neighbourZ, enode.X, enode.Z);
-                if (neighbourNode.IsOpenOrClosed)
+                float gCost = bestNode.GCost + GridMathUtils.GridDistanceApproximately(bestNode.X, bestNode.Z, neighbourNode.X, neighbourNode.Z);
+                if (neighbourNode.IsOpen || neighbourNode.IsClosed)
                 {
-                    if (hCost + gCost >= neighbourNode.FCost)
+                    if (gCost >= neighbourNode.GCost)
                     {
                         continue;
                     }
+                    neighbourNode.IsClosed = false;
                 }
                 else
                 {
                     dirtyQueue.Add(neighbourNode);
                 }
                 neighbourNode.GCost = gCost;
-                neighbourNode.HCost = hCost;
+                neighbourNode.HCost = GridMathUtils.GridDistanceApproximately(neighbourX, neighbourZ, enode.X, enode.Z);
                 neighbourNode.Parent = bestNode;
-                neighbourNode.IsClosed = false;
                 if (neighbourNode.IsOpen)
                 {
                     openQueue.Modify(neighbourNode);
@@ -379,13 +376,13 @@ public class GridPathFinder
                     neighbourNode.IsOpen = true;
                     openQueue.Push(neighbourNode);
                 }
-                if (hCost < lastBestNodeCost)
+                if (neighbourNode.HCost < lastBestNode.HCost)
                 {
                     lastBestNode = neighbourNode;
-                    lastBestNodeCost = hCost;
                 }
             }
         }
+
         var curNode = lastBestNode;
         do
         {
@@ -548,12 +545,5 @@ public class GridPathFinder
     {
         Debug.Assert(node != null && blockedFunc != null);
         return node.IsBlocked || (blockedFunc != null && blockedFunc(node.X, node.Z));
-    }
-
-    private static float HeuristicDistance(int sx, int sz, int ex, int ez)
-    {
-        int dx = Mathf.Abs(ex - sx);
-        int dz = Mathf.Abs(ez - sz);
-        return (dx + dz) + Mathf.Min(dx, dz) * (1.4142f - 2.0f);
     }
 }
