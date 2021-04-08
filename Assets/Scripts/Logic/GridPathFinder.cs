@@ -398,21 +398,24 @@ public class GridPathFinder
         }
         return status;
     }
-    public bool FindStraightPath(int unitSize, GridPathNode startNode, GridPathNode goalNode, float goalRadius, Func<int, int, bool> blockedFunc, out List<GridPathNode> path)
+    public GridPathStatus FindRawPath(int unitSize, GridPathNode snode, GridPathNode enode, Func<int, int, bool> blockedFunc, out List<GridPathNode> path)
     {
-        Debug.Assert(unitSize > 0 && startNode != null && goalNode != null && goalRadius >= 0 && blockedFunc != null);
+        Debug.Assert(unitSize > 0 && snode != null && enode != null);
 
         path = new List<GridPathNode>();
-
-        int dx = goalNode.X - startNode.X;
-        int dz = goalNode.Z - startNode.Z;
+        if (IsNodeBlocked(unitSize, snode.X, snode.Z, blockedFunc) || IsNodeBlocked(unitSize, enode.X, enode.Z, blockedFunc))
+        {
+            return GridPathStatus.Failure;
+        }
+        path.Add(snode);
+        int dx = enode.X - snode.X;
+        int dz = enode.Z - snode.Z;
         int nx = Mathf.Abs(dx);
         int nz = Mathf.Abs(dz);
         int signX = dx > 0 ? 1 : -1;
         int signZ = dz > 0 ? 1 : -1;
-
-        int x = startNode.X;
-        int z = startNode.Z;
+        int x = snode.X;
+        int z = snode.Z;
         int ix = 0;
         int iz = 0;
         while (ix < nx || iz < nz)
@@ -423,7 +426,7 @@ public class GridPathFinder
             {
                 if (!IsNeighborWalkable(unitSize, nodes[x + z * xsize], nodes[x + signX + z * xsize], blockedFunc))
                 {
-                    return false;
+                    return GridPathStatus.Failure;
                 }
                 x += signX;
                 ix++;
@@ -432,7 +435,7 @@ public class GridPathFinder
             {
                 if (!IsNeighborWalkable(unitSize, nodes[x + z * xsize], nodes[x + (z + signZ) * xsize], blockedFunc))
                 {
-                    return false;
+                    return GridPathStatus.Failure;
                 }
                 z += signZ;
                 iz++;
@@ -441,7 +444,7 @@ public class GridPathFinder
             {
                 if (!IsNeighborWalkable(unitSize, nodes[x + z * xsize], nodes[x + signX + (z + signZ) * xsize], blockedFunc))
                 {
-                    return false;
+                    return GridPathStatus.Failure;
                 }
                 x += signX;
                 z += signZ;
@@ -450,7 +453,7 @@ public class GridPathFinder
             }
             path.Add(nodes[x + z * xsize]);
         }
-        return true;
+        return GridPathStatus.Success;
     }
     private bool IsNeighborWalkable(int unitSize, GridPathNode snode, GridPathNode enode, Func<int, int, bool> blockedFunc)
     {
@@ -514,7 +517,6 @@ public class GridPathFinder
             return true;
         }
     }
-
     private bool IsNodeBlocked(int unitSize, int x, int z, Func<int, int, bool> blockedFunc)
     {
         Debug.Assert(unitSize > 0);
@@ -540,10 +542,9 @@ public class GridPathFinder
         }
         return false;
     }
-
     private bool IsNodeCenterBlocked(GridPathNode node, Func<int, int, bool> blockedFunc)
     {
-        Debug.Assert(node != null && blockedFunc != null);
-        return node.IsBlocked || (blockedFunc != null && blockedFunc(node.X, node.Z));
+        Debug.Assert(node != null);
+        return blockedFunc != null && blockedFunc(node.X, node.Z);
     }
 }
