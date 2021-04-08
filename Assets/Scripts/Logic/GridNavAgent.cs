@@ -1,5 +1,6 @@
 using UnityEngine;
 
+/*
 public enum GridMovePushFlags { EnemyResistant = 0x01, FriendResistant = 0x02 }
 
 public struct GridMoveAgentParam
@@ -23,6 +24,7 @@ public class GridMoveAgent
     private GridMoveAgentParam param;
 
 }
+*/
     /*
 public class GridMoveAgent
 {

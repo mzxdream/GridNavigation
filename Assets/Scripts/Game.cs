@@ -20,7 +20,7 @@ public class Game : MonoBehaviour
 
     Dictionary<int, GameTile> tiles;
     List<Character> characters;
-    GridMoveManager moveManager;
+    GridNavManager navManager;
     int redDestinationIndex;
     int blueDestinationIndex;
 
@@ -35,8 +35,8 @@ public class Game : MonoBehaviour
         characters = new List<Character>();
 
         var offset = new Vector3(xsize * tileSize * 0.5f, 0, zsize * tileSize * 0.5f);
-        moveManager = new GridMoveManager();
-        moveManager.Init(transform.position - offset, transform.position + offset, tileSize, 30, 1000);
+        navManager = new GridNavManager();
+        navManager.Init(transform.position - offset, transform.position + offset, tileSize, 4096);
 
         redDestinationIndex = -1;
         blueDestinationIndex = -1;
@@ -67,10 +67,7 @@ public class Game : MonoBehaviour
         {
             c.Update();
         }
-    }
-    void FixedUpdate()
-    {
-        moveManager.Update();
+        navManager.Update(Time.deltaTime);
     }
     void AddCharacter(CharacterType type)
     {
@@ -90,7 +87,7 @@ public class Game : MonoBehaviour
                     Debug.Assert(false, "unsupported character type:" + type);
                     break;
             }
-            var character = new Character(prefab, type, hit.point, Vector3.forward, 0.6f, moveManager);
+            var character = new Character(prefab, type, hit.point, Vector3.forward, 0.6f, navManager);
             characters.Add(character);
         }
     }
@@ -100,7 +97,7 @@ public class Game : MonoBehaviour
         {
             if (tile.Type == GameTileType.Wall)
             {
-                moveManager.SetTileBlocked(index % xsize, index / xsize, false);
+                navManager.SetNodeBlocked(index % xsize, index / xsize, false);
             }
             else if (tile.Type == GameTileType.RedDestination)
             {
@@ -134,7 +131,7 @@ public class Game : MonoBehaviour
         if (type == GameTileType.Wall)
         {
             prefab = wallPrefab;
-            moveManager.SetTileBlocked(index % xsize, index / xsize, true);
+            navManager.SetNodeBlocked(index % xsize, index / xsize, true);
         }
         else if (type == GameTileType.RedDestination)
         {
