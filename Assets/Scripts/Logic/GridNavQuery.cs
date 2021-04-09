@@ -6,6 +6,8 @@ enum GridNavNodeFlags { Open = 0x01, Closed = 0x02 };
 
 class GridNavQueryNode
 {
+    public int x;
+    public int z;
     public int squareIndex;
     public float gCost;
     public float fCost;
@@ -15,22 +17,22 @@ class GridNavQueryNode
 
 class GridNavQueryPriorityQueue
 {
-    private GridPathNode[] heap;
+    private GridNavQueryNode[] heap;
     private int count;
     private int capacity;
 
     public GridNavQueryPriorityQueue(int capacity = 256)
     {
-        this.heap = new GridPathNode[capacity];
+        this.heap = new GridNavQueryNode[capacity];
         this.count = 0;
         this.capacity = capacity;
     }
-    public void Push(GridPathNode node)
+    public void Push(GridNavQueryNode node)
     {
         if (count == capacity)
         {
             capacity <<= 1;
-            var newHeap = new GridPathNode[capacity];
+            var newHeap = new GridNavQueryNode[capacity];
             heap.CopyTo(newHeap, 0);
             heap = newHeap;
         }
@@ -38,7 +40,7 @@ class GridNavQueryPriorityQueue
         HeapifyUp(count);
         count++;
     }
-    public void Modify(GridPathNode node)
+    public void Modify(GridNavQueryNode node)
     {
         for (int i = 0; i < count; ++i)
         {
@@ -49,7 +51,7 @@ class GridNavQueryPriorityQueue
             }
         }
     }
-    public GridPathNode Pop()
+    public GridNavQueryNode Pop()
     {
         if (count == 0)
         {
@@ -74,7 +76,7 @@ class GridNavQueryPriorityQueue
         while (i > 0)
         {
             int j = (i - 1) / 2; //parent
-            if (heap[j].FCost <= heap[i].FCost)
+            if (heap[j].fCost <= heap[i].fCost)
             {
                 break;
             }
@@ -89,11 +91,11 @@ class GridNavQueryPriorityQueue
         int lowest = i;
         int left = i * 2 + 1;
         int right = i * 2 + 2;
-        if (left < length && heap[left].FCost < heap[lowest].FCost)
+        if (left < length && heap[left].fCost < heap[lowest].fCost)
         {
             lowest = left;
         }
-        if (right < length && heap[right].FCost < heap[lowest].FCost)
+        if (right < length && heap[right].fCost < heap[lowest].fCost)
         {
             lowest = right;
         }
@@ -111,7 +113,6 @@ public class GridNavQueryFilter
 {
     public int unitSize;
     public float searchRadiusScale;
-    public float searchRadiusExtra;
     public Func<int, bool> blockedFunc;
 }
 
@@ -137,6 +138,8 @@ public class GridNavQuery
             {
                 this.nodes[x + z * xsize] = new GridNavQueryNode
                 {
+                    x = x,
+                    z = z,
                     squareIndex = navMesh.GetSquareIndex(x, z),
                 };
             }
@@ -170,28 +173,29 @@ public class GridNavQuery
 
         foreach (var n in dirtyQueue)
         {
-            n.flags = 0;
+            n.flags &= ~(int)(GridNavNodeFlags.Open | GridNavNodeFlags.Closed);
         }
         dirtyQueue.Clear();
         openQueue.Clear();
 
         int mx = (sx + ex) / 2;
         int mz = (sz + ez) / 2;
-        float searchRadius = GridMathUtils.GridDistanceApproximately(snode.X, snode.Z, middleX, middleZ) * searchRadiusScale + searchRadiusExtra;
+        float searchRadius = GridMathUtils.GridDistanceApproximately(sx, sz, mx, mz) * filter.searchRadiusScale;
 
-        snode.GCost = 0;
-        snode.HCost = GridMathUtils.GridDistanceApproximately(snode.X, snode.Z, enode.X, enode.Z);
-        snode.Parent = null;
-        snode.IsOpen = true;
+        snode.gCost = 0;
+        snode.fCost = GridMathUtils.GridDistanceApproximately(sx, sz, ex, ez);
+        snode.parent = null;
+        snode.flags |= (int)GridNavNodeFlags.Open;
         dirtyQueue.Add(snode);
         openQueue.Push(snode);
 
         var lastBestNode = snode;
-        GridPathNode bestNode = null;
+        var lastBestNodeCost = snode.fCost;
+        GridNavQueryNode bestNode = null;
         while ((bestNode = openQueue.Pop()) != null)
         {
-            bestNode.IsOpen = false;
-            bestNode.IsClosed = true;
+            bestNode.flags &= ~(int)GridNavNodeFlags.Open;
+            bestNode.flags |= (int)GridNavNodeFlags.Closed;
             if (bestNode == enode)
             {
                 lastBestNode = bestNode;
@@ -199,44 +203,46 @@ public class GridNavQuery
             }
             for (int i = 0; i < neighbours.Length - 1; i += 2)
             {
-                var neighbourX = bestNode.X + neighbours[i];
-                var neighbourZ = bestNode.Z + neighbours[i + 1];
-                if (neighbourX < 0 || neighbourX >= xsize || neighbourZ < 0 || neighbourZ >= zsize)
+                var nx = bestNode.x + neighbours[i];
+                var nz = bestNode.z + neighbours[i + 1];
+                if (nx < 0 || nx >= xsize || nz < 0 || nz >= zsize)
                 {
                     continue;
                 }
-                if (GridMathUtils.GridDistanceApproximately(neighbourX, neighbourZ, middleX, middleZ) > searchRadius)
+                if (GridMathUtils.GridDistanceApproximately(nx, nz, mx, mz) > searchRadius)
                 {
                     continue;
                 }
-                var neighbourNode = nodes[neighbourX + neighbourZ * xsize];
-                float gCost = bestNode.GCost + GridMathUtils.GridDistanceApproximately(bestNode.X, bestNode.Z, neighbourNode.X, neighbourNode.Z);
-                if (neighbourNode.IsOpen || neighbourNode.IsClosed)
+                var neighbourNode = nodes[nx + nz * xsize];
+                var gCost = bestNode.gCost + GridMathUtils.GridDistanceApproximately(bestNode.x, bestNode.z, neighbourNode.x, neighbourNode.z);
+                if ((neighbourNode.flags & (int)(GridNavNodeFlags.Open | GridNavNodeFlags.Closed)) != 0)
                 {
-                    if (gCost >= neighbourNode.GCost)
+                    if (gCost >= neighbourNode.gCost)
                     {
                         continue;
                     }
-                    neighbourNode.IsClosed = false;
+                    neighbourNode.flags &= ~(int)GridNavNodeFlags.Closed;
                 }
                 else
                 {
                     dirtyQueue.Add(neighbourNode);
                 }
-                neighbourNode.GCost = gCost;
-                neighbourNode.HCost = GridMathUtils.GridDistanceApproximately(neighbourX, neighbourZ, enode.X, enode.Z);
-                neighbourNode.Parent = bestNode;
-                if (neighbourNode.IsOpen)
+                var hCost = GridMathUtils.GridDistanceApproximately(nx, nz, ex, ez);
+                neighbourNode.gCost = gCost;
+                neighbourNode.fCost = gCost + hCost;
+                neighbourNode.parent = bestNode;
+                if ((neighbourNode.flags & (int)GridNavNodeFlags.Open) != 0)
                 {
                     openQueue.Modify(neighbourNode);
                 }
                 else
                 {
-                    neighbourNode.IsOpen = true;
+                    neighbourNode.flags |= (int)GridNavNodeFlags.Open;
                     openQueue.Push(neighbourNode);
                 }
-                if (neighbourNode.HCost < lastBestNode.HCost)
+                if (hCost < lastBestNodeCost)
                 {
+                    lastBestNodeCost = hCost;
                     lastBestNode = neighbourNode;
                 }
             }
@@ -245,17 +251,12 @@ public class GridNavQuery
         var curNode = lastBestNode;
         do
         {
-            path.Add(curNode);
-            curNode = curNode.Parent;
+            path.Add(curNode.squareIndex);
+            curNode = curNode.parent;
         } while (curNode != null);
         path.Reverse();
 
-        var status = GridPathStatus.Success;
-        if (lastBestNode != enode)
-        {
-            status |= GridPathStatus.PartialResult;
-        }
-        return status;
+        return true;
     }
     public GridPathStatus FindRawPath(int unitSize, GridPathNode snode, GridPathNode enode, Func<int, int, bool> blockedFunc, out List<GridPathNode> path)
     {
