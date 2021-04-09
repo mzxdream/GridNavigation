@@ -31,7 +31,11 @@ public class GridNavAgent
     public List<GridPathNode> path;
 }
 
-
+class GridNavNode {
+    public int x;
+    public int z;
+    public bool isBlocked;
+ }
 
 public class GridNavManager
 {
@@ -64,7 +68,7 @@ public class GridNavManager
         {
             for (int x = 0; x < xsize; x++)
             {
-                nodes[x + z * xsize] = new GridNavNode(x, z);
+                //nodes[x + z * xsize] = new GridNavNode(x, z);
             }
         }
         agents = new List<GridNavAgent>();
@@ -81,7 +85,7 @@ public class GridNavManager
         {
             return;
         }
-        nodes[x + z * xsize].IsBlocked = blocked;
+        //nodes[x + z * xsize].IsBlocked = blocked;
     }
     public bool GetNodeXZUnclamped(Vector3 pos, out int x, out int z)
     {

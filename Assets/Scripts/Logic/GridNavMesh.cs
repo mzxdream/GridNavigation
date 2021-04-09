@@ -1,9 +1,7 @@
 using UnityEngine;
 
-public class GridNavSquare
+class GridNavSquare
 {
-    public int x;
-    public int z;
     public bool isBlocked;
 }
 
@@ -12,12 +10,14 @@ public class GridNavMesh
     private Vector3 bmin;
     private int xsize;
     private int zsize;
+    private int size;
     private float squareSize;
     private GridNavSquare[] squares;
 
     public int XSize { get => xsize; }
     public int ZSize { get => zsize; }
     public float SquareSize { get => squareSize; }
+    public int Size { get => size; }
 
     public bool Init(Vector3 bmin, int xsize, int zsize, float squareSize)
     {
@@ -28,6 +28,7 @@ public class GridNavMesh
         this.bmin = bmin;
         this.xsize = xsize;
         this.zsize = zsize;
+        this.size = xsize * zsize;
         this.squareSize = squareSize;
         this.squares = new GridNavSquare[xsize * zsize];
         for (int z = 0; z < zsize; z++)
@@ -36,8 +37,6 @@ public class GridNavMesh
             {
                 this.squares[x + z * xsize] = new GridNavSquare
                 {
-                    x = x,
-                    z = z,
                     isBlocked = false,
                 };
             }
@@ -47,35 +46,35 @@ public class GridNavMesh
     public void Clear()
     {
     }
-    public GridNavSquare GetSquare(int index)
+    public bool GetSquareXZ(int index, out int x, out int z)
     {
-        Debug.Assert(index >= 0 && index < xsize * zsize);
-        return squares[index];
+        z = index / xsize;
+        x = index - z * xsize;
+        return x >= 0 && x < xsize && z >= 0 && z < zsize;
     }
-    public GridNavSquare GetSquare(int x, int z)
+    public int GetSquareIndex(int x, int z)
     {
-        Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
-        return squares[x + z * xsize];
+        if (x >= 0 && x < xsize && z >= 0 && z < zsize)
+        {
+            return x + z * xsize;
+        }
+        return -1;
     }
     public void SetSquare(int index, bool isBlocked)
     {
-        Debug.Assert(index >= 0 && index < xsize * zsize);
+        Debug.Assert(index >= 0 && index < size);
         squares[index].isBlocked = isBlocked;
-    }
-    public void SetSquare(int x, int z, bool isBlocked)
-    {
-        Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
-        squares[x + z * xsize].isBlocked = isBlocked;
     }
     public Vector3 GetSquarePos(int index)
     {
-        Debug.Assert(index >= 0 && index < xsize * zsize);
-        var square = squares[index];
-        return new Vector3(bmin.x + (square.x + 0.5f) * squareSize, 0, bmin.z + (square.z + 0.5f) * squareSize);
-    }
-    public Vector3 GetSquarePos(int x, int z)
-    {
-        Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
+        Debug.Assert(index >= 0 && index < size);
+        int z = index / xsize;
+        int x = index - z * xsize;
         return new Vector3(bmin.x + (x + 0.5f) * squareSize, 0, bmin.z + (z + 0.5f) * squareSize);
+    }
+    public bool IsSquareBlocked(int index)
+    {
+        Debug.Assert(index >= 0 && index < size);
+        return squares[index].isBlocked;
     }
 }
