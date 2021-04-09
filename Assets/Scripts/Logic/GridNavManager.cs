@@ -31,25 +31,7 @@ public class GridNavAgent
     public List<GridPathNode> path;
 }
 
-class GridNavNode
-{
-    private readonly int x;
-    private readonly int z;
-    private bool isBlocked;
-    private List<GridNavAgent> agents;
 
-    public int X { get => x; }
-    public int Z { get => z; }
-    public bool IsBlocked { get => isBlocked; set => isBlocked = value; }
-    public List<GridNavAgent> Agents { get => agents; }
-
-    public GridNavNode(int x, int z)
-    {
-        this.x = x;
-        this.z = z;
-        this.agents = new List<GridNavAgent>();
-    }
-}
 
 public class GridNavManager
 {
