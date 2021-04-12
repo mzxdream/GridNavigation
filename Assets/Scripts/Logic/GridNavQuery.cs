@@ -329,18 +329,35 @@ public class GridNavQuery
     {
         return true;
     }
-    public bool FindNearestSquare(int unitSize, Func<int, bool> blockedFunc, Vector3 pos, float radius, out int nearestRef, out Vector3 nearestPos)
+    public bool FindNearestSquare(int unitSize, Func<int, bool> blockedFunc, Vector3 pos, float radius, out int nearestIndex, out Vector3 nearestPos)
     {
         Debug.Assert(unitSize > 0 && radius > 0);
-        navMesh.ClampInBounds(pos, out nearestRef, out nearestPos);
-        navMesh.GetSquareXZ(nearestRef, out int x, out int z);
+        navMesh.ClampInBounds(pos, out nearestIndex, out nearestPos);
+        navMesh.GetSquareXZ(nearestIndex, out int x, out int z);
         var node = nodes[x + z * xsize];
+        var ext = (int)(radius / navMesh.SquareSize);
+        var nearestNode = FindNearestNode(unitSize, blockedFunc, node, ext);
+        if (nearestNode == null)
+        {
+            return false;
+        }
+        if (node != nearestNode)
+        {
+            nearestIndex = nearestNode.squareIndex;
+            nearestPos = navMesh.GetSquarePos(nearestIndex);
+        }
+        return true;
+    }
+    private GridNavQueryNode FindNearestNode(int unitSize, Func<int, bool> blockedFunc, GridNavQueryNode node, int ext)
+    {
+        Debug.Assert(unitSize > 0 && node != null);
         if (!IsNodeBlocked(unitSize, node, blockedFunc))
         {
-            return true;
+            return node;
         }
-        var extent = (int)(radius / navMesh.SquareSize);
-        for (int k = 1; k <= extent; k++)
+        int x = node.x;
+        int z = node.z;
+        for (int k = 1; k <= ext; k++)
         {
             int xmin = x - k;
             int xmax = x + k;
@@ -348,25 +365,19 @@ public class GridNavQuery
             int zmax = z + k;
             if (!IsNodeBlocked(unitSize, x, zmax, blockedFunc)) //up
             {
-                nearestRef = nodes[x + zmax * xsize].squareIndex;
-                nearestPos = navMesh.GetSquarePos(nearestRef);
-                return true;
+                return nodes[x + zmax * xsize];
             }
             if (!IsNodeBlocked(unitSize, x, zmin, blockedFunc)) //down
             {
-                nearestRef = nodes[x + zmin * xsize].squareIndex;
-                nearestPos = navMesh.GetSquarePos(nearestRef);
-                return true;
+                return nodes[x + zmin * xsize];
             }
             if (!IsNodeBlocked(unitSize, xmin, z, blockedFunc)) //left
             {
-                nearestRef = nodes[xmin + z * xsize].squareIndex;
-                return true;
+                return nodes[xmin + z * xsize];
             }
             if (!IsNodeBlocked(unitSize, xmax, z, blockedFunc)) //right
             {
-                nearestRef = nodes[xmax + z * xsize].squareIndex;
-                return true;
+                return nodes[xmax + z * xsize];
             }
             for (int t = 1; t < k; t++)
             {
@@ -420,6 +431,7 @@ public class GridNavQuery
                 return nodes[xmax + zmin * xsize];
             }
         }
+        return null;
     }
     private bool IsNeighborWalkable(int unitSize, GridNavQueryNode snode, GridNavQueryNode enode, Func<int, bool> blockedFunc)
     {
@@ -436,7 +448,7 @@ public class GridNavQuery
             }
             for (int i = 0; i < unitSize; i++)
             {
-                if (IsNodeBlocked(nodes[x + (enode.z - offset + i) * xsize], blockedFunc))
+                if (IsNodeCenterBlocked(nodes[x + (enode.z - offset + i) * xsize], blockedFunc))
                 {
                     return false;
                 }
@@ -452,7 +464,7 @@ public class GridNavQuery
             }
             for (int i = 0; i < unitSize; i++)
             {
-                if (IsNodeBlocked(nodes[enode.x - offset + i + z * xsize], blockedFunc))
+                if (IsNodeCenterBlocked(nodes[enode.x - offset + i + z * xsize], blockedFunc))
                 {
                     return false;
                 }
@@ -468,14 +480,14 @@ public class GridNavQuery
             }
             for (int i = 0; i <= unitSize; i++)
             {
-                if (IsNodeBlocked(nodes[x - i * (enode.x - snode.x) + z * xsize], blockedFunc))
+                if (IsNodeCenterBlocked(nodes[x - i * (enode.x - snode.x) + z * xsize], blockedFunc))
                 {
                     return false;
                 }
             }
             for (int i = 1; i <= unitSize; i++)
             {
-                if (IsNodeBlocked(nodes[x + (z - i * (enode.z - snode.z)) * xsize], blockedFunc))
+                if (IsNodeCenterBlocked(nodes[x + (z - i * (enode.z - snode.z)) * xsize], blockedFunc))
                 {
                     return false;
                 }
