@@ -327,10 +327,10 @@ public class GridNavQuery
         }
         //去除直线上的点
         straightPath.Add(path[0]);
-        int oldDir = SquareDirection(path[0], path[1]);
+        int oldDir = path[1] - path[0];
         for (int i = 2; i < path.Count; i++)
         {
-            int newDir = SquareDirection(path[i - 1], path[i]);
+            int newDir = path[i] - path[i - 1];
             if (oldDir != newDir)
             {
                 oldDir = newDir;
@@ -628,9 +628,5 @@ public class GridNavQuery
         int dx = Mathf.Abs(enode.x - snode.x);
         int dz = Mathf.Abs(enode.z - snode.z);
         return (dx + dz) + Mathf.Min(dx, dz) * (1.4142f - 2.0f);
-    }
-    private static int SquareDirection(int startIndex, int endIndex)
-    {
-        return endIndex - startIndex;
     }
 }
