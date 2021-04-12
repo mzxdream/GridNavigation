@@ -22,122 +22,69 @@ public class GridNavAgent
     public GridNavAgentState state;
     public GridNavAgentMoveState moveState;
     public int unitSize;
-    public int mapIndex;
-    public Vector3 position;
-    public int targetMapIndex;
-    public Vector3 targetPosition;
-    public Vector3 velocity;
-    public Vector3 desireVelocity;
-    public List<GridPathNode> path;
+    public int squareIndex;
+    public Vector3 pos;
+    public Vector3 targetPos;
+    public Vector3 vel;
+    public Vector3 desireVel;
 }
-
-class GridNavNode {
-    public int x;
-    public int z;
-    public bool isBlocked;
- }
 
 public class GridNavManager
 {
-    private Vector3 bmin;
-    private Vector3 bmax;
-    private float nodeSize;
-    private int xsize;
-    private int zsize;
-    private GridNavNode[] nodes;
+    private GridNavMesh navMesh;
+    private GridNavQuery navQuery;
     private List<GridNavAgent> agents;
-    private GridPathFinder pathFinder;
+    private Dictionary<int, List<GridNavAgent>> squareAgents;
 
-    public float NodeSize { get => nodeSize; }
-    public int XSize { get => xsize; }
-    public int ZSize { get => zsize; }
-
-    public bool Init(Vector3 bmin, Vector3 bmax, float nodeSize, int maxAgents)
+    public bool Init(GridNavMesh navMesh, int maxAgents)
     {
-        if (bmin.x >= bmax.x || bmin.z >= bmax.z || nodeSize <= 0 || maxAgents <= 0)
+        this.navMesh = navMesh;
+        this.navQuery = new GridNavQuery();
+        if (!navQuery.Init(navMesh))
         {
             return false;
         }
-        this.bmin = bmin;
-        this.bmax = bmax;
-        this.nodeSize = nodeSize;
-        this.xsize = Mathf.Max(1, (int)((bmax.x - bmin.x) / nodeSize));
-        this.zsize = Mathf.Max(1, (int)((bmax.z - bmin.z) / nodeSize));
-        nodes = new GridNavNode[xsize * zsize];
-        for (int z = 0; z < zsize; z++)
-        {
-            for (int x = 0; x < xsize; x++)
-            {
-                //nodes[x + z * xsize] = new GridNavNode(x, z);
-            }
-        }
-        agents = new List<GridNavAgent>();
-        pathFinder = new GridPathFinder(xsize, zsize);
+        this.agents = new List<GridNavAgent>();
+        this.squareAgents = new Dictionary<int, List<GridNavAgent>>();
         return true;
     }
     public void Clear()
     {
     }
-
-    public void SetNodeBlocked(int x, int z, bool blocked)
-    {
-        if (x < 0 || x >= xsize || z < 0 || z >= zsize)
-        {
-            return;
-        }
-        //nodes[x + z * xsize].IsBlocked = blocked;
-    }
-    public bool GetNodeXZUnclamped(Vector3 pos, out int x, out int z)
-    {
-        x = (int)((pos.x - bmin.x) / nodeSize);
-        z = (int)((pos.z - bmin.z) / nodeSize);
-        return x >= 0 && x < xsize && z >= 0 && z < zsize;
-    }
-    public void GetNodeXZ(Vector3 pos, out int x, out int z)
-    {
-        x = Mathf.Clamp((int)((pos.x - bmin.x) / nodeSize), 0, xsize - 1);
-        z = Mathf.Clamp((int)((pos.z - bmin.z) / nodeSize), 0, zsize - 1);
-    }
-    public Vector3 GetNodePos(int x, int z)
-    {
-        Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
-        return new Vector3(bmin.x + (x + 0.5f) * nodeSize, 0, bmin.z + (z + 0.5f) * nodeSize);
-    }
     public GridNavAgent AddAgent(Vector3 pos, GridNavAgentParam param)
     {
-        var unitSize = Mathf.Max(1, (int)(param.radius / nodeSize));
-        if ((unitSize & 1) == 0)
-        {
-            unitSize++;
-        }
+        var unitSize = Mathf.Max(1, (int)(param.radius / navMesh.SquareSize + 0.9f));
         var agent = new GridNavAgent
         {
             param = param,
             state = GridNavAgentState.Walking,
             moveState = GridNavAgentMoveState.None,
             unitSize = unitSize,
-            position = pos,
-            targetPosition = Vector3.zero,
-            velocity = Vector3.zero,
-            desireVelocity = Vector3.zero,
-            path = new List<GridPathNode>(),
+            squareIndex = 0,
+            pos = pos,
+            targetPos = Vector3.zero,
+            vel = Vector3.zero,
+            desireVel = Vector3.zero,
         };
-        if (GetNodeXZUnclamped(agent.position, out int x, out int z))
-        {
-            agent.mapIndex = x + z * xsize;
-        }
-        else
-        {
-            x = Mathf.Clamp(x, 0, xsize - 1);
-            z = Mathf.Clamp(z, 0, zsize - 1);
-            agent.mapIndex = x + z * xsize;
-            agent.position = new Vector3(bmin.x + (x + 0.5f) * nodeSize, 0, bmin.z + (z + 0.5f) * nodeSize);
-        }
+        navMesh.ClampInBounds(agent.pos, out agent.squareIndex, out agent.pos);
         agents.Add(agent);
-        //todo
         return agent;
     }
     public void Update(float deltaTime)
     {
+    }
+    private void AddSquareAgent(int index, GridNavAgent agent)
+    {
+        if (!navMesh.GetSquareXZ(index, out var x, out var z))
+        {
+            return;
+        }
+    }
+    private void RemoveSquareAgent(int index, GridNavAgent agent)
+    {
+        if (!navMesh.GetSquareXZ(index, out var x, out var z))
+        {
+            return;
+        }
     }
 }

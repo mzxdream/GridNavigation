@@ -525,7 +525,7 @@ public class GridNavQuery
         navMesh.ClampInBounds(pos, out nearestIndex, out nearestPos);
         navMesh.GetSquareXZ(nearestIndex, out int x, out int z);
         var node = nodes[x + z * xsize];
-        var ext = (int)(radius / navMesh.SquareSize);
+        var ext = Mathf.Max(1, (int)(radius / navMesh.SquareSize + 0.9f));
         var nearestNode = FindNearestNode(unitSize, blockedFunc, node, ext);
         if (nearestNode == null)
         {
@@ -680,35 +680,36 @@ public class GridNavQuery
     private bool IsNeighborWalkable(int unitSize, Func<int, bool> blockedFunc, GridNavQueryNode snode, GridNavQueryNode enode)
     {
         Debug.Assert(unitSize > 0 && snode != null && enode != null && snode != enode);
-        Debug.Assert(Mathf.Abs(snode.x - enode.x) <= 1 && Mathf.Abs(snode.z - enode.z) <= 1);
+        int signX = enode.x - snode.x;
+        int signZ = enode.z - enode.z;
+        Debug.Assert(signX >= -1 && signX <= 1 && signZ >= -1 && signZ <= 1);
 
-        var offset = (unitSize >> 1);
-        if (snode.z == enode.z) //Horizontal
+        if (signZ == 0) //Horizontal
         {
-            int x = enode.x + offset * (enode.x - snode.x);
+            int x = enode.x + (unitSize - 1) * signX;
             if (x < 0 || x >= xsize)
             {
                 return false;
             }
-            for (int i = 0; i < unitSize; i++)
+            for (int i = -(unitSize - 1); i < unitSize; i++)
             {
-                if (IsNodeCenterBlocked(nodes[x + (enode.z - offset + i) * xsize], blockedFunc))
+                if (IsNodeCenterBlocked(x, enode.z + i, blockedFunc))
                 {
                     return false;
                 }
             }
             return true;
         }
-        if (snode.x == enode.x) //Vertical
+        if (signX == 0) //Vertical
         {
-            int z = enode.z + offset * (enode.z - snode.z);
+            int z = enode.z + (unitSize - 1) * signZ;
             if (z < 0 || z >= zsize)
             {
                 return false;
             }
-            for (int i = 0; i < unitSize; i++)
+            for (int i = -(unitSize - 1); i < unitSize; i++)
             {
-                if (IsNodeCenterBlocked(nodes[enode.x - offset + i + z * xsize], blockedFunc))
+                if (IsNodeCenterBlocked(enode.x + i, z, blockedFunc))
                 {
                     return false;
                 }
@@ -716,28 +717,34 @@ public class GridNavQuery
             return true;
         }
         { //Cross
-            int x = enode.x + offset * (enode.x - snode.x);
-            int z = enode.z + offset * (enode.z - snode.z);
+            int x = enode.x + (unitSize - 1) * signX;
+            int z = enode.z + (unitSize - 1) * signZ;
             if (x < 0 || x >= xsize || z < 0 || z >= zsize)
             {
                 return false;
             }
-            for (int i = 0; i <= unitSize; i++)
+            for (int i = 0; i < unitSize * 2; i++)
             {
-                if (IsNodeCenterBlocked(nodes[x - i * (enode.x - snode.x) + z * xsize], blockedFunc))
+                if (IsNodeCenterBlocked(x - i * signX, z, blockedFunc))
                 {
                     return false;
                 }
             }
-            for (int i = 1; i <= unitSize; i++)
+            for (int i = 1; i < unitSize * 2; i++)
             {
-                if (IsNodeCenterBlocked(nodes[x + (z - i * (enode.z - snode.z)) * xsize], blockedFunc))
+                if (IsNodeCenterBlocked(x, z - i * signZ, blockedFunc))
                 {
                     return false;
                 }
             }
             return true;
         }
+    }
+    private bool IsNodeCenterBlocked(int x, int z, Func<int, bool> blockedFunc)
+    {
+        Debug.Assert(x < 0 || x >= xsize || z < 0 || z >= zsize);
+        var node = nodes[x + z * xsize];
+        return navMesh.IsSquareBlocked(node.squareIndex) || (blockedFunc != null && blockedFunc(node.squareIndex));
     }
     private bool IsNodeCenterBlocked(GridNavQueryNode node, Func<int, bool> blockedFunc)
     {
@@ -752,12 +759,10 @@ public class GridNavQuery
     private bool IsNodeBlocked(int unitSize, Func<int, bool> blockedFunc, int x, int z)
     {
         Debug.Assert(unitSize > 0);
-
-        int offset = (unitSize >> 1);
-        int xmin = x - offset;
-        int xmax = x + offset;
-        int zmin = z - offset;
-        int zmax = z + offset;
+        int xmin = x - (unitSize - 1);
+        int xmax = x + (unitSize - 1);
+        int zmin = z - (unitSize - 1);
+        int zmax = z + (unitSize - 1);
         if (xmin < 0 || xmax >= xsize || zmin < 0 || zmax >= zsize)
         {
             return true;
