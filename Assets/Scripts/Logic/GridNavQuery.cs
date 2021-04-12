@@ -109,13 +109,6 @@ class GridNavQueryPriorityQueue
     }
 }
 
-public class GridNavQueryFilter
-{
-    public int unitSize;
-    public float searchRadiusScale;
-    public Func<int, bool> blockedFunc;
-}
-
 public class GridNavQuery
 {
     private static readonly int[] neighbours = { 1, 0, -1, 0, 0, 1, 0, -1, -1, -1, 1, 1, -1, 1, 1, -1 };
@@ -151,9 +144,9 @@ public class GridNavQuery
     public void Clear()
     {
     }
-    public bool FindPath(GridNavQueryFilter filter, int startIndex, int endIndex, out List<int> path)
+    public bool FindPath(int unitSize, float searchRadiusScale, Func<int, bool> blockedFunc, int startIndex, int endIndex, out List<int> path)
     {
-        Debug.Assert(filter != null && filter.unitSize > 0);
+        Debug.Assert(unitSize > 0 && searchRadiusScale > 0);
         path = new List<int>();
         if (!navMesh.GetSquareXZ(startIndex, out int sx, out int sz) || !navMesh.GetSquareXZ(endIndex, out int ex, out int ez))
         {
@@ -161,7 +154,7 @@ public class GridNavQuery
         }
         var snode = nodes[sx + sz * xsize];
         var enode = nodes[ex + ez * xsize];
-        if (IsNodeBlocked(filter.unitSize, snode, filter.blockedFunc) || IsNodeBlocked(filter.unitSize, enode, filter.blockedFunc))
+        if (IsNodeBlocked(unitSize, snode, blockedFunc) || IsNodeBlocked(unitSize, enode, blockedFunc))
         {
             return false;
         }
@@ -179,7 +172,7 @@ public class GridNavQuery
         openQueue.Clear();
 
         var mnode = nodes[(sx + ex) / 2 + (sz + ez) / 2 * xsize];
-        float searchRadius = DistanceApproximately(snode, mnode) * filter.searchRadiusScale;
+        float searchRadius = DistanceApproximately(snode, mnode) * searchRadiusScale;
 
         snode.gCost = 0;
         snode.fCost = DistanceApproximately(snode, enode);
@@ -257,9 +250,9 @@ public class GridNavQuery
 
         return true;
     }
-    public bool FindRawPath(GridNavQueryFilter filter, int startIndex, int endIndex, out List<int> path)
+    public bool FindRawPath(int unitSize, Func<int, bool> blockedFunc, int startIndex, int endIndex, out List<int> path)
     {
-        Debug.Assert(filter != null && filter.unitSize > 0);
+        Debug.Assert(unitSize > 0);
         path = new List<int>();
         if (!navMesh.GetSquareXZ(startIndex, out int sx, out int sz) || !navMesh.GetSquareXZ(endIndex, out int ex, out int ez))
         {
@@ -267,7 +260,7 @@ public class GridNavQuery
         }
         var snode = nodes[sx + sz * xsize];
         var enode = nodes[ex + ez * xsize];
-        if (IsNodeBlocked(filter.unitSize, snode, filter.blockedFunc) || IsNodeBlocked(filter.unitSize, enode, filter.blockedFunc))
+        if (IsNodeBlocked(unitSize, snode, blockedFunc) || IsNodeBlocked(unitSize, enode, blockedFunc))
         {
             return false;
         }
@@ -293,7 +286,7 @@ public class GridNavQuery
             var t2 = (2 * iz + 1) * nx;
             if (t1 < t2) //Horizontal
             {
-                if (!IsNeighborWalkable(filter.unitSize, nodes[x + z * xsize], nodes[x + signX + z * xsize], filter.blockedFunc))
+                if (!IsNeighborWalkable(unitSize, nodes[x + z * xsize], nodes[x + signX + z * xsize], blockedFunc))
                 {
                     return false;
                 }
@@ -302,7 +295,7 @@ public class GridNavQuery
             }
             else if (t1 > t2) //Vertical
             {
-                if (!IsNeighborWalkable(filter.unitSize, nodes[x + z * xsize], nodes[x + (z + signZ) * xsize], filter.blockedFunc))
+                if (!IsNeighborWalkable(unitSize, nodes[x + z * xsize], nodes[x + (z + signZ) * xsize], blockedFunc))
                 {
                     return false;
                 }
@@ -311,7 +304,7 @@ public class GridNavQuery
             }
             else //Cross
             {
-                if (!IsNeighborWalkable(filter.unitSize, nodes[x + z * xsize], nodes[x + signX + (z + signZ) * xsize], filter.blockedFunc))
+                if (!IsNeighborWalkable(unitSize, nodes[x + z * xsize], nodes[x + signX + (z + signZ) * xsize], blockedFunc))
                 {
                     return false;
                 }
@@ -323,6 +316,18 @@ public class GridNavQuery
             path.Add(nodes[x + z * xsize].squareIndex);
         }
         return true;
+    }
+    public bool InitSlicedFindPath()
+    {
+    }
+    public bool UpdateSlicedFindPath()
+    {
+    }
+    public bool FinalizeSlicedFindPath()
+    {
+    }
+    public bool FindNearestSquare(int unitSize, Vector3 pos, float radius, Func<int, bool> blockedFunc, out int nearestRef, out Vector3 nearestPos)
+    {
     }
     private bool IsNeighborWalkable(int unitSize, GridNavQueryNode snode, GridNavQueryNode enode, Func<int, bool> blockedFunc)
     {
