@@ -51,6 +51,10 @@ class GridNavQueryPriorityQueue
             }
         }
     }
+    public bool IsEmpty()
+    {
+        return count == 0;
+    }
     public GridNavQueryNode Pop()
     {
         if (count == 0)
@@ -155,7 +159,7 @@ public class GridNavQuery
         }
         this.openQueue = new GridNavQueryPriorityQueue();
         this.dirtyQueue = new List<GridNavQueryNode>();
-        this.queryData = new GridNavQueryData();
+        this.queryData = new GridNavQueryData { status = GridNavQueryStatus.Failed };
         return true;
     }
     public void Clear()
@@ -171,7 +175,7 @@ public class GridNavQuery
         }
         var snode = nodes[sx + sz * xsize];
         var enode = nodes[ex + ez * xsize];
-        if (IsNodeBlocked(unitSize, blockedFunc, snode) || IsNodeBlocked(unitSize, blockedFunc, enode))
+        if (IsNodeBlocked(unitSize, blockedFunc, snode))
         {
             return false;
         }
@@ -277,7 +281,7 @@ public class GridNavQuery
         }
         var snode = nodes[sx + sz * xsize];
         var enode = nodes[ex + ez * xsize];
-        if (IsNodeBlocked(unitSize, blockedFunc, snode) || IsNodeBlocked(unitSize, blockedFunc, enode))
+        if (IsNodeBlocked(unitSize, blockedFunc, snode))
         {
             return false;
         }
@@ -373,26 +377,26 @@ public class GridNavQuery
         }
         return true;
     }
-    public bool InitSlicedFindPath(int unitSize, Func<int, bool> blockedFunc, float searchRadiusScale, int startIndex, int endIndex)
+    public GridNavQueryStatus InitSlicedFindPath(int unitSize, Func<int, bool> blockedFunc, float searchRadiusScale, int startIndex, int endIndex)
     {
         Debug.Assert(unitSize > 0 && searchRadiusScale > 0);
+        queryData.status = GridNavQueryStatus.Failed;
         if (!navMesh.GetSquareXZ(startIndex, out int sx, out int sz) || !navMesh.GetSquareXZ(endIndex, out int ex, out int ez))
         {
-            return false;
+            return queryData.status;
         }
-        queryData.status = GridNavQueryStatus.Failed;
         queryData.unitSize = unitSize;
         queryData.blockedFunc = blockedFunc;
         queryData.snode = nodes[sx + sz * xsize];
         queryData.enode = nodes[ex + ez * xsize];
-        if (IsNodeBlocked(unitSize, blockedFunc, queryData.snode) || IsNodeBlocked(unitSize, blockedFunc, queryData.enode))
+        if (IsNodeBlocked(unitSize, blockedFunc, queryData.snode))
         {
-            return false;
+            return queryData.status;
         }
         if (queryData.snode == queryData.enode)
         {
             queryData.status = GridNavQueryStatus.Success;
-            return true;
+            return queryData.status;
         }
 
         foreach (var n in dirtyQueue)
@@ -414,15 +418,106 @@ public class GridNavQuery
 
         queryData.lastBestNode = queryData.snode;
         queryData.lastBestNodeCost = queryData.snode.fCost;
-        return true;
+        queryData.status = GridNavQueryStatus.InProgress;
+        return queryData.status;
     }
-    public bool UpdateSlicedFindPath()
+    public GridNavQueryStatus UpdateSlicedFindPath(int maxNodes, out int doneNodes)
     {
-        return true;
+        doneNodes = 0;
+        if (queryData.status != GridNavQueryStatus.InProgress)
+        {
+            return queryData.status;
+        }
+        if (IsNodeBlocked(queryData.unitSize, queryData.blockedFunc, queryData.snode))
+        {
+            queryData.status = GridNavQueryStatus.Failed;
+            return queryData.status;
+        }
+        GridNavQueryNode bestNode = null;
+        while (doneNodes < maxNodes && (bestNode = openQueue.Pop()) != null)
+        {
+            doneNodes++;
+            bestNode.flags &= ~(int)GridNavNodeFlags.Open;
+            bestNode.flags |= (int)GridNavNodeFlags.Closed;
+            if (bestNode == queryData.enode)
+            {
+                queryData.lastBestNode = bestNode;
+                queryData.status = GridNavQueryStatus.Success;
+                return queryData.status;
+            }
+            for (int i = 0; i < neighbours.Length - 1; i += 2)
+            {
+                var nx = bestNode.x + neighbours[i];
+                var nz = bestNode.z + neighbours[i + 1];
+                if (nx < 0 || nx >= xsize || nz < 0 || nz >= zsize)
+                {
+                    continue;
+                }
+                var neighbourNode = nodes[nx + nz * xsize];
+                if (DistanceApproximately(neighbourNode, queryData.mnode) > queryData.searchRadius)
+                {
+                    continue;
+                }
+                var gCost = bestNode.gCost + DistanceApproximately(bestNode, neighbourNode);
+                if ((neighbourNode.flags & (int)(GridNavNodeFlags.Open | GridNavNodeFlags.Closed)) != 0)
+                {
+                    if (gCost >= neighbourNode.gCost)
+                    {
+                        continue;
+                    }
+                    neighbourNode.flags &= ~(int)GridNavNodeFlags.Closed;
+                }
+                else
+                {
+                    dirtyQueue.Add(neighbourNode);
+                }
+                var hCost = DistanceApproximately(neighbourNode, queryData.enode);
+                neighbourNode.gCost = gCost;
+                neighbourNode.fCost = gCost + hCost;
+                neighbourNode.parent = bestNode;
+                if ((neighbourNode.flags & (int)GridNavNodeFlags.Open) != 0)
+                {
+                    openQueue.Modify(neighbourNode);
+                }
+                else
+                {
+                    neighbourNode.flags |= (int)GridNavNodeFlags.Open;
+                    openQueue.Push(neighbourNode);
+                }
+                if (hCost < queryData.lastBestNodeCost)
+                {
+                    queryData.lastBestNodeCost = hCost;
+                    queryData.lastBestNode = neighbourNode;
+                }
+            }
+        }
+        if (openQueue.IsEmpty())
+        {
+            queryData.status = GridNavQueryStatus.Success;
+        }
+        return queryData.status;
     }
-    public bool FinalizeSlicedFindPath()
+    public GridNavQueryStatus FinalizeSlicedFindPath(out List<int> path)
     {
-        return true;
+        path = new List<int>();
+        if (queryData.status == GridNavQueryStatus.Failed)
+        {
+            return queryData.status;
+        }
+        if (queryData.lastBestNode == null)
+        {
+            queryData.status = GridNavQueryStatus.Failed;
+            return queryData.status;
+        }
+        var curNode = queryData.lastBestNode;
+        do
+        {
+            path.Add(curNode.squareIndex);
+            curNode = curNode.parent;
+        } while (curNode != null);
+        path.Reverse();
+
+        return queryData.status;
     }
     public bool FindNearestSquare(int unitSize, Func<int, bool> blockedFunc, Vector3 pos, float radius, out int nearestIndex, out Vector3 nearestPos)
     {
