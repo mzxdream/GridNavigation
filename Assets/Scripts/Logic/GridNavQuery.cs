@@ -109,6 +109,21 @@ class GridNavQueryPriorityQueue
     }
 }
 
+public enum GridNavQueryStatus { Success, Failed, InProgress, }
+
+class GridNavQueryData
+{
+    public GridNavQueryStatus status;
+    public int unitSize;
+    public Func<int, bool> blockedFunc;
+    public GridNavQueryNode snode;
+    public GridNavQueryNode enode;
+    public GridNavQueryNode mnode;
+    public float searchRadius;
+    public GridNavQueryNode lastBestNode;
+    public float lastBestNodeCost;
+}
+
 public class GridNavQuery
 {
     private static readonly int[] neighbours = { 1, 0, -1, 0, 0, 1, 0, -1, -1, -1, 1, 1, -1, 1, 1, -1 };
@@ -118,6 +133,7 @@ public class GridNavQuery
     private GridNavQueryNode[] nodes;
     private GridNavQueryPriorityQueue openQueue;
     private List<GridNavQueryNode> dirtyQueue;
+    private GridNavQueryData queryData;
 
     public bool Init(GridNavMesh navMesh)
     {
@@ -139,6 +155,7 @@ public class GridNavQuery
         }
         this.openQueue = new GridNavQueryPriorityQueue();
         this.dirtyQueue = new List<GridNavQueryNode>();
+        this.queryData = new GridNavQueryData();
         return true;
     }
     public void Clear()
@@ -356,8 +373,47 @@ public class GridNavQuery
         }
         return true;
     }
-    public bool InitSlicedFindPath()
+    public bool InitSlicedFindPath(int unitSize, Func<int, bool> blockedFunc, float searchRadiusScale, int startIndex, int endIndex)
     {
+        Debug.Assert(unitSize > 0 && searchRadiusScale > 0);
+        if (!navMesh.GetSquareXZ(startIndex, out int sx, out int sz) || !navMesh.GetSquareXZ(endIndex, out int ex, out int ez))
+        {
+            return false;
+        }
+        queryData.status = GridNavQueryStatus.Failed;
+        queryData.unitSize = unitSize;
+        queryData.blockedFunc = blockedFunc;
+        queryData.snode = nodes[sx + sz * xsize];
+        queryData.enode = nodes[ex + ez * xsize];
+        if (IsNodeBlocked(unitSize, blockedFunc, queryData.snode) || IsNodeBlocked(unitSize, blockedFunc, queryData.enode))
+        {
+            return false;
+        }
+        if (queryData.snode == queryData.enode)
+        {
+            queryData.status = GridNavQueryStatus.Success;
+            return true;
+        }
+
+        foreach (var n in dirtyQueue)
+        {
+            n.flags &= ~(int)(GridNavNodeFlags.Open | GridNavNodeFlags.Closed);
+        }
+        dirtyQueue.Clear();
+        openQueue.Clear();
+
+        queryData.mnode = nodes[(sx + ex) / 2 + (sz + ez) / 2 * xsize];
+        queryData.searchRadius = DistanceApproximately(queryData.snode, queryData.mnode) * searchRadiusScale;
+
+        queryData.snode.gCost = 0;
+        queryData.snode.fCost = DistanceApproximately(queryData.snode, queryData.enode);
+        queryData.snode.parent = null;
+        queryData.snode.flags |= (int)GridNavNodeFlags.Open;
+        dirtyQueue.Add(queryData.snode);
+        openQueue.Push(queryData.snode);
+
+        queryData.lastBestNode = queryData.snode;
+        queryData.lastBestNodeCost = queryData.snode.fCost;
         return true;
     }
     public bool UpdateSlicedFindPath()
