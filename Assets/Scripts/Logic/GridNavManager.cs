@@ -68,6 +68,7 @@ public class GridNavManager
         };
         navMesh.ClampInBounds(agent.pos, out agent.squareIndex, out agent.pos);
         agents.Add(agent);
+        AddSquareAgent(agent.squareIndex, agent);
         return agent;
     }
     public void Update(float deltaTime)
@@ -79,12 +80,48 @@ public class GridNavManager
         {
             return;
         }
+        int xmin = Mathf.Max(0, x - (agent.unitSize - 1));
+        int xmax = Mathf.Min(navMesh.XSize - 1, x + (agent.unitSize - 1));
+        int zmin = Mathf.Min(0, z - (agent.unitSize - 1));
+        int zmax = Mathf.Max(navMesh.ZSize - 1, z + (agent.unitSize - 1));
+        for (int tz = zmin; tz <= zmax; tz++)
+        {
+            for (int tx = xmin; tx <= xmax; tx++)
+            {
+                index = navMesh.GetSquareIndex(tx, tz);
+                if (!squareAgents.TryGetValue(index, out var agentList))
+                {
+                    agentList = new List<GridNavAgent>();
+                    squareAgents.Add(index, agentList);
+                }
+                agentList.Add(agent);
+            }
+        }
     }
     private void RemoveSquareAgent(int index, GridNavAgent agent)
     {
         if (!navMesh.GetSquareXZ(index, out var x, out var z))
         {
             return;
+        }
+        int xmin = Mathf.Max(0, x - (agent.unitSize - 1));
+        int xmax = Mathf.Min(navMesh.XSize - 1, x + (agent.unitSize - 1));
+        int zmin = Mathf.Min(0, z - (agent.unitSize - 1));
+        int zmax = Mathf.Max(navMesh.ZSize - 1, z + (agent.unitSize - 1));
+        for (int tz = zmin; tz <= zmax; tz++)
+        {
+            for (int tx = xmin; tx <= xmax; tx++)
+            {
+                index = navMesh.GetSquareIndex(tx, tz);
+                if (squareAgents.TryGetValue(index, out var agentList))
+                {
+                    agentList.Remove(agent);
+                    if (squareAgents.Count == 0)
+                    {
+                        squareAgents.Remove(index);
+                    }
+                }
+            }
         }
     }
 }
