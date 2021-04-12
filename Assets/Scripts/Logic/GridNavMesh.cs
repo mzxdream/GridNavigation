@@ -60,6 +60,23 @@ public class GridNavMesh
         }
         return -1;
     }
+    public void ClampInBounds(Vector3 pos, out int nearestIndex, out Vector3 nearestPos)
+    {
+        int x = (int)((pos.x - bmin.x) / squareSize);
+        int z = (int)((pos.z - bmin.z) / squareSize);
+        if (x < 0 || x >= xsize || z < 0 || z >= zsize)
+        {
+            x = Mathf.Clamp(x, 0, xsize - 1);
+            z = Mathf.Clamp(z, 0, zsize - 1);
+            nearestIndex = x + z * xsize;
+            nearestPos = GetSquarePos(nearestIndex);
+        }
+        else
+        {
+            nearestIndex = x + z * xsize;
+            nearestPos = pos;
+        }
+    }
     public void SetSquare(int index, bool isBlocked)
     {
         Debug.Assert(index >= 0 && index < size);

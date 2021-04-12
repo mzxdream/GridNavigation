@@ -319,15 +319,107 @@ public class GridNavQuery
     }
     public bool InitSlicedFindPath()
     {
+        return true;
     }
     public bool UpdateSlicedFindPath()
     {
+        return true;
     }
     public bool FinalizeSlicedFindPath()
     {
+        return true;
     }
-    public bool FindNearestSquare(int unitSize, Vector3 pos, float radius, Func<int, bool> blockedFunc, out int nearestRef, out Vector3 nearestPos)
+    public bool FindNearestSquare(int unitSize, Func<int, bool> blockedFunc, Vector3 pos, float radius, out int nearestRef, out Vector3 nearestPos)
     {
+        Debug.Assert(unitSize > 0 && radius > 0);
+        navMesh.ClampInBounds(pos, out nearestRef, out nearestPos);
+        navMesh.GetSquareXZ(nearestRef, out int x, out int z);
+        var node = nodes[x + z * xsize];
+        if (!IsNodeBlocked(unitSize, node, blockedFunc))
+        {
+            return true;
+        }
+        var extent = (int)(radius / navMesh.SquareSize);
+        for (int k = 1; k <= extent; k++)
+        {
+            int xmin = x - k;
+            int xmax = x + k;
+            int zmin = z - k;
+            int zmax = z + k;
+            if (!IsNodeBlocked(unitSize, x, zmax, blockedFunc)) //up
+            {
+                nearestRef = nodes[x + zmax * xsize].squareIndex;
+                nearestPos = navMesh.GetSquarePos(nearestRef);
+                return true;
+            }
+            if (!IsNodeBlocked(unitSize, x, zmin, blockedFunc)) //down
+            {
+                nearestRef = nodes[x + zmin * xsize].squareIndex;
+                nearestPos = navMesh.GetSquarePos(nearestRef);
+                return true;
+            }
+            if (!IsNodeBlocked(unitSize, xmin, z, blockedFunc)) //left
+            {
+                nearestRef = nodes[xmin + z * xsize].squareIndex;
+                return true;
+            }
+            if (!IsNodeBlocked(unitSize, xmax, z, blockedFunc)) //right
+            {
+                nearestRef = nodes[xmax + z * xsize].squareIndex;
+                return true;
+            }
+            for (int t = 1; t < k; t++)
+            {
+                if (!IsNodeBlocked(unitSize, x - t, zmax, blockedFunc)) //up left
+                {
+                    return nodes[x - t + zmax * xsize];
+                }
+                if (!IsNodeBlocked(unitSize, x + t, zmax, blockedFunc)) //up right
+                {
+                    return nodes[x + t + zmax * xsize];
+                }
+                if (!IsNodeBlocked(unitSize, x - t, zmin, blockedFunc)) //down left
+                {
+                    return nodes[x - t + zmin * xsize];
+                }
+                if (!IsNodeBlocked(unitSize, x + t, zmin, blockedFunc)) //down right
+                {
+                    return nodes[x + t + zmin * xsize];
+                }
+                if (!IsNodeBlocked(unitSize, xmin, z - t, blockedFunc)) //left up
+                {
+                    return nodes[xmin + (z - t) * xsize];
+                }
+                if (!IsNodeBlocked(unitSize, xmin, z + t, blockedFunc)) //left down
+                {
+                    return nodes[xmin + (z + t) * xsize];
+                }
+                if (!IsNodeBlocked(unitSize, xmax, z - t, blockedFunc)) //right up
+                {
+                    return nodes[xmax + (z - t) * xsize];
+                }
+                if (!IsNodeBlocked(unitSize, xmax, z + t, blockedFunc)) //right down
+                {
+                    return nodes[xmax + (z + t) * xsize];
+                }
+            }
+            if (!IsNodeBlocked(unitSize, xmin, zmax, blockedFunc)) //left up
+            {
+                return nodes[xmin + zmax * xsize];
+            }
+            if (!IsNodeBlocked(unitSize, xmax, zmax, blockedFunc)) //right up
+            {
+                return nodes[xmax + zmax * xsize];
+            }
+            if (!IsNodeBlocked(unitSize, xmin, zmin, blockedFunc)) //left down
+            {
+                return nodes[xmin + zmin * xsize];
+            }
+            if (!IsNodeBlocked(unitSize, xmax, zmin, blockedFunc)) //right down
+            {
+                return nodes[xmax + zmin * xsize];
+            }
+        }
     }
     private bool IsNeighborWalkable(int unitSize, GridNavQueryNode snode, GridNavQueryNode enode, Func<int, bool> blockedFunc)
     {
@@ -391,7 +483,7 @@ public class GridNavQuery
             return true;
         }
     }
-    private bool IsNodeBlocked(GridNavQueryNode node, Func<int, bool> blockedFunc)
+    private bool IsNodeCenterBlocked(GridNavQueryNode node, Func<int, bool> blockedFunc)
     {
         Debug.Assert(node != null);
         return navMesh.IsSquareBlocked(node.squareIndex) || (blockedFunc != null && blockedFunc(node.squareIndex));
@@ -399,12 +491,17 @@ public class GridNavQuery
     private bool IsNodeBlocked(int unitSize, GridNavQueryNode node, Func<int, bool> blockedFunc)
     {
         Debug.Assert(unitSize > 0);
+        return IsNodeBlocked(unitSize, node.x, node.z, blockedFunc);
+    }
+    private bool IsNodeBlocked(int unitSize, int x, int z, Func<int, bool> blockedFunc)
+    {
+        Debug.Assert(unitSize > 0);
 
         int offset = (unitSize >> 1);
-        int xmin = node.x - offset;
-        int xmax = node.x + offset;
-        int zmin = node.z - offset;
-        int zmax = node.z + offset;
+        int xmin = x - offset;
+        int xmax = x + offset;
+        int zmin = z - offset;
+        int zmax = z + offset;
         if (xmin < 0 || xmax >= xsize || zmin < 0 || zmax >= zsize)
         {
             return true;
@@ -413,7 +510,7 @@ public class GridNavQuery
         {
             for (int tx = xmin; tx <= xmax; tx++)
             {
-                if (IsNodeBlocked(nodes[tx + tz * xsize], blockedFunc))
+                if (IsNodeCenterBlocked(nodes[tx + tz * xsize], blockedFunc))
                 {
                     return true;
                 }
