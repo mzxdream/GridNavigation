@@ -141,13 +141,37 @@ class GridNavQueryPriorityQueue
     }
 }
 
-public abstract class GridNavQueryFilter
+public interface GridNavQueryFilter
 {
-    public abstract bool IsGoal(int squareIndex);
-    public abstract float Cost(int squareIndex);
-    public abstract float Heuristic(int startIndex, int endIndex);
-    public abstract bool WithinConstraints(int index);
-    public abstract bool IsBlocked(int index);
+    float GetCost(GridNavMesh navMesh, int index);
+    float GetHCost(GridNavMesh navMesh, int startIndex, int endIndex);
+    bool IsBlocked(GridNavMesh navMesh, int index);
+}
+
+public class GridNavQueryFilterDef : GridNavQueryFilter
+{
+    private Vector3 startPos;
+    private Vector3 endPos;
+
+    public GridNavQueryFilterDef()
+    {
+    }
+    public float GetCost(GridNavMesh navMesh, int index)
+    {
+        return navMesh.GetSquareCost(index);
+    }
+    public float GetHCost(GridNavMesh navMesh, int startIndex, int endIndex)
+    {
+        navMesh.GetSquareXZ(startIndex, out var sx, out var sz);
+        navMesh.GetSquareXZ(endIndex, out var ex, out var ez);
+        int dx = Mathf.Abs(ex - sx);
+        int dz = Mathf.Abs(ez - sz);
+        return (dx + dz) + Mathf.Min(dx, dz) * (1.4142f - 2.0f);
+    }
+    public bool IsBlocked(GridNavMesh navMesh, int index)
+    {
+        return navMesh.IsSquareBlocked(index);
+    }
 }
 
 public enum GridNavQueryStatus { Success, Failed, InProgress, }

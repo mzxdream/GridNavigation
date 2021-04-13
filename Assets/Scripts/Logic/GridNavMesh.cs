@@ -2,6 +2,7 @@ using UnityEngine;
 
 class GridNavSquare
 {
+    public float cost;
     public bool isBlocked;
 }
 
@@ -93,5 +94,10 @@ public class GridNavMesh
     {
         Debug.Assert(index >= 0 && index < size);
         return squares[index].isBlocked;
+    }
+    public float GetSquareCost(int index)
+    {
+        Debug.Assert(index >= 0 && index < size);
+        return squares[index].cost;
     }
 }
