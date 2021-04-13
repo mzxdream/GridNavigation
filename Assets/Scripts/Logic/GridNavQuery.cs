@@ -6,13 +6,41 @@ enum GridNavNodeFlags { Open = 0x01, Closed = 0x02 };
 
 class GridNavQueryNode
 {
-    public int x;
-    public int z;
-    public int squareIndex;
+    public int index;
     public float gCost;
     public float fCost;
     public GridNavQueryNode parent;
     public int flags;
+}
+
+class GridNavQueryNodePool
+{
+    private GridNavQueryNode[] nodes;
+    private int count;
+    private int maxNodes;
+    public bool Init(int maxNodes)
+    {
+        if (maxNodes <= 0)
+        {
+            return false;
+        }
+        this.nodes = new GridNavQueryNode[maxNodes];
+        this.count = 0;
+        this.maxNodes = maxNodes;
+        return true;
+    }
+    public void Clear()
+    {
+        count = 0;
+    }
+    public GridNavQueryNode GetNewNode()
+    {
+        if (count >= maxNodes)
+        {
+            return null;
+        }
+        return nodes[count++];
+    }
 }
 
 class GridNavQueryPriorityQueue
@@ -113,6 +141,15 @@ class GridNavQueryPriorityQueue
     }
 }
 
+public abstract class GridNavQueryFilter
+{
+    public abstract bool IsGoal(int squareIndex);
+    public abstract float Cost(int squareIndex);
+    public abstract float Heuristic(int startIndex, int endIndex);
+    public abstract bool WithinConstraints(int index);
+    public abstract bool IsBlocked(int index);
+}
+
 public enum GridNavQueryStatus { Success, Failed, InProgress, }
 
 class GridNavQueryData
@@ -132,42 +169,28 @@ public class GridNavQuery
 {
     private static readonly int[] neighbours = { 1, 0, -1, 0, 0, 1, 0, -1, -1, -1, 1, 1, -1, 1, 1, -1 };
     private GridNavMesh navMesh;
-    private int xsize;
-    private int zsize;
-    private GridNavQueryNode[] nodes;
+    private GridNavQueryNodePool nodePool;
     private GridNavQueryPriorityQueue openQueue;
-    private List<GridNavQueryNode> dirtyQueue;
     private GridNavQueryData queryData;
 
-    public bool Init(GridNavMesh navMesh)
+    public bool Init(GridNavMesh navMesh, int maxNodes = 0xFFFF)
     {
         this.navMesh = navMesh;
-        this.xsize = navMesh.XSize;
-        this.zsize = navMesh.ZSize;
-        this.nodes = new GridNavQueryNode[this.xsize * this.zsize];
-        for (int z = 0; z < this.zsize; z++)
+        this.nodePool = new GridNavQueryNodePool();
+        if (!this.nodePool.Init(maxNodes))
         {
-            for (int x = 0; x < this.xsize; x++)
-            {
-                this.nodes[x + z * xsize] = new GridNavQueryNode
-                {
-                    x = x,
-                    z = z,
-                    squareIndex = navMesh.GetSquareIndex(x, z),
-                };
-            }
+            return false;
         }
         this.openQueue = new GridNavQueryPriorityQueue();
-        this.dirtyQueue = new List<GridNavQueryNode>();
-        this.queryData = new GridNavQueryData { status = GridNavQueryStatus.Failed };
+        this.queryData = new GridNavQueryData();
         return true;
     }
     public void Clear()
     {
     }
-    public bool FindPath(int unitSize, float searchRadiusScale, int startIndex, int endIndex, out List<int> path, Func<int, bool> blockedFunc = null)
+    public bool FindPath(int unitSize, GridNavQueryFilter filter, int startIndex, int endIndex, out List<int> path)
     {
-        Debug.Assert(unitSize > 0 && searchRadiusScale > 0);
+        Debug.Assert(unitSize > 0 && filter != null);
         path = new List<int>();
         if (!navMesh.GetSquareXZ(startIndex, out int sx, out int sz) || !navMesh.GetSquareXZ(endIndex, out int ex, out int ez))
         {

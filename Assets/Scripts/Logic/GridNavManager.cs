@@ -18,6 +18,7 @@ public struct GridNavAgentParam
 
 public class GridNavAgent
 {
+    public int id;
     public GridNavAgentParam param;
     public GridNavAgentMoveState moveState;
     public int unitSize;
@@ -32,7 +33,8 @@ public class GridNavManager
 {
     private GridNavMesh navMesh;
     private GridNavQuery navQuery;
-    private List<GridNavAgent> agents;
+    private int lastAgentID;
+    private Dictionary<int, GridNavAgent> agents;
     private Dictionary<int, List<GridNavAgent>> squareAgents;
 
     public bool Init(GridNavMesh navMesh, int maxAgents)
@@ -43,18 +45,19 @@ public class GridNavManager
         {
             return false;
         }
-        this.agents = new List<GridNavAgent>();
+        this.agents = new Dictionary<int, GridNavAgent>();
         this.squareAgents = new Dictionary<int, List<GridNavAgent>>();
         return true;
     }
     public void Clear()
     {
     }
-    public GridNavAgent AddAgent(Vector3 pos, GridNavAgentParam param)
+    public int AddAgent(Vector3 pos, GridNavAgentParam param)
     {
         var unitSize = Mathf.Max(1, (int)(param.radius / navMesh.SquareSize + 0.9f));
         var agent = new GridNavAgent
         {
+            id = ++lastAgentID,
             param = param,
             moveState = GridNavAgentMoveState.None,
             unitSize = unitSize,
@@ -71,12 +74,17 @@ public class GridNavManager
             agent.squareIndex = nearestIndex;
             agent.pos = nearestPos;
         }
-        agents.Add(agent);
+        agents.Add(agent.id, agent);
         AddSquareAgent(agent.squareIndex, agent);
-        return agent;
+        return agent.id;
     }
     public void Update(float deltaTime)
     {
+    }
+    public bool RequestMoveTarget(int agentID, Vector3 pos, float radius)
+    {
+        navMesh.ClampInBounds(pos, out var neareastIndex, out var nearestPos);
+        return true;
     }
     private void CheckPathValid(float deltaTime)
     {
