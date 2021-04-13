@@ -165,7 +165,7 @@ public class GridNavQuery
     public void Clear()
     {
     }
-    public bool FindPath(int unitSize, Func<int, bool> blockedFunc, float searchRadiusScale, int startIndex, int endIndex, out List<int> path)
+    public bool FindPath(int unitSize, float searchRadiusScale, int startIndex, int endIndex, out List<int> path, Func<int, bool> blockedFunc = null)
     {
         Debug.Assert(unitSize > 0 && searchRadiusScale > 0);
         path = new List<int>();
@@ -271,7 +271,7 @@ public class GridNavQuery
 
         return true;
     }
-    public bool FindRawPath(int unitSize, Func<int, bool> blockedFunc, int startIndex, int endIndex, out List<int> path)
+    public bool FindRawPath(int unitSize, int startIndex, int endIndex, out List<int> path, Func<int, bool> blockedFunc = null)
     {
         Debug.Assert(unitSize > 0);
         path = new List<int>();
@@ -338,7 +338,7 @@ public class GridNavQuery
         }
         return true;
     }
-    public bool FindStraightPath(int unitSize, Func<int, bool> blockedFunc, List<int> path, out List<int> straightPath)
+    public bool FindStraightPath(int unitSize, List<int> path, out List<int> straightPath, Func<int, bool> blockedFunc = null)
     {
         Debug.Assert(unitSize > 0);
         straightPath = new List<int>();
@@ -377,7 +377,7 @@ public class GridNavQuery
         }
         return true;
     }
-    public GridNavQueryStatus InitSlicedFindPath(int unitSize, Func<int, bool> blockedFunc, float searchRadiusScale, int startIndex, int endIndex)
+    public GridNavQueryStatus InitSlicedFindPath(int unitSize, float searchRadiusScale, int startIndex, int endIndex, Func<int, bool> blockedFunc)
     {
         Debug.Assert(unitSize > 0 && searchRadiusScale > 0);
         queryData.status = GridNavQueryStatus.Failed;
@@ -519,7 +519,7 @@ public class GridNavQuery
 
         return queryData.status;
     }
-    public bool FindNearestSquare(int unitSize, Func<int, bool> blockedFunc, Vector3 pos, float radius, out int nearestIndex, out Vector3 nearestPos)
+    public bool FindNearestSquare(int unitSize, Vector3 pos, float radius, out int nearestIndex, out Vector3 nearestPos, Func<int, bool> blockedFunc)
     {
         Debug.Assert(unitSize > 0 && radius > 0);
         navMesh.ClampInBounds(pos, out nearestIndex, out nearestPos);

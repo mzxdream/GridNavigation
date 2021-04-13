@@ -1,8 +1,8 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 public enum GridNavAgentFlags { EnemyPushResistant = 0x01, FriendPushResistant = 0x02 }
-public enum GridNavAgentState { NotActive, Walking }
 public enum GridNavAgentMoveState { None, Failed, Valid, Requesting, WaitForQueue, WaitForPath }
 
 public struct GridNavAgentParam
@@ -19,7 +19,6 @@ public struct GridNavAgentParam
 public class GridNavAgent
 {
     public GridNavAgentParam param;
-    public GridNavAgentState state;
     public GridNavAgentMoveState moveState;
     public int unitSize;
     public int squareIndex;
@@ -57,7 +56,6 @@ public class GridNavManager
         var agent = new GridNavAgent
         {
             param = param,
-            state = GridNavAgentState.Walking,
             moveState = GridNavAgentMoveState.None,
             unitSize = unitSize,
             squareIndex = 0,
@@ -67,11 +65,20 @@ public class GridNavManager
             desireVel = Vector3.zero,
         };
         navMesh.ClampInBounds(agent.pos, out agent.squareIndex, out agent.pos);
+        Func<int, bool> blockedFunc = (int index) => { return squareAgents.TryGetValue(index, out var squareAgentList) && squareAgentList.Count > 0; };
+        if (navQuery.FindNearestSquare(agent.unitSize, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearestPos, blockedFunc))
+        {
+            agent.squareIndex = nearestIndex;
+            agent.pos = nearestPos;
+        }
         agents.Add(agent);
         AddSquareAgent(agent.squareIndex, agent);
         return agent;
     }
     public void Update(float deltaTime)
+    {
+    }
+    private void CheckPathValid(float deltaTime)
     {
     }
     private void AddSquareAgent(int index, GridNavAgent agent)
@@ -123,5 +130,20 @@ public class GridNavManager
                 }
             }
         }
+    }
+    private bool IsSquareAgentBlocked(int index, GridNavAgent agent)
+    {
+        if (squareAgents.TryGetValue(index, out var squareAgentList))
+        {
+            foreach (var squareAgent in squareAgentList)
+            {
+                if (agent == squareAgent)
+                {
+                    continue;
+                }
+                return true;
+            }
+        }
+        return false;
     }
 }
