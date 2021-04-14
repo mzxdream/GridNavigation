@@ -2,178 +2,46 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-enum GridNavNodeFlags { Open = 0x01, Closed = 0x02 };
 
-class GridNavQueryNode
-{
-    public int index;
-    public float gCost;
-    public float fCost;
-    public GridNavQueryNode parent;
-    public int flags;
-}
 
-class GridNavQueryNodePool
-{
-    private GridNavQueryNode[] nodes;
-    private int count;
-    private int maxNodes;
-    public bool Init(int maxNodes)
-    {
-        if (maxNodes <= 0)
-        {
-            return false;
-        }
-        this.nodes = new GridNavQueryNode[maxNodes];
-        this.count = 0;
-        this.maxNodes = maxNodes;
-        return true;
-    }
-    public void Clear()
-    {
-        count = 0;
-    }
-    public GridNavQueryNode GetNewNode()
-    {
-        if (count >= maxNodes)
-        {
-            return null;
-        }
-        return nodes[count++];
-    }
-}
-
-class GridNavQueryPriorityQueue
-{
-    private GridNavQueryNode[] heap;
-    private int count;
-    private int capacity;
-
-    public GridNavQueryPriorityQueue(int capacity = 256)
-    {
-        this.heap = new GridNavQueryNode[capacity];
-        this.count = 0;
-        this.capacity = capacity;
-    }
-    public void Push(GridNavQueryNode node)
-    {
-        if (count == capacity)
-        {
-            capacity <<= 1;
-            var newHeap = new GridNavQueryNode[capacity];
-            heap.CopyTo(newHeap, 0);
-            heap = newHeap;
-        }
-        heap[count] = node;
-        HeapifyUp(count);
-        count++;
-    }
-    public void Modify(GridNavQueryNode node)
-    {
-        for (int i = 0; i < count; ++i)
-        {
-            if (heap[i] == node)
-            {
-                HeapifyUp(i);
-                return;
-            }
-        }
-    }
-    public bool IsEmpty()
-    {
-        return count == 0;
-    }
-    public GridNavQueryNode Pop()
-    {
-        if (count == 0)
-        {
-            return null;
-        }
-        count--;
-        var node = heap[0];
-        heap[0] = heap[count];
-        HeapifyDown(0, count);
-        return node;
-    }
-    public void Clear()
-    {
-        for (int i = 0; i < count; i++)
-        {
-            heap[i] = null;
-        }
-        count = 0;
-    }
-    private void HeapifyUp(int i)
-    {
-        while (i > 0)
-        {
-            int j = (i - 1) / 2; //parent
-            if (heap[j].fCost <= heap[i].fCost)
-            {
-                break;
-            }
-            var tmp = heap[j];
-            heap[j] = heap[i];
-            heap[i] = tmp;
-            i = j;
-        }
-    }
-    private void HeapifyDown(int i, int length)
-    {
-        int lowest = i;
-        int left = i * 2 + 1;
-        int right = i * 2 + 2;
-        if (left < length && heap[left].fCost < heap[lowest].fCost)
-        {
-            lowest = left;
-        }
-        if (right < length && heap[right].fCost < heap[lowest].fCost)
-        {
-            lowest = right;
-        }
-        if (lowest != i)
-        {
-            var tmp = heap[i];
-            heap[i] = heap[lowest];
-            heap[lowest] = tmp;
-            HeapifyDown(lowest, length);
-        }
-    }
-}
-
-public interface GridNavQueryFilter
-{
-    bool IsGoal(GridNavMesh navMesh, int index);
-    float GetCost(GridNavMesh navMesh, int index, int parentIndex, float parentCost);
-    float GetHeuristicCost(GridNavMesh navMesh, int index);
-    bool IsBlocked(GridNavMesh navMesh, int index);
-}
-
-public class GridNavQueryFilterDef : GridNavQueryFilter
+public class GridNavQueryConstraintDef2 : GridNavQueryConstraint
 {
     private int goalIndex;
     private float goalRadius;
+    private int constraintIndex = -1;
+    private float constraintRadius;
 
-    public GridNavQueryFilterDef(int goalIndex, float goalRadius)
+    public void SetGoal(int goalIndex, float goalRadius)
     {
         this.goalIndex = goalIndex;
         this.goalRadius = goalRadius;
+    }
+    public void SetConstraintIndex(int constraintIndex, float constraintRadius)
+    {
+        this.constraintIndex = constraintIndex;
+        this.constraintRadius = constraintRadius;
+    }
+    public void SetExtraBlockedFunc(Func<int, bool> extraBlockedFunc)
+    {
+        this.extraBlockedFunc = extraBlockedFunc;
+    }
+    public bool IsBlocked(GridNavMesh navMesh, int index)
+    {
+        return navMesh.IsSquareBlocked(index)
+            || (constraintIndex >= 0 && navMesh.DistanceApproximately(index, constraintIndex) > constraintRadius)
+            || (extraBlockedFunc != null && extraBlockedFunc(index));
+    }
+    public float GetCost(GridNavMesh navMesh, int index, int parentIndex, float parentCost)
+    {
+        return navMesh.GetSquareCost(index) + parentCost + navMesh.DistanceApproximately(parentIndex, index);
     }
     public bool IsGoal(GridNavMesh navMesh, int index)
     {
         return navMesh.DistanceApproximately(index, goalIndex) <= goalRadius;
     }
-    public float GetCost(GridNavMesh navMesh, int index, int parentIndex, float parentCost)
-    {
-        return navMesh.GetSquareCost(index) + parentCost;
-    }
     public float GetHeuristicCost(GridNavMesh navMesh, int index)
     {
         return navMesh.DistanceApproximately(index, goalIndex);
-    }
-    public bool IsBlocked(GridNavMesh navMesh, int index)
-    {
-        return navMesh.IsSquareBlocked(index);
     }
 }
 
@@ -182,12 +50,7 @@ public enum GridNavQueryStatus { Success, Failed, InProgress, }
 class GridNavQueryData
 {
     public GridNavQueryStatus status;
-    public int unitSize;
-    public Func<int, bool> blockedFunc;
-    public GridNavQueryNode snode;
-    public GridNavQueryNode enode;
-    public GridNavQueryNode mnode;
-    public float searchRadius;
+    public int startIndex;
     public GridNavQueryNode lastBestNode;
     public float lastBestNodeCost;
 }
@@ -196,60 +59,53 @@ public class GridNavQuery
 {
     private static readonly int[] neighbours = { 1, 0, -1, 0, 0, 1, 0, -1, -1, -1, 1, 1, -1, 1, 1, -1 };
     private GridNavMesh navMesh;
-    private GridNavQueryNodePool nodePool;
+    private GridNavQueryNode[] nodes;
     private GridNavQueryPriorityQueue openQueue;
+    private List<GridNavQueryNode> dirtyQueue;
     private GridNavQueryData queryData;
 
-    public bool Init(GridNavMesh navMesh, int maxNodes = 0xFFFF)
+    public bool Init(GridNavMesh navMesh, int maxOpenNodes = 1024)
     {
         this.navMesh = navMesh;
-        this.nodePool = new GridNavQueryNodePool();
-        if (!this.nodePool.Init(maxNodes))
+        this.nodes = new GridNavQueryNode[navMesh.Size];
+        for (int i = 0; i < navMesh.Size; i++)
         {
-            return false;
+            nodes[i] = new GridNavQueryNode { index = i };
         }
-        this.openQueue = new GridNavQueryPriorityQueue();
+        this.openQueue = new GridNavQueryPriorityQueue(maxOpenNodes);
+        this.dirtyQueue = new List<GridNavQueryNode>();
         this.queryData = new GridNavQueryData();
         return true;
     }
     public void Clear()
     {
     }
-    public bool FindPath(int unitSize, GridNavQueryFilter filter, int startIndex, int endIndex, out List<int> path)
+    public bool FindPath(GridNavQueryFilter filter, int startIndex, out List<int> path)
     {
-        Debug.Assert(unitSize > 0 && filter != null);
+        Debug.Assert(filter != null);
         path = new List<int>();
-        if (!navMesh.GetSquareXZ(startIndex, out int sx, out int sz) || !navMesh.GetSquareXZ(endIndex, out int ex, out int ez))
+        if (filter.IsBlocked(navMesh, startIndex))
         {
             return false;
         }
-        var snode = nodes[sx + sz * xsize];
-        var enode = nodes[ex + ez * xsize];
-        if (IsNodeBlocked(unitSize, blockedFunc, snode))
+        if (filter.IsGoal(navMesh, startIndex))
         {
-            return false;
-        }
-        if (snode == enode)
-        {
-            path.Add(snode.squareIndex);
+            path.Add(startIndex);
             return true;
         }
 
         foreach (var n in dirtyQueue)
         {
-            n.flags &= ~(int)(GridNavNodeFlags.Open | GridNavNodeFlags.Closed);
+            n.flags = 0;
         }
         dirtyQueue.Clear();
         openQueue.Clear();
 
-        var mnode = nodes[(sx + ex) / 2 + (sz + ez) / 2 * xsize];
-        float searchRadius = DistanceApproximately(snode, mnode) * searchRadiusScale;
-
+        var snode = GetNode(startIndex);
         snode.gCost = 0;
-        snode.fCost = DistanceApproximately(snode, enode);
+        snode.fCost = filter.GetHeuristicCost(navMesh, startIndex);
         snode.parent = null;
-        snode.flags |= (int)GridNavNodeFlags.Open;
-        dirtyQueue.Add(snode);
+        snode.flags = (int)GridNavNodeFlags.Open;
         openQueue.Push(snode);
 
         var lastBestNode = snode;
@@ -259,25 +115,27 @@ public class GridNavQuery
         {
             bestNode.flags &= ~(int)GridNavNodeFlags.Open;
             bestNode.flags |= (int)GridNavNodeFlags.Closed;
-            if (bestNode == enode)
+            if (filter.IsGoal(navMesh, bestNode.index))
             {
                 lastBestNode = bestNode;
                 break;
             }
+            navMesh.GetSquareXZ(bestNode.index, out var x, out var z);
             for (int i = 0; i < neighbours.Length - 1; i += 2)
             {
-                var nx = bestNode.x + neighbours[i];
-                var nz = bestNode.z + neighbours[i + 1];
-                if (nx < 0 || nx >= xsize || nz < 0 || nz >= zsize)
+                var nx = x + neighbours[i];
+                var nz = z + neighbours[i + 1];
+                if (nx < 0 || nx >= navMesh.XSize || nz < 0 || nz >= navMesh.ZSize)
                 {
                     continue;
                 }
-                var neighbourNode = nodes[nx + nz * xsize];
-                if (DistanceApproximately(neighbourNode, mnode) > searchRadius)
+                var neighbourIndex = navMesh.GetSquareIndex(nx, nz);
+                if (filter.IsBlocked(navMesh, neighbourIndex))
                 {
                     continue;
                 }
-                var gCost = bestNode.gCost + DistanceApproximately(bestNode, neighbourNode);
+                var neighbourNode = GetNode(neighbourIndex);
+                var gCost = filter.GetCost(navMesh, neighbourIndex, bestNode.index, bestNode.gCost);
                 if ((neighbourNode.flags & (int)(GridNavNodeFlags.Open | GridNavNodeFlags.Closed)) != 0)
                 {
                     if (gCost >= neighbourNode.gCost)
@@ -290,7 +148,7 @@ public class GridNavQuery
                 {
                     dirtyQueue.Add(neighbourNode);
                 }
-                var hCost = DistanceApproximately(neighbourNode, enode);
+                var hCost = filter.GetHeuristicCost(navMesh, neighbourIndex);
                 neighbourNode.gCost = gCost;
                 neighbourNode.fCost = gCost + hCost;
                 neighbourNode.parent = bestNode;
@@ -314,21 +172,18 @@ public class GridNavQuery
         var curNode = lastBestNode;
         do
         {
-            path.Add(curNode.squareIndex);
+            path.Add(curNode.index);
             curNode = curNode.parent;
         } while (curNode != null);
         path.Reverse();
 
         return true;
     }
-    public bool FindRawPath(int unitSize, int startIndex, int endIndex, out List<int> path, Func<int, bool> blockedFunc = null)
+    public bool Raycast(int startIndex, int endIndex, out List<int> path)
     {
-        Debug.Assert(unitSize > 0);
+        Debug.Assert(filter != null);
         path = new List<int>();
-        if (!navMesh.GetSquareXZ(startIndex, out int sx, out int sz) || !navMesh.GetSquareXZ(endIndex, out int ex, out int ez))
-        {
-            return false;
-        }
+
         var snode = nodes[sx + sz * xsize];
         var enode = nodes[ex + ez * xsize];
         if (IsNodeBlocked(unitSize, blockedFunc, snode))
@@ -834,5 +689,9 @@ public class GridNavQuery
         int dx = Mathf.Abs(enode.x - snode.x);
         int dz = Mathf.Abs(enode.z - snode.z);
         return (dx + dz) + Mathf.Min(dx, dz) * (1.4142f - 2.0f);
+    }
+    private GridNavQueryNode GetNode(int index)
+    {
+        return nodePool[index];
     }
 }

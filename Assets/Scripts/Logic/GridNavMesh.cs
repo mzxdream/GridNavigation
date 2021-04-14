@@ -109,6 +109,17 @@ public class GridNavMesh
         int ex = endIndex - ez * xsize;
         int dx = Mathf.Abs(ex - sx);
         int dz = Mathf.Abs(ez - sz);
-        return (dx + dz) + Mathf.Min(dx, dz) * (1.4142f - 2.0f);
+        return ((dx + dz) + Mathf.Min(dx, dz) * (1.4142f - 2.0f)) * squareSize;
+    }
+    public float SqrDistance(int startIndex, int endIndex)
+    {
+        Debug.Assert(startIndex >= 0 && startIndex < size && endIndex >= 0 && endIndex < size);
+        int sz = startIndex / xsize;
+        int sx = startIndex - sz * xsize;
+        int ez = endIndex / xsize;
+        int ex = endIndex - ez * xsize;
+        int dx = Mathf.Abs(ex - sx);
+        int dz = Mathf.Abs(ez - sz);
+        return (dx * dx + dz * dz) * squareSize * squareSize;
     }
 }
