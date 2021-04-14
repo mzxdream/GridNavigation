@@ -143,30 +143,33 @@ class GridNavQueryPriorityQueue
 
 public interface GridNavQueryFilter
 {
-    float GetCost(GridNavMesh navMesh, int index);
-    float GetHCost(GridNavMesh navMesh, int startIndex, int endIndex);
+    bool IsGoal(GridNavMesh navMesh, int index);
+    float GetCost(GridNavMesh navMesh, int index, int parentIndex, float parentCost);
+    float GetHeuristicCost(GridNavMesh navMesh, int index);
     bool IsBlocked(GridNavMesh navMesh, int index);
 }
 
 public class GridNavQueryFilterDef : GridNavQueryFilter
 {
-    private Vector3 startPos;
-    private Vector3 endPos;
+    private int goalIndex;
+    private float goalRadius;
 
-    public GridNavQueryFilterDef()
+    public GridNavQueryFilterDef(int goalIndex, float goalRadius)
     {
+        this.goalIndex = goalIndex;
+        this.goalRadius = goalRadius;
     }
-    public float GetCost(GridNavMesh navMesh, int index)
+    public bool IsGoal(GridNavMesh navMesh, int index)
     {
-        return navMesh.GetSquareCost(index);
+        return navMesh.DistanceApproximately(index, goalIndex) <= goalRadius;
     }
-    public float GetHCost(GridNavMesh navMesh, int startIndex, int endIndex)
+    public float GetCost(GridNavMesh navMesh, int index, int parentIndex, float parentCost)
     {
-        navMesh.GetSquareXZ(startIndex, out var sx, out var sz);
-        navMesh.GetSquareXZ(endIndex, out var ex, out var ez);
-        int dx = Mathf.Abs(ex - sx);
-        int dz = Mathf.Abs(ez - sz);
-        return (dx + dz) + Mathf.Min(dx, dz) * (1.4142f - 2.0f);
+        return navMesh.GetSquareCost(index) + parentCost;
+    }
+    public float GetHeuristicCost(GridNavMesh navMesh, int index)
+    {
+        return navMesh.DistanceApproximately(index, goalIndex);
     }
     public bool IsBlocked(GridNavMesh navMesh, int index)
     {
