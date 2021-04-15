@@ -82,7 +82,7 @@ public class GridNavQuery
                 }
                 var neighbourIndex = navMesh.GetSquareIndex(nx, nz);
                 var neighbourNode = nodePool.GetNode(neighbourIndex);
-                if ((neighbourNode.flags & (int)GridNavNodeFlags.Closed) != 0)
+                if (neighbourNode == null || (neighbourNode.flags & (int)GridNavNodeFlags.Closed) != 0)
                 {
                     continue;
                 }
