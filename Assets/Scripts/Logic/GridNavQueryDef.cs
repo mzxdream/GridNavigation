@@ -1,5 +1,4 @@
 using System;
-using UnityEngine;
 
 public interface IGridNavQueryFilter
 {
@@ -72,18 +71,23 @@ public class GridNavQueryConstraintCircle : IGridNavQueryConstraint
 {
     private int goalIndex;
     private float goalRadius;
+    private int circleIndex;
+    private float circleRadius;
 
-    public GridNavQueryConstraintDef(int goalIndex, float goalRadius)
+    public GridNavQueryConstraintCircle(int goalIndex, float goalRadius, int circleIndex, float circleRadius)
     {
         this.goalIndex = goalIndex;
+        this.goalRadius = goalRadius;
+        this.circleIndex = circleIndex;
+        this.circleRadius = circleRadius;
     }
     public bool IsGoal(GridNavMesh navMesh, int index)
     {
-        return index == goalIndex;
+        return navMesh.DistanceApproximately(index, goalIndex) <= goalRadius;
     }
     public bool WithinConstraints(GridNavMesh navMesh, int index)
     {
-        return true;
+        return navMesh.DistanceApproximately(index, circleIndex) <= circleRadius;
     }
     public float GetHeuristicCost(GridNavMesh navMesh, int index)
     {

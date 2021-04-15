@@ -2,49 +2,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-
-
-public class GridNavQueryConstraintDef2 : GridNavQueryConstraint
-{
-    private int goalIndex;
-    private float goalRadius;
-    private int constraintIndex = -1;
-    private float constraintRadius;
-
-    public void SetGoal(int goalIndex, float goalRadius)
-    {
-        this.goalIndex = goalIndex;
-        this.goalRadius = goalRadius;
-    }
-    public void SetConstraintIndex(int constraintIndex, float constraintRadius)
-    {
-        this.constraintIndex = constraintIndex;
-        this.constraintRadius = constraintRadius;
-    }
-    public void SetExtraBlockedFunc(Func<int, bool> extraBlockedFunc)
-    {
-        this.extraBlockedFunc = extraBlockedFunc;
-    }
-    public bool IsBlocked(GridNavMesh navMesh, int index)
-    {
-        return navMesh.IsSquareBlocked(index)
-            || (constraintIndex >= 0 && navMesh.DistanceApproximately(index, constraintIndex) > constraintRadius)
-            || (extraBlockedFunc != null && extraBlockedFunc(index));
-    }
-    public float GetCost(GridNavMesh navMesh, int index, int parentIndex, float parentCost)
-    {
-        return navMesh.GetSquareCost(index) + parentCost + navMesh.DistanceApproximately(parentIndex, index);
-    }
-    public bool IsGoal(GridNavMesh navMesh, int index)
-    {
-        return navMesh.DistanceApproximately(index, goalIndex) <= goalRadius;
-    }
-    public float GetHeuristicCost(GridNavMesh navMesh, int index)
-    {
-        return navMesh.DistanceApproximately(index, goalIndex);
-    }
-}
-
 public enum GridNavQueryStatus { Success, Failed, InProgress, }
 
 class GridNavQueryData
