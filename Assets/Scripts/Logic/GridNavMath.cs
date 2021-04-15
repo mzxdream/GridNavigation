@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public enum GridNavDirection { Left = 1, Right = 2, Up = 4, Down = 8 }
+public enum GridNavDirOpt { Left = 1, Right = 2, Up = 4, Down = 8 }
 
 public static class GridNavMath
 {

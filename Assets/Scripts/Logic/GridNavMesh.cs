@@ -1,5 +1,7 @@
 using UnityEngine;
 
+public enum GridNavDirection { Left = 1, Right = 2, Up = 3, Down = 4, LeftUp = 5, RightUp = 6, LeftDown = 7, RightDown = 8 }
+
 class GridNavSquare
 {
     public float cost;
@@ -8,6 +10,7 @@ class GridNavSquare
 
 public class GridNavMesh
 {
+    private int[] neighbourIndexes;
     private Vector3 bmin;
     private int xsize;
     private int zsize;
@@ -24,6 +27,7 @@ public class GridNavMesh
         {
             return false;
         }
+        neighbourIndexes = new int[] { 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
         this.bmin = bmin;
         this.xsize = xsize;
         this.zsize = zsize;
@@ -56,8 +60,12 @@ public class GridNavMesh
         Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
         return x + z * xsize;
     }
-    public int GetSuqareNeighbourIndex(int index, GridNavDirection dir)
+    public int GetSuqareNeighbourIndex(int index, int dir)
     {
+        Debug.Assert(index >= 0 && index < xsize * zsize && dir >= 0 && dir < 16);
+        int z = index / xsize;
+        int x = index - z * xsize;
+        index += neighbourIndexes[dir];
         return -1;
     }
     public void ClampInBounds(Vector3 pos, out int nearestIndex, out Vector3 nearestPos)

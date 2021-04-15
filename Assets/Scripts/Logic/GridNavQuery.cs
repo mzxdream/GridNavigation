@@ -22,7 +22,7 @@ public class GridNavQuery
     public bool Init(GridNavMesh navMesh, int maxNodes = 1024)
     {
         this.navMesh = navMesh;
-        this.nodePool = new GridNavQueryNodePool(navMesh.Size);
+        this.nodePool = new GridNavQueryNodePool(navMesh.XSize * navMesh.ZSize);
         this.openQueue = new GridNavQueryPriorityQueue(maxNodes);
         this.queryData = new GridNavQueryData();
         return true;
@@ -70,7 +70,90 @@ public class GridNavQuery
                 lastBestNode = bestNode;
                 break;
             }
-            
+            navMesh.GetSquareXZ(bestNode.index, out var x, out var z);
+            Action<int, int, GridNavDirection> testCardinalFunc = (int nx, int nz, GridNavDirection dir) =>
+            {
+            };
+            bool upBlocked = true;
+            if (z + 1 < navMesh.ZSize)
+            {
+                var neighbourIndex = navMesh.GetSquareIndex(x, z + 1);
+                var neighbourNode = nodePool.GetNode(neighbourIndex);
+                if (neighbourNode == null || (neighbourNode.flags & (int)GridNavNodeFlags.Closed) != 0)
+                {
+                    continue;
+                }
+                float gCost = filter.GetCost(navMesh, neighbourIndex, bestNode.index);
+                if (gCost < 0)
+                {
+                    continue;
+                }
+                gCost += bestNode.gCost;
+                if ((neighbourNode.flags & (int)GridNavNodeFlags.Open) != 0)
+                {
+                    if (gCost >= neighbourNode.gCost)
+                    {
+                        continue;
+                    }
+                    neighbourNode.gCost = gCost;
+                    neighbourNode.fCost = gCost + constraint.GetHeuristicCost(navMesh, neighbourIndex);
+                    neighbourNode.parent = bestNode;
+                    openQueue.Modify(neighbourNode);
+                }
+                else
+                {
+                    if (!constraint.WithinConstraints(navMesh, neighbourIndex) || filter.IsBlocked(navMesh, neighbourIndex))
+                    {
+                        neighbourNode.flags |= (int)GridNavNodeFlags.Closed;
+                        continue;
+                    }
+                    var hCost = constraint.GetHeuristicCost(navMesh, neighbourIndex);
+                    neighbourNode.gCost = gCost;
+                    neighbourNode.fCost = gCost + hCost;
+                    neighbourNode.parent = bestNode;
+                    neighbourNode.flags |= (int)GridNavNodeFlags.Open;
+                    openQueue.Push(neighbourNode);
+                    if (hCost < lastBestNodeCost)
+                    {
+                        lastBestNodeCost = hCost;
+                        lastBestNode = neighbourNode;
+                    }
+                }
+            }
+            bool downBlocked = false;
+            if (z - 1 >= 0)
+            {
+                //todo
+            }
+            bool leftBlocked = false;
+            if (x - 1 >= 0)
+            {
+                //todo
+            }
+            bool rightBlocked = false;
+            if (x + 1 < navMesh.XSize)
+            {
+                //todo
+            }
+            if (!upBlocked)
+            {
+                if (!leftBlocked)
+                {
+                }
+                if (!rightBlocked)
+                {
+                }
+            }
+            if (!downBlocked)
+            {
+                if (leftBlocked)
+                {
+                }
+                if (!rightBlocked)
+                {
+                }
+            }
+
 
             for (int i = 0; i < neighbours.Length - 1; i += 2)
             {
