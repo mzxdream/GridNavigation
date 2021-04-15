@@ -11,14 +11,12 @@ public class GridNavMesh
     private Vector3 bmin;
     private int xsize;
     private int zsize;
-    private int size;
     private float squareSize;
     private GridNavSquare[] squares;
 
     public int XSize { get => xsize; }
     public int ZSize { get => zsize; }
     public float SquareSize { get => squareSize; }
-    public int Size { get => size; }
 
     public bool Init(Vector3 bmin, int xsize, int zsize, float squareSize)
     {
@@ -29,7 +27,6 @@ public class GridNavMesh
         this.bmin = bmin;
         this.xsize = xsize;
         this.zsize = zsize;
-        this.size = xsize * zsize;
         this.squareSize = squareSize;
         this.squares = new GridNavSquare[xsize * zsize];
         for (int z = 0; z < zsize; z++)
@@ -38,6 +35,7 @@ public class GridNavMesh
             {
                 this.squares[x + z * xsize] = new GridNavSquare
                 {
+                    cost = 1.0f,
                     isBlocked = false,
                 };
             }
@@ -47,18 +45,19 @@ public class GridNavMesh
     public void Clear()
     {
     }
-    public bool GetSquareXZ(int index, out int x, out int z)
+    public void GetSquareXZ(int index, out int x, out int z)
     {
+        Debug.Assert(index >= 0 && index < xsize * zsize);
         z = index / xsize;
         x = index - z * xsize;
-        return x >= 0 && x < xsize && z >= 0 && z < zsize;
     }
     public int GetSquareIndex(int x, int z)
     {
-        if (x >= 0 && x < xsize && z >= 0 && z < zsize)
-        {
-            return x + z * xsize;
-        }
+        Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
+        return x + z * xsize;
+    }
+    public int GetSuqareNeighbourIndex(int index, GridNavDirection dir)
+    {
         return -1;
     }
     public void ClampInBounds(Vector3 pos, out int nearestIndex, out Vector3 nearestPos)
@@ -78,31 +77,33 @@ public class GridNavMesh
             nearestPos = pos;
         }
     }
-    public void SetSquare(int index, bool isBlocked)
+    public void SetSquare(int index, float cost, bool isBlocked)
     {
-        Debug.Assert(index >= 0 && index < size);
-        squares[index].isBlocked = isBlocked;
+        Debug.Assert(index >= 0 && index < xsize * zsize);
+        var square = squares[index];
+        square.cost = cost;
+        square.isBlocked = isBlocked;
     }
     public Vector3 GetSquarePos(int index)
     {
-        Debug.Assert(index >= 0 && index < size);
+        Debug.Assert(index >= 0 && index < xsize * zsize);
         int z = index / xsize;
         int x = index - z * xsize;
         return new Vector3(bmin.x + (x + 0.5f) * squareSize, 0, bmin.z + (z + 0.5f) * squareSize);
     }
     public bool IsSquareBlocked(int index)
     {
-        Debug.Assert(index >= 0 && index < size);
+        Debug.Assert(index >= 0 && index < xsize * zsize);
         return squares[index].isBlocked;
     }
     public float GetSquareCost(int index)
     {
-        Debug.Assert(index >= 0 && index < size);
+        Debug.Assert(index >= 0 && index < xsize * zsize);
         return squares[index].cost;
     }
     public float DistanceApproximately(int startIndex, int endIndex)
     {
-        Debug.Assert(startIndex >= 0 && startIndex < size && endIndex >= 0 && endIndex < size);
+        Debug.Assert(startIndex >= 0 && startIndex < xsize * zsize && endIndex >= 0 && endIndex < xsize * zsize);
         int sz = startIndex / xsize;
         int sx = startIndex - sz * xsize;
         int ez = endIndex / xsize;
@@ -113,7 +114,7 @@ public class GridNavMesh
     }
     public float SqrDistance(int startIndex, int endIndex)
     {
-        Debug.Assert(startIndex >= 0 && startIndex < size && endIndex >= 0 && endIndex < size);
+        Debug.Assert(startIndex >= 0 && startIndex < xsize * zsize && endIndex >= 0 && endIndex < xsize * zsize);
         int sz = startIndex / xsize;
         int sx = startIndex - sz * xsize;
         int ez = endIndex / xsize;

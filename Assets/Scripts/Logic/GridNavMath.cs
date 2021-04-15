@@ -1,5 +1,7 @@
 using UnityEngine;
 
+public enum GridNavDirection { Left = 1, Right = 2, Up = 4, Down = 8 }
+
 public static class GridNavMath
 {
     public static float DistanceApproximately(int sx, int sz, int ex, int ez)

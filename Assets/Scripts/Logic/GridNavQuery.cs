@@ -14,7 +14,6 @@ class GridNavQueryData
 
 public class GridNavQuery
 {
-    private static readonly int[] neighbours = { 1, 0, -1, 0, 0, 1, 0, -1, -1, -1, 1, 1, -1, 1, 1, -1 };
     private GridNavMesh navMesh;
     private GridNavQueryNodePool nodePool;
     private GridNavQueryPriorityQueue openQueue;
@@ -71,7 +70,8 @@ public class GridNavQuery
                 lastBestNode = bestNode;
                 break;
             }
-            navMesh.GetSquareXZ(bestNode.index, out var x, out var z);
+            
+
             for (int i = 0; i < neighbours.Length - 1; i += 2)
             {
                 var nx = x + neighbours[i];
@@ -646,5 +646,8 @@ public class GridNavQuery
             }
         }
         return false;
+    }
+    private void TestNeighbour()
+    {
     }
 }
