@@ -16,53 +16,47 @@ public class GridNavQuery
 {
     private static readonly int[] neighbours = { 1, 0, -1, 0, 0, 1, 0, -1, -1, -1, 1, 1, -1, 1, 1, -1 };
     private GridNavMesh navMesh;
-    private GridNavQueryNode[] nodes;
+    private GridNavQueryNodePool nodePool;
     private GridNavQueryPriorityQueue openQueue;
-    private List<GridNavQueryNode> dirtyQueue;
     private GridNavQueryData queryData;
 
-    public bool Init(GridNavMesh navMesh, int maxOpenNodes = 1024)
+    public bool Init(GridNavMesh navMesh, int maxNodes = 1024)
     {
         this.navMesh = navMesh;
-        this.nodes = new GridNavQueryNode[navMesh.Size];
-        for (int i = 0; i < navMesh.Size; i++)
-        {
-            nodes[i] = new GridNavQueryNode { index = i };
-        }
-        this.openQueue = new GridNavQueryPriorityQueue(maxOpenNodes);
-        this.dirtyQueue = new List<GridNavQueryNode>();
+        this.nodePool = new GridNavQueryNodePool(navMesh.Size);
+        this.openQueue = new GridNavQueryPriorityQueue(maxNodes);
         this.queryData = new GridNavQueryData();
         return true;
     }
     public void Clear()
     {
     }
-    public bool FindPath(GridNavQueryFilter filter, int startIndex, out List<int> path)
+    public bool FindPath(IGridNavQueryFilter filter, int startIndex, IGridNavQueryConstraint constraint, out List<int> path)
     {
         Debug.Assert(filter != null);
         path = new List<int>();
-        if (filter.IsBlocked(navMesh, startIndex))
+        if (!filter.PassFilter(navMesh, startIndex))
         {
             return false;
         }
-        if (filter.IsGoal(navMesh, startIndex))
+        if (constraint.IsGoal(navMesh, startIndex))
         {
             path.Add(startIndex);
             return true;
         }
 
-        foreach (var n in dirtyQueue)
-        {
-            n.flags = 0;
-        }
-        dirtyQueue.Clear();
+        nodePool.Clear();
         openQueue.Clear();
 
-        var snode = GetNode(startIndex);
+        var snode = nodePool.GetNode(startIndex);
+        if (snode == null)
+        {
+            return false;
+        }
         snode.gCost = 0;
-        snode.fCost = filter.GetHeuristicCost(navMesh, startIndex);
+        snode.fCost = constraint.GetHeuristicCost(navMesh, startIndex);
         snode.parent = null;
-        snode.flags = (int)GridNavNodeFlags.Open;
+        snode.flags |= (int)GridNavNodeFlags.Open;
         openQueue.Push(snode);
 
         var lastBestNode = snode;
@@ -72,7 +66,7 @@ public class GridNavQuery
         {
             bestNode.flags &= ~(int)GridNavNodeFlags.Open;
             bestNode.flags |= (int)GridNavNodeFlags.Closed;
-            if (filter.IsGoal(navMesh, bestNode.index))
+            if (constraint.IsGoal(navMesh, bestNode.index))
             {
                 lastBestNode = bestNode;
                 break;
@@ -87,25 +81,22 @@ public class GridNavQuery
                     continue;
                 }
                 var neighbourIndex = navMesh.GetSquareIndex(nx, nz);
-                if (filter.IsBlocked(navMesh, neighbourIndex))
+                var neighbourNode = nodePool.GetNode(neighbourIndex);
+                if ((neighbourNode.flags & (int)GridNavNodeFlags.Closed) != 0)
                 {
                     continue;
                 }
-                var neighbourNode = GetNode(neighbourIndex);
-                var gCost = filter.GetCost(navMesh, neighbourIndex, bestNode.index, bestNode.gCost);
-                if ((neighbourNode.flags & (int)(GridNavNodeFlags.Open | GridNavNodeFlags.Closed)) != 0)
+                if (!constraint.WithinConstraints(navMesh, neighbourIndex) || !filter.PassFilter(navMesh, neighbourIndex))
                 {
-                    if (gCost >= neighbourNode.gCost)
-                    {
-                        continue;
-                    }
-                    neighbourNode.flags &= ~(int)GridNavNodeFlags.Closed;
+                    neighbourNode.flags |= (int)GridNavNodeFlags.Closed;
+                    continue;
                 }
-                else
+                var gCost = filter.GetCost(navMesh, neighbourIndex, bestNode.index) + bestNode.gCost;
+                if ((neighbourNode.flags & (int)GridNavNodeFlags.Open) != 0 && gCost >= neighbourNode.gCost)
                 {
-                    dirtyQueue.Add(neighbourNode);
+                    continue;
                 }
-                var hCost = filter.GetHeuristicCost(navMesh, neighbourIndex);
+                var hCost = constraint.GetHeuristicCost(navMesh, neighbourIndex);
                 neighbourNode.gCost = gCost;
                 neighbourNode.fCost = gCost + hCost;
                 neighbourNode.parent = bestNode;
@@ -640,15 +631,5 @@ public class GridNavQuery
             }
         }
         return false;
-    }
-    private static float DistanceApproximately(GridNavQueryNode snode, GridNavQueryNode enode)
-    {
-        int dx = Mathf.Abs(enode.x - snode.x);
-        int dz = Mathf.Abs(enode.z - snode.z);
-        return (dx + dz) + Mathf.Min(dx, dz) * (1.4142f - 2.0f);
-    }
-    private GridNavQueryNode GetNode(int index)
-    {
-        return nodePool[index];
     }
 }

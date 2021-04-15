@@ -1,4 +1,6 @@
-enum GridNavNodeFlags { Open = 0x01, Closed = 0x02 };
+using System.Collections.Generic;
+
+enum GridNavNodeFlags { Open = 0x01, Closed = 0x02, Visited = 0x04 };
 
 class GridNavQueryNode
 {
@@ -7,6 +9,44 @@ class GridNavQueryNode
     public float fCost;
     public GridNavQueryNode parent;
     public int flags;
+}
+
+class GridNavQueryNodePool
+{
+    private GridNavQueryNode[] nodes;
+    private List<GridNavQueryNode> dirtyQueue;
+
+    public GridNavQueryNodePool(int maxNodes)
+    {
+        nodes = new GridNavQueryNode[maxNodes];
+        for (int i = 0; i < maxNodes; i++)
+        {
+            nodes[i] = new GridNavQueryNode { index = i };
+        }
+        dirtyQueue = new List<GridNavQueryNode>();
+    }
+    public void Clear()
+    {
+        foreach (var n in dirtyQueue)
+        {
+            n.flags = 0;
+        }
+        dirtyQueue.Clear();
+    }
+    public GridNavQueryNode GetNode(int index)
+    {
+        if (index < 0 || index >= nodes.Length)
+        {
+            return null;
+        }
+        var node = nodes[index];
+        if ((node.flags & (int)GridNavNodeFlags.Visited) == 0)
+        {
+            node.flags = (int)GridNavNodeFlags.Visited;
+            dirtyQueue.Add(node);
+        }
+        return node;
+    }
 }
 
 class GridNavQueryPriorityQueue
