@@ -2,38 +2,8 @@ using System;
 
 public interface IGridNavQueryFilter
 {
-    bool PassFilter(GridNavMesh navMesh, int index);
-    float GetCost(GridNavMesh navMesh, int index, int parentIndex);
-}
-
-public class GridNavQueryFilterDef : IGridNavQueryFilter
-{
-    public bool PassFilter(GridNavMesh navMesh, int index)
-    {
-        return !navMesh.IsSquareBlocked(index);
-    }
-    public float GetCost(GridNavMesh navMesh, int index, int parentIndex)
-    {
-        return navMesh.GetSquareCost(index) + navMesh.DistanceApproximately(parentIndex, index);
-    }
-}
-
-public class GridNavQueryFilterExtraFilter
-{
-    private Func<int, bool> extraFilterFunc;
-
-    public GridNavQueryFilterExtraFilter(Func<int, bool> extraFilterFunc)
-    {
-        this.extraFilterFunc = extraFilterFunc;
-    }
-    public bool PassFilter(GridNavMesh navMesh, int index)
-    {
-        return !navMesh.IsSquareBlocked(index) && extraFilterFunc(index);
-    }
-    public float GetCost(GridNavMesh navMesh, int index, int parentIndex)
-    {
-        return navMesh.GetSquareCost(index) + navMesh.DistanceApproximately(parentIndex, index);
-    }
+    bool IsBlocked(GridNavMesh navMesh, int index);
+    float GetCost(GridNavMesh navMesh, int index, int parentIndex); //小于0表示无法通过
 }
 
 public interface IGridNavQueryConstraint
@@ -41,6 +11,36 @@ public interface IGridNavQueryConstraint
     bool IsGoal(GridNavMesh navMesh, int index);
     bool WithinConstraints(GridNavMesh navMesh, int index);
     float GetHeuristicCost(GridNavMesh navMesh, int index);
+}
+
+public class GridNavQueryFilterDef : IGridNavQueryFilter
+{
+    public bool IsBlocked(GridNavMesh navMesh, int index)
+    {
+        return navMesh.IsSquareBlocked(index);
+    }
+    public float GetCost(GridNavMesh navMesh, int index, int parentIndex)
+    {
+        return navMesh.GetSquareCost(index) + navMesh.DistanceApproximately(parentIndex, index);
+    }
+}
+
+public class GridNavQueryFilterExtraBlockedCheck : IGridNavQueryFilter
+{
+    private Func<int, bool> extraBlockedFunc;
+
+    public GridNavQueryFilterExtraBlockedCheck(Func<int, bool> extraBlockedFunc)
+    {
+        this.extraBlockedFunc = extraBlockedFunc;
+    }
+    public bool IsBlocked(GridNavMesh navMesh, int index)
+    {
+        return navMesh.IsSquareBlocked(index) && extraBlockedFunc(index);
+    }
+    public float GetCost(GridNavMesh navMesh, int index, int parentIndex)
+    {
+        return navMesh.GetSquareCost(index) + navMesh.DistanceApproximately(parentIndex, index);
+    }
 }
 
 public class GridNavQueryConstraintDef : IGridNavQueryConstraint
