@@ -135,23 +135,23 @@ public class GridNavQuery
 
         return true;
     }
-    public bool Raycast(int startIndex, int endIndex, out List<int> path)
+    public bool Raycast(IGridNavQueryFilter filter, int startIndex, int endIndex, out List<int> path, out float totalCost)
     {
         Debug.Assert(filter != null);
         path = new List<int>();
-
-        var snode = nodes[sx + sz * xsize];
-        var enode = nodes[ex + ez * xsize];
-        if (IsNodeBlocked(unitSize, blockedFunc, snode))
+        totalCost = 0.0f;
+        if (filter.IsBlocked(navMesh, startIndex))
         {
             return false;
         }
-        if (snode == enode)
+        if (startIndex == endIndex)
         {
-            path.Add(snode.squareIndex);
+            path.Add(startIndex);
             return true;
         }
-        path.Add(snode.squareIndex);
+        path.Add(startIndex);
+        navMesh.GetSquareXZ(startIndex, out var sx, out var sz);
+        navMesh.GetSquareXZ(endIndex, out var ex, out var ez);
         int dx = ex - sx;
         int dz = ez - sz;
         int nx = Mathf.Abs(dx);
@@ -162,31 +162,26 @@ public class GridNavQuery
         int z = sz;
         int ix = 0;
         int iz = 0;
+        var parentIndex = startIndex;
         while (ix < nx || iz < nz)
         {
             var t1 = (2 * ix + 1) * nz;
             var t2 = (2 * iz + 1) * nx;
             if (t1 < t2) //Horizontal
             {
-                if (!IsNeighborWalkable(unitSize, blockedFunc, nodes[x + z * xsize], nodes[x + signX + z * xsize]))
-                {
-                    return false;
-                }
                 x += signX;
                 ix++;
             }
             else if (t1 > t2) //Vertical
             {
-                if (!IsNeighborWalkable(unitSize, blockedFunc, nodes[x + z * xsize], nodes[x + (z + signZ) * xsize]))
-                {
-                    return false;
-                }
                 z += signZ;
                 iz++;
             }
             else //Cross
             {
-                if (!IsNeighborWalkable(unitSize, blockedFunc, nodes[x + z * xsize], nodes[x + signX + (z + signZ) * xsize]))
+                var xIndex = navMesh.GetSquareIndex(x + signX, z);
+                var zIndex = navMesh.GetSquareIndex(x, z + signZ);
+                if (filter.IsBlocked(navMesh, xIndex) || filter.IsBlocked(navMesh, zIndex))
                 {
                     return false;
                 }
@@ -195,7 +190,19 @@ public class GridNavQuery
                 ix++;
                 iz++;
             }
-            path.Add(nodes[x + z * xsize].squareIndex);
+            var index = navMesh.GetSquareIndex(x, z);
+            var cost = filter.GetCost(navMesh, index, parentIndex);
+            if (cost < 0)
+            {
+                return false;
+            }
+            if (filter.IsBlocked(navMesh, index))
+            {
+                return false;
+            }
+            totalCost += cost;
+            path.Add(index);
+            parentIndex = index;
         }
         return true;
     }
