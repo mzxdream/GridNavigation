@@ -19,10 +19,11 @@ public class GridNavQuery
     private GridNavQueryPriorityQueue openQueue;
     private GridNavQueryData queryData;
 
-    public bool Init(GridNavMesh navMesh, int maxNodes = 1024)
+    public bool Init(GridNavMesh navMesh, int maxNodes = 8192)
     {
+        Debug.Assert(maxNodes > 0);
         this.navMesh = navMesh;
-        this.nodePool = new GridNavQueryNodePool(navMesh.XSize * navMesh.ZSize);
+        this.nodePool = new GridNavQueryNodePool(maxNodes);
         this.openQueue = new GridNavQueryPriorityQueue(maxNodes);
         this.queryData = new GridNavQueryData();
         return true;

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-enum GridNavNodeFlags { Open = 0x01, Closed = 0x02, Visited = 0x04 };
+enum GridNavNodeFlags { Open = 0x01, Closed = 0x02 };
 
 class GridNavQueryNode
 {
@@ -14,36 +14,39 @@ class GridNavQueryNode
 class GridNavQueryNodePool
 {
     private GridNavQueryNode[] nodes;
-    private List<GridNavQueryNode> dirtyQueue;
+    private int count;
+    private Dictionary<int, GridNavQueryNode> nodeIndexes;
 
     public GridNavQueryNodePool(int maxNodes)
     {
         nodes = new GridNavQueryNode[maxNodes];
         for (int i = 0; i < maxNodes; i++)
         {
-            nodes[i] = new GridNavQueryNode { index = i };
+            nodes[i] = new GridNavQueryNode();
         }
-        dirtyQueue = new List<GridNavQueryNode>();
+        count = 0;
+        nodeIndexes = new Dictionary<int, GridNavQueryNode>();
     }
     public void Clear()
     {
-        foreach (var n in dirtyQueue)
-        {
-            n.flags = 0;
-        }
-        dirtyQueue.Clear();
+        count = 0;
+        nodeIndexes.Clear();
     }
     public GridNavQueryNode GetNode(int index)
     {
-        if (index < 0 || index >= nodes.Length)
+        if (!nodeIndexes.TryGetValue(index, out var node))
         {
-            return null;
-        }
-        var node = nodes[index];
-        if ((node.flags & (int)GridNavNodeFlags.Visited) == 0)
-        {
-            node.flags = (int)GridNavNodeFlags.Visited;
-            dirtyQueue.Add(node);
+            if (count >= nodes.Length)
+            {
+                return null;
+            }
+            node = nodes[count++];
+            node.index = index;
+            node.gCost = 0;
+            node.fCost = 0;
+            node.parent = null;
+            node.flags = 0;
+            nodeIndexes.Add(index, node);
         }
         return node;
     }
