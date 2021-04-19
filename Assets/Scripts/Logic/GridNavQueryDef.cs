@@ -3,7 +3,7 @@ using System;
 public interface IGridNavQueryFilter
 {
     bool IsBlocked(GridNavMesh navMesh, int index);
-    float GetCost(GridNavMesh navMesh, int index, int parentIndex); //小于0表示无法通过
+    float GetCost(GridNavMesh navMesh, int index, GridNavDirection dir); //小于0表示无法通过
 }
 
 public interface IGridNavQueryConstraint
@@ -19,9 +19,9 @@ public class GridNavQueryFilterDef : IGridNavQueryFilter
     {
         return navMesh.IsSquareBlocked(index);
     }
-    public float GetCost(GridNavMesh navMesh, int index, int parentIndex)
+    public float GetCost(GridNavMesh navMesh, int index, GridNavDirection dir)
     {
-        return navMesh.GetSquareCost(index) + navMesh.DistanceApproximately(parentIndex, index);
+        return navMesh.GetSquareCost(index, dir);
     }
 }
 
@@ -37,9 +37,9 @@ public class GridNavQueryFilterExtraBlockedCheck : IGridNavQueryFilter
     {
         return navMesh.IsSquareBlocked(index) && extraBlockedFunc(index);
     }
-    public float GetCost(GridNavMesh navMesh, int index, int parentIndex)
+    public float GetCost(GridNavMesh navMesh, int index, GridNavDirection dir)
     {
-        return navMesh.GetSquareCost(index) + navMesh.DistanceApproximately(parentIndex, index);
+        return navMesh.GetSquareCost(index, dir);
     }
 }
 

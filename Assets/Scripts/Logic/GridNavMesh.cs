@@ -10,7 +10,9 @@ class GridNavSquare
 
 public class GridNavMesh
 {
-    private int[] neighbourIndexes;
+    private static readonly int[] dirX = { 0, -1, 1, 0, 0, -1, 1, -1, 1 };
+    private static readonly int[] dirZ = { 0, 0, 0, 1, -1, 1, 1, -1, -1 };
+    private static readonly float[] dirCost = { 0, 1.0f, 1.0f, 1.0f, 1.0f, 1.4142f, 1.4142f, 1.4142f, 1.4142f };
     private Vector3 bmin;
     private int xsize;
     private int zsize;
@@ -27,7 +29,6 @@ public class GridNavMesh
         {
             return false;
         }
-        neighbourIndexes = new int[] { 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
         this.bmin = bmin;
         this.xsize = xsize;
         this.zsize = zsize;
@@ -60,13 +61,18 @@ public class GridNavMesh
         Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
         return x + z * xsize;
     }
-    public int GetSuqareNeighbourIndex(int index, int dir)
+    public int GetSuqareNeighbourIndex(int index, GridNavDirection dir)
     {
-        Debug.Assert(index >= 0 && index < xsize * zsize && dir >= 0 && dir < 16);
+        Debug.Assert(index >= 0 && index < xsize * zsize);
         int z = index / xsize;
         int x = index - z * xsize;
-        index += neighbourIndexes[dir];
-        return -1;
+        x += dirX[(int)dir];
+        z += dirZ[(int)dir];
+        if (x < 0 || x >= xsize || z < 0 || z >= zsize)
+        {
+            return -1;
+        }
+        return x + z * xsize;
     }
     public void ClampInBounds(Vector3 pos, out int nearestIndex, out Vector3 nearestPos)
     {
@@ -104,10 +110,10 @@ public class GridNavMesh
         Debug.Assert(index >= 0 && index < xsize * zsize);
         return squares[index].isBlocked;
     }
-    public float GetSquareCost(int index)
+    public float GetSquareCost(int index, GridNavDirection dir)
     {
         Debug.Assert(index >= 0 && index < xsize * zsize);
-        return squares[index].cost;
+        return squares[index].cost + dirCost[(int)dir] * squareSize;
     }
     public float DistanceApproximately(int startIndex, int endIndex)
     {
