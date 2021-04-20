@@ -204,9 +204,9 @@ public class GridNavQuery
         }
         return true;
     }
-    public bool FindStraightPath(int unitSize, List<int> path, out List<int> straightPath, Func<int, bool> blockedFunc = null)
+    public bool FindStraightPath(IGridNavQueryFilter filter, List<int> path, out List<int> straightPath)
     {
-        Debug.Assert(unitSize > 0);
+        Debug.Assert(filter != null);
         straightPath = new List<int>();
         if (path.Count <= 1)
         {
@@ -230,7 +230,7 @@ public class GridNavQuery
         {
             for (int j = 0; j < i - 1; j++)
             {
-                if (IsCrossWalkable(unitSize, blockedFunc, straightPath[i], straightPath[j]))
+                if (Raycast(filter, straightPath[i], straightPath[j], out _, out _))
                 {
                     for (int k = i - 1; k > j; k--)
                     {
