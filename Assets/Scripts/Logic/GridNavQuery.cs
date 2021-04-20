@@ -134,7 +134,9 @@ public class GridNavQuery
         int z = sz;
         int ix = 0;
         int iz = 0;
-        var parentIndex = startIndex;
+        var dirX = dx > 0 ? GridNavDirection.Right : GridNavDirection.Left;
+        var dirZ = dz > 0 ? GridNavDirection.Up : GridNavDirection.Down;
+        var dirXZ = GridNavMath.CombineDirection(dirX, dirZ);
         while (ix < nx || iz < nz)
         {
             var t1 = (2 * ix + 1) * nz;
@@ -143,17 +145,42 @@ public class GridNavQuery
             {
                 x += signX;
                 ix++;
+                var index = navMesh.GetSquareIndex(x, z);
+                if (filter.IsBlocked(navMesh, index))
+                {
+                    return false;
+                }
+                var cost = filter.GetCost(navMesh, index, dirX);
+                if (cost < 0)
+                {
+                    return false;
+                }
+                totalCost += cost;
+                path.Add(index);
             }
             else if (t1 > t2) //Vertical
             {
                 z += signZ;
                 iz++;
+                var index = navMesh.GetSquareIndex(x, z);
+                if (filter.IsBlocked(navMesh, index))
+                {
+                    return false;
+                }
+                var cost = filter.GetCost(navMesh, index, dirZ);
+                if (cost < 0)
+                {
+                    return false;
+                }
+                totalCost += cost;
+                path.Add(index);
             }
             else //Cross
             {
                 var xIndex = navMesh.GetSquareIndex(x + signX, z);
                 var zIndex = navMesh.GetSquareIndex(x, z + signZ);
-                if (filter.IsBlocked(navMesh, xIndex) || filter.IsBlocked(navMesh, zIndex))
+                if (filter.IsBlocked(navMesh, xIndex) || filter.GetCost(navMesh, xIndex, dirX) < 0
+                    || filter.IsBlocked(navMesh, zIndex) || filter.GetCost(navMesh, zIndex, dirZ) < 0)
                 {
                     return false;
                 }
@@ -161,20 +188,19 @@ public class GridNavQuery
                 z += signZ;
                 ix++;
                 iz++;
+                var index = navMesh.GetSquareIndex(x, z);
+                if (filter.IsBlocked(navMesh, index))
+                {
+                    return false;
+                }
+                var cost = filter.GetCost(navMesh, index, dirXZ);
+                if (cost < 0)
+                {
+                    return false;
+                }
+                totalCost += cost;
+                path.Add(index);
             }
-            var index = navMesh.GetSquareIndex(x, z);
-            var cost = filter.GetCost(navMesh, index, parentIndex);
-            if (cost < 0)
-            {
-                return false;
-            }
-            if (filter.IsBlocked(navMesh, index))
-            {
-                return false;
-            }
-            totalCost += cost;
-            path.Add(index);
-            parentIndex = index;
         }
         return true;
     }

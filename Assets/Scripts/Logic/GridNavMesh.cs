@@ -1,7 +1,5 @@
 using UnityEngine;
 
-public enum GridNavDirection { Left = 1, Right = 2, Up = 3, Down = 4, LeftUp = 5, RightUp = 6, LeftDown = 7, RightDown = 8 }
-
 class GridNavSquare
 {
     public float cost;
