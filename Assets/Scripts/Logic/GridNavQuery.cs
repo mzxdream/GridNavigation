@@ -346,40 +346,27 @@ public class GridNavQuery
         path.Reverse();
         return queryData.status;
     }
-    public bool FindNearestSquare(int unitSize, Vector3 pos, float radius, out int nearestIndex, out Vector3 nearestPos, Func<int, bool> blockedFunc)
+    public bool FindNearestSquare(IGridNavQueryFilter filter, Vector3 pos, float radius, out int nearestIndex, out Vector3 nearestPos)
     {
-        Debug.Assert(unitSize > 0 && radius > 0);
+        Debug.Assert(filter != null && radius > 0);
         navMesh.ClampInBounds(pos, out nearestIndex, out nearestPos);
+        if (!filter.IsBlocked(navMesh, nearestIndex))
+        {
+            return true;
+        }
+        var ext = Mathf.Max(1, (int)(radius / navMesh.SquareSize));
         navMesh.GetSquareXZ(nearestIndex, out int x, out int z);
-        var node = nodes[x + z * xsize];
-        var ext = Mathf.Max(1, (int)(radius / navMesh.SquareSize + 0.9f));
-        var nearestNode = FindNearestNode(unitSize, blockedFunc, node, ext);
-        if (nearestNode == null)
-        {
-            return false;
-        }
-        if (node != nearestNode)
-        {
-            nearestIndex = nearestNode.squareIndex;
-            nearestPos = navMesh.GetSquarePos(nearestIndex);
-        }
-        return true;
-    }
-    private GridNavQueryNode FindNearestNode(int unitSize, Func<int, bool> blockedFunc, GridNavQueryNode node, int ext)
-    {
-        Debug.Assert(unitSize > 0 && node != null);
-        if (!IsNodeBlocked(unitSize, blockedFunc, node))
-        {
-            return node;
-        }
-        int x = node.x;
-        int z = node.z;
         for (int k = 1; k <= ext; k++)
         {
             int xmin = x - k;
             int xmax = x + k;
             int zmin = z - k;
             int zmax = z + k;
+            if (zmax < 0)
+            {
+            }
+
+
             if (!IsNodeBlocked(unitSize, blockedFunc, x, zmax)) //up
             {
                 return nodes[x + zmax * xsize];
@@ -448,6 +435,19 @@ public class GridNavQuery
                 return nodes[xmax + zmin * xsize];
             }
         }
+
+        return true;
+    }
+    private GridNavQueryNode FindNearestNode(int unitSize, Func<int, bool> blockedFunc, GridNavQueryNode node, int ext)
+    {
+        Debug.Assert(unitSize > 0 && node != null);
+        if (!IsNodeBlocked(unitSize, blockedFunc, node))
+        {
+            return node;
+        }
+        int x = node.x;
+        int z = node.z;
+        
         return null;
     }
     private bool TestNeighbourBlocked(IGridNavQueryFilter filter, IGridNavQueryConstraint constraint, GridNavQueryNode node, GridNavDirection dir, ref float lastBestNodeCost, ref GridNavQueryNode lastBestNode)
