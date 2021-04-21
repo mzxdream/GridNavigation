@@ -72,10 +72,12 @@ public class GridNavManager
             desireVel = Vector3.zero,
         };
         navMesh.ClampInBounds(agent.pos, out agent.squareIndex, out agent.pos);
-        if (navQuery.FindNearestSquare(agent.unitSize, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearestPos, blockedFunc))
+        Func<int, bool> extraBlockedFunc = (int index) => { return IsSquareAgentBlocked(index, agent); };
+        var filter = new GridNavQueryFilterExtraBlockedCheck(unitSize, extraBlockedFunc);
+        if (navQuery.FindNearestSquare(filter, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearesetPos))
         {
             agent.squareIndex = nearestIndex;
-            agent.pos = nearestPos;
+            agent.pos = nearesetPos;
         }
         agents.Add(agent.id, agent);
         AddSquareAgent(agent.squareIndex, agent);
