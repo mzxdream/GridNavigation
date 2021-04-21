@@ -25,17 +25,77 @@ public class GridNavQueryFilterDef : IGridNavQueryFilter
     }
 }
 
+public class GridNavQueryFilterUnitSize : IGridNavQueryFilter
+{
+    private int unitSize;
+
+    public GridNavQueryFilterUnitSize(int unitSize)
+    {
+        this.unitSize = unitSize;
+    }
+    public bool IsBlocked(GridNavMesh navMesh, int index)
+    {
+        navMesh.GetSquareXZ(index, out var x, out var z);
+        int xmin = x - unitSize + 1;
+        int xmax = x + unitSize - 1;
+        int zmin = z - unitSize + 1;
+        int zmax = z + unitSize - 1;
+        if (xmin < 0 || xmax >= navMesh.XSize || zmin < 0 || zmax >= navMesh.ZSize)
+        {
+            return true;
+        }
+        for (int tz = zmin; tz <= zmax; tz++)
+        {
+            for (int tx = xmin; tx <= xmax; tx++)
+            {
+                var tIndex = navMesh.GetSquareIndex(tx, tz);
+                if (navMesh.IsSquareBlocked(tIndex))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    public float GetCost(GridNavMesh navMesh, int index, GridNavDirection dir)
+    {
+        return navMesh.GetSquareCost(index, dir);
+    }
+}
+
 public class GridNavQueryFilterExtraBlockedCheck : IGridNavQueryFilter
 {
+    private int unitSize;
     private Func<int, bool> extraBlockedFunc;
 
-    public GridNavQueryFilterExtraBlockedCheck(Func<int, bool> extraBlockedFunc)
+    public GridNavQueryFilterExtraBlockedCheck(int unitSize, Func<int, bool> extraBlockedFunc)
     {
+        this.unitSize = unitSize;
         this.extraBlockedFunc = extraBlockedFunc;
     }
     public bool IsBlocked(GridNavMesh navMesh, int index)
     {
-        return navMesh.IsSquareBlocked(index) && extraBlockedFunc(index);
+        navMesh.GetSquareXZ(index, out var x, out var z);
+        int xmin = x - unitSize + 1;
+        int xmax = x + unitSize - 1;
+        int zmin = z - unitSize + 1;
+        int zmax = z + unitSize - 1;
+        if (xmin < 0 || xmax >= navMesh.XSize || zmin < 0 || zmax >= navMesh.ZSize)
+        {
+            return true;
+        }
+        for (int tz = zmin; tz <= zmax; tz++)
+        {
+            for (int tx = xmin; tx <= xmax; tx++)
+            {
+                var tIndex = navMesh.GetSquareIndex(tx, tz);
+                if (navMesh.IsSquareBlocked(tIndex) || extraBlockedFunc(tIndex))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
     public float GetCost(GridNavMesh navMesh, int index, GridNavDirection dir)
     {

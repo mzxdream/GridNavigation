@@ -54,7 +54,11 @@ public class GridNavManager
     }
     public int AddAgent(Vector3 pos, GridNavAgentParam param)
     {
-        var unitSize = Mathf.Max(1, (int)(param.radius / navMesh.SquareSize + 0.9f));
+        int unitSize = Mathf.CeilToInt(param.radius / navMesh.SquareSize);
+        if ((unitSize & 1) == 0)
+        {
+            unitSize++;
+        }
         var agent = new GridNavAgent
         {
             id = ++lastAgentID,
@@ -68,7 +72,6 @@ public class GridNavManager
             desireVel = Vector3.zero,
         };
         navMesh.ClampInBounds(agent.pos, out agent.squareIndex, out agent.pos);
-        Func<int, bool> blockedFunc = (int index) => { return squareAgents.TryGetValue(index, out var squareAgentList) && squareAgentList.Count > 0; };
         if (navQuery.FindNearestSquare(agent.unitSize, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearestPos, blockedFunc))
         {
             agent.squareIndex = nearestIndex;
