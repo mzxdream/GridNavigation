@@ -354,101 +354,60 @@ public class GridNavQuery
         {
             return true;
         }
-        var ext = Mathf.Max(1, (int)(radius / navMesh.SquareSize));
         navMesh.GetSquareXZ(nearestIndex, out int x, out int z);
+        var ext = (int)(radius / navMesh.SquareSize);
         for (int k = 1; k <= ext; k++)
         {
             int xmin = x - k;
             int xmax = x + k;
             int zmin = z - k;
             int zmax = z + k;
-            if (zmax < 0)
+            if (!TestBlocked(filter, xmin, z, ref nearestIndex) //left
+                || !TestBlocked(filter, xmax, z, ref nearestIndex) //right
+                || !TestBlocked(filter, x, zmax, ref nearestIndex) //up
+                || !TestBlocked(filter, x, zmin, ref nearestIndex)) //down
             {
-            }
-
-
-            if (!IsNodeBlocked(unitSize, blockedFunc, x, zmax)) //up
-            {
-                return nodes[x + zmax * xsize];
-            }
-            if (!IsNodeBlocked(unitSize, blockedFunc, x, zmin)) //down
-            {
-                return nodes[x + zmin * xsize];
-            }
-            if (!IsNodeBlocked(unitSize, blockedFunc, xmin, z)) //left
-            {
-                return nodes[xmin + z * xsize];
-            }
-            if (!IsNodeBlocked(unitSize, blockedFunc, xmax, z)) //right
-            {
-                return nodes[xmax + z * xsize];
+                nearestPos = navMesh.GetSquarePos(nearestIndex);
+                return true;
             }
             for (int t = 1; t < k; t++)
             {
-                if (!IsNodeBlocked(unitSize, blockedFunc, x - t, zmax)) //up left
+                if (!TestBlocked(filter, xmin, z + t, ref nearestIndex) //left up
+                    || !TestBlocked(filter, xmin, z - t, ref nearestIndex) //left down
+                    || !TestBlocked(filter, xmax, z + t, ref nearestIndex) //right up
+                    || !TestBlocked(filter, xmax, z - t, ref nearestIndex) //right down
+                    || !TestBlocked(filter, x - t, zmax, ref nearestIndex) //up left
+                    || !TestBlocked(filter, x + t, zmax, ref nearestIndex) //up right
+                    || !TestBlocked(filter, x - t, zmin, ref nearestIndex) //down left
+                    || !TestBlocked(filter, x + t, zmin, ref nearestIndex)) //down right
                 {
-                    return nodes[x - t + zmax * xsize];
-                }
-                if (!IsNodeBlocked(unitSize, blockedFunc, x + t, zmax)) //up right
-                {
-                    return nodes[x + t + zmax * xsize];
-                }
-                if (!IsNodeBlocked(unitSize, blockedFunc, x - t, zmin)) //down left
-                {
-                    return nodes[x - t + zmin * xsize];
-                }
-                if (!IsNodeBlocked(unitSize, blockedFunc, x + t, zmin)) //down right
-                {
-                    return nodes[x + t + zmin * xsize];
-                }
-                if (!IsNodeBlocked(unitSize, blockedFunc, xmin, z - t)) //left up
-                {
-                    return nodes[xmin + (z - t) * xsize];
-                }
-                if (!IsNodeBlocked(unitSize, blockedFunc, xmin, z + t)) //left down
-                {
-                    return nodes[xmin + (z + t) * xsize];
-                }
-                if (!IsNodeBlocked(unitSize, blockedFunc, xmax, z - t)) //right up
-                {
-                    return nodes[xmax + (z - t) * xsize];
-                }
-                if (!IsNodeBlocked(unitSize, blockedFunc, xmax, z + t)) //right down
-                {
-                    return nodes[xmax + (z + t) * xsize];
+                    nearestPos = navMesh.GetSquarePos(nearestIndex);
+                    return true;
                 }
             }
-            if (!IsNodeBlocked(unitSize, blockedFunc, xmin, zmax)) //left up
+            if (!TestBlocked(filter, xmin, zmax, ref nearestIndex) //left up
+                || !TestBlocked(filter, xmin, zmin, ref nearestIndex) //left down
+                || !TestBlocked(filter, xmax, zmax, ref nearestIndex) //right up
+                || !TestBlocked(filter, xmax, zmin, ref nearestIndex)) //right down
             {
-                return nodes[xmin + zmax * xsize];
-            }
-            if (!IsNodeBlocked(unitSize, blockedFunc, xmax, zmax)) //right up
-            {
-                return nodes[xmax + zmax * xsize];
-            }
-            if (!IsNodeBlocked(unitSize, blockedFunc, xmin, zmin)) //left down
-            {
-                return nodes[xmin + zmin * xsize];
-            }
-            if (!IsNodeBlocked(unitSize, blockedFunc, xmax, zmin)) //right down
-            {
-                return nodes[xmax + zmin * xsize];
+                nearestPos = navMesh.GetSquarePos(nearestIndex);
+                return true;
             }
         }
-
-        return true;
+        return false;
     }
-    private GridNavQueryNode FindNearestNode(int unitSize, Func<int, bool> blockedFunc, GridNavQueryNode node, int ext)
+    private bool TestBlocked(IGridNavQueryFilter filter, int x, int z, ref int index)
     {
-        Debug.Assert(unitSize > 0 && node != null);
-        if (!IsNodeBlocked(unitSize, blockedFunc, node))
+        if (x >= 0 && x < navMesh.XSize && z >= 0 && z < navMesh.ZSize)
         {
-            return node;
+            var t = navMesh.GetSquareIndex(x, z);
+            if (!filter.IsBlocked(navMesh, t))
+            {
+                index = t;
+                return false;
+            }
         }
-        int x = node.x;
-        int z = node.z;
-        
-        return null;
+        return true;
     }
     private bool TestNeighbourBlocked(IGridNavQueryFilter filter, IGridNavQueryConstraint constraint, GridNavQueryNode node, GridNavDirection dir, ref float lastBestNodeCost, ref GridNavQueryNode lastBestNode)
     {
