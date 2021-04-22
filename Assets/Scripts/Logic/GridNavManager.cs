@@ -24,6 +24,7 @@ public class GridNavAgent
     public int unitSize;
     public int squareIndex;
     public Vector3 pos;
+    public int targetSquareIndex;
     public Vector3 targetPos;
     public Vector3 vel;
     public Vector3 desireVel;
@@ -86,9 +87,14 @@ public class GridNavManager
     public void Update(float deltaTime)
     {
     }
-    public bool RequestMoveTarget(int agentID, Vector3 pos, float radius)
+    public bool RequestMoveTarget(int agentID, Vector3 pos)
     {
+        if (!agents.TryGetValue(agentID, out var agent))
+        {
+            return false;
+        }
         navMesh.ClampInBounds(pos, out var neareastIndex, out var nearestPos);
+
         return true;
     }
     private void CheckPathValid(float deltaTime)
