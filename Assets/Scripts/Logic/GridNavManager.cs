@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public enum GridNavAgentFlags { EnemyPushResistant = 0x01, FriendPushResistant = 0x02 }
-public enum GridNavAgentMoveState { None, Failed, Valid, Requesting, WaitForQueue, WaitForPath }
 
 public struct GridNavAgentParam
 {
@@ -15,6 +14,8 @@ public struct GridNavAgentParam
     public float maxTurnAngle;
     public int Flags;
 }
+
+public enum GridNavAgentMoveState { None, Requesting, WaitForPath, Moving }
 
 public class GridNavAgent
 {
