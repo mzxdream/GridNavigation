@@ -25,6 +25,7 @@ public class GridNavAgent
     public int unitSize;
     public int squareIndex;
     public Vector3 pos;
+    public bool repath;
     public int targetSquareIndex;
     public Vector3 targetPos;
     public List<int> path;
@@ -121,6 +122,26 @@ public class GridNavManager
     }
     public void Update(float deltaTime)
     {
+        foreach (var a in agents)
+        {
+            var agent = a.Value;
+            var filter = new GridNavQueryFilterExtraBlockedCheck(agent.unitSize, (int index) =>
+            {
+                if (squareAgents.TryGetValue(index, out var squareAgentList))
+                {
+                    foreach (var squareAgent in squareAgentList)
+                    {
+                        return squareAgent != agent;
+                    }
+                }
+                return false;
+            });
+            if (navQuery.FindNearestSquare(filter, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearesetPos))
+            {
+                agent.squareIndex = nearestIndex;
+                agent.pos = nearesetPos;
+            }
+        }
         int maxNodes = 8192;
         while (pathRequestQueue.Count > 0 && maxNodes > 0)
         {
