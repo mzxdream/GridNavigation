@@ -59,6 +59,12 @@ public class GridNavMesh
         Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
         return x + z * xsize;
     }
+    public int GetSquareCenterIndex(int startIndex, int endIndex)
+    {
+        GetSquareXZ(startIndex, out var sx, out var sz);
+        GetSquareXZ(endIndex, out var ex, out var ez);
+        return (sx + ex) / 2 + (ex + ez) / 2 * zsize;
+    }
     public int GetSuqareNeighbourIndex(int index, GridNavDirection dir)
     {
         Debug.Assert(index >= 0 && index < xsize * zsize);

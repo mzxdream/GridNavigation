@@ -27,8 +27,11 @@ public class GridNavAgent
     public Vector3 pos;
     public int targetSquareIndex;
     public Vector3 targetPos;
+    public List<int> path;
+    public Vector3 disp;
+    public Vector3 dvel;
+    public Vector3 nvel;
     public Vector3 vel;
-    public Vector3 desireVel;
 }
 
 public class GridNavManager
@@ -74,12 +77,23 @@ public class GridNavManager
             squareIndex = 0,
             pos = pos,
             targetPos = Vector3.zero,
+            disp = Vector3.zero,
+            dvel = Vector3.zero,
+            nvel = Vector3.zero,
             vel = Vector3.zero,
-            desireVel = Vector3.zero,
         };
         navMesh.ClampInBounds(agent.pos, out agent.squareIndex, out agent.pos);
-        Func<int, bool> extraBlockedFunc = (int index) => { return IsSquareAgentBlocked(index, agent); };
-        var filter = new GridNavQueryFilterExtraBlockedCheck(unitSize, extraBlockedFunc);
+        var filter = new GridNavQueryFilterExtraBlockedCheck(unitSize, (int index) =>
+        {
+            if (squareAgents.TryGetValue(index, out var squareAgentList))
+            {
+                foreach (var squareAgent in squareAgentList)
+                {
+                    return squareAgent != agent;
+                }
+            }
+            return false;
+        });
         if (navQuery.FindNearestSquare(filter, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearesetPos))
         {
             agent.squareIndex = nearestIndex;
@@ -107,6 +121,49 @@ public class GridNavManager
     }
     public void Update(float deltaTime)
     {
+        int maxNodes = 8192;
+        while (pathRequestQueue.Count > 0 && maxNodes > 0)
+        {
+            var agent = agents[pathRequestQueue[0]];
+            if (agent.moveState == GridNavAgentMoveState.Requesting)
+            {
+                Debug.Assert(!isPathRequesting);
+                isPathRequesting = true;
+                agent.moveState = GridNavAgentMoveState.WaitForPath;
+                var filter = new GridNavQueryFilterUnitSize(agent.unitSize);
+                var circleIndex = navMesh.GetSquareCenterIndex(agent.squareIndex, agent.targetSquareIndex);
+                var circleRadius = navMesh.DistanceApproximately(agent.squareIndex, circleIndex) * 3.0f + 200.0f;
+                var constraint = new GridNavQueryConstraintCircle(agent.targetSquareIndex, agent.param.radius + 0.1f, circleIndex, circleRadius);
+                pathRequestNavQuery.InitSlicedFindPath(filter, agent.squareIndex, constraint);
+            }
+            if (agent.moveState == GridNavAgentMoveState.WaitForPath)
+            {
+                var status = pathRequestNavQuery.UpdateSlicedFindPath(maxNodes, out var doneNodes);
+                maxNodes -= doneNodes;
+                if (status != GridNavQueryStatus.InProgress)
+                {
+                    isPathRequesting = false;
+                    pathRequestQueue.RemoveAt(0);
+                    if (status == GridNavQueryStatus.Failed)
+                    {
+                        agent.moveState = GridNavAgentMoveState.None;
+                    }
+                    else if (status == GridNavQueryStatus.Success)
+                    {
+                        agent.moveState = GridNavAgentMoveState.Moving;
+                        pathRequestNavQuery.FinalizeSlicedFindPath(out agent.path);
+                    }
+                }
+            }
+        }
+        foreach (var a in agents)
+        {
+            var agent = a.Value;
+            if (agent.moveState != GridNavAgentMoveState.Moving)
+            {
+                continue;
+            }
+        }
     }
     public bool RequestMoveTarget(int agentID, Vector3 pos)
     {
@@ -188,11 +245,7 @@ public class GridNavManager
         {
             foreach (var squareAgent in squareAgentList)
             {
-                if (agent == squareAgent)
-                {
-                    continue;
-                }
-                return true;
+                return squareAgent != agent;
             }
         }
         return false;
