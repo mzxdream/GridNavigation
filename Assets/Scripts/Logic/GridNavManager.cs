@@ -184,6 +184,20 @@ public class GridNavManager
             {
                 continue;
             }
+            var filter = new GridNavQueryFilterExtraBlockedCheck(agent.unitSize, (int index) =>
+            {
+                if (squareAgents.TryGetValue(index, out var squareAgentList))
+                {
+                    foreach (var squareAgent in squareAgentList)
+                    {
+                        return squareAgent.param.teamID != agent.param.teamID;
+                    }
+                }
+                return false;
+            });
+            var circleIndex = navMesh.GetSquareCenterIndex(agent.squareIndex, agent.targetSquareIndex);
+            var circleRadius = navMesh.DistanceApproximately(agent.squareIndex, circleIndex) * 1.01f;
+            var constraint = new GridNavQueryConstraintCircle(agent.targetSquareIndex, agent.param.radius + 0.1f, circleIndex, circleRadius);
         }
     }
     public bool RequestMoveTarget(int agentID, Vector3 pos)
