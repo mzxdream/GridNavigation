@@ -38,6 +38,9 @@ public class GridNavManager
     private int lastAgentID;
     private Dictionary<int, GridNavAgent> agents;
     private Dictionary<int, List<GridNavAgent>> squareAgents;
+    private List<int> pathRequestQueue;
+    private GridNavQuery pathRequestNavQuery;
+    private bool isPathRequesting;
 
     public bool Init(GridNavMesh navMesh, int maxAgents)
     {
@@ -49,6 +52,7 @@ public class GridNavManager
         }
         this.agents = new Dictionary<int, GridNavAgent>();
         this.squareAgents = new Dictionary<int, List<GridNavAgent>>();
+        this.pathRequestQueue = new List<int>();
         return true;
     }
     public void Clear()
@@ -85,6 +89,22 @@ public class GridNavManager
         AddSquareAgent(agent.squareIndex, agent);
         return agent.id;
     }
+    public void RemoveAgent(int agentID)
+    {
+        if (agents.TryGetValue(agentID, out var agent))
+        {
+            if (agent.moveState != GridNavAgentMoveState.None)
+            {
+                pathRequestQueue.Remove(agent.id);
+                if (agent.moveState == GridNavAgentMoveState.WaitForPath)
+                {
+                    isPathRequesting = false;
+                }
+            }
+            RemoveSquareAgent(agent.squareIndex, agent);
+            agents.Remove(agentID);
+        }
+    }
     public void Update(float deltaTime)
     {
     }
@@ -95,22 +115,36 @@ public class GridNavManager
             return false;
         }
         navMesh.ClampInBounds(pos, out var neareastIndex, out var nearestPos);
-
+        if (agent.moveState == GridNavAgentMoveState.Requesting)
+        {
+            agent.targetPos = nearestPos;
+            agent.targetSquareIndex = neareastIndex;
+            return true;
+        }
+        if (agent.moveState == GridNavAgentMoveState.WaitForPath)
+        {
+            Debug.Assert(agent.id == pathRequestQueue[0]);
+            if (neareastIndex == agent.targetSquareIndex)
+            {
+                agent.targetPos = nearestPos;
+                return true;
+            }
+            isPathRequesting = false;
+            pathRequestQueue.RemoveAt(0);
+        }
+        agent.moveState = GridNavAgentMoveState.Requesting;
+        agent.targetSquareIndex = neareastIndex;
+        agent.targetPos = nearestPos;
+        pathRequestQueue.Add(agent.id);
         return true;
-    }
-    private void CheckPathValid(float deltaTime)
-    {
     }
     private void AddSquareAgent(int index, GridNavAgent agent)
     {
-        if (!navMesh.GetSquareXZ(index, out var x, out var z))
-        {
-            return;
-        }
-        int xmin = Mathf.Max(0, x - (agent.unitSize - 1));
-        int xmax = Mathf.Min(navMesh.XSize - 1, x + (agent.unitSize - 1));
-        int zmin = Mathf.Min(0, z - (agent.unitSize - 1));
-        int zmax = Mathf.Max(navMesh.ZSize - 1, z + (agent.unitSize - 1));
+        navMesh.GetSquareXZ(index, out var x, out var z);
+        int xmin = Mathf.Max(0, x - agent.unitSize + 1);
+        int xmax = Mathf.Min(navMesh.XSize - 1, x + agent.unitSize - 1);
+        int zmin = Mathf.Min(0, z - agent.unitSize + 1);
+        int zmax = Mathf.Max(navMesh.ZSize - 1, z + agent.unitSize - 1);
         for (int tz = zmin; tz <= zmax; tz++)
         {
             for (int tx = xmin; tx <= xmax; tx++)
@@ -127,14 +161,11 @@ public class GridNavManager
     }
     private void RemoveSquareAgent(int index, GridNavAgent agent)
     {
-        if (!navMesh.GetSquareXZ(index, out var x, out var z))
-        {
-            return;
-        }
-        int xmin = Mathf.Max(0, x - (agent.unitSize - 1));
-        int xmax = Mathf.Min(navMesh.XSize - 1, x + (agent.unitSize - 1));
-        int zmin = Mathf.Min(0, z - (agent.unitSize - 1));
-        int zmax = Mathf.Max(navMesh.ZSize - 1, z + (agent.unitSize - 1));
+        navMesh.GetSquareXZ(index, out var x, out var z);
+        int xmin = Mathf.Max(0, x - agent.unitSize + 1);
+        int xmax = Mathf.Min(navMesh.XSize - 1, x + agent.unitSize - 1);
+        int zmin = Mathf.Min(0, z - agent.unitSize + 1);
+        int zmax = Mathf.Max(navMesh.ZSize - 1, z + agent.unitSize - 1);
         for (int tz = zmin; tz <= zmax; tz++)
         {
             for (int tx = xmin; tx <= xmax; tx++)
