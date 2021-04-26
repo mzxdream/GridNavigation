@@ -136,10 +136,13 @@ public class GridNavManager
                 }
                 return false;
             });
-            if (navQuery.FindNearestSquare(filter, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearesetPos))
+            if (filter.IsBlocked(navMesh, agent.squareIndex))
             {
-                agent.squareIndex = nearestIndex;
-                agent.pos = nearesetPos;
+                if (navQuery.FindNearestSquare(filter, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearesetPos))
+                {
+                    agent.squareIndex = nearestIndex;
+                    agent.pos = nearesetPos;
+                }
             }
         }
         int maxNodes = 8192;
