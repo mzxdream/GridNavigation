@@ -299,19 +299,6 @@ public class GridNavManager
                 }
             }
         }
-        for (int i = 0; i < 4; i++)
-        {
-            foreach (var a in agents)
-            {
-                var agent = a.Value;
-                agent.disp.Set(0, 0, 0);
-                float w = 0;
-                foreach (var n in agent.nneis)
-                {
-                    Vector3 diff = agent.pos - n.pos;
-                }
-            }
-        }
     }
     public bool RequestMoveTarget(int agentID, Vector3 pos)
     {
