@@ -142,6 +142,24 @@ public class GridNavManager
                 {
                     agent.squareIndex = nearestIndex;
                     agent.pos = nearesetPos;
+                    if (agent.moveState == GridNavAgentMoveState.WaitForPath)
+                    {
+                        isPathRequesting = false;
+                        pathRequestQueue.RemoveAt(0);
+                        pathRequestQueue.Add(agent.id);
+                    }
+                }
+                else
+                {
+                    if (agent.moveState != GridNavAgentMoveState.None)
+                    {
+                        pathRequestQueue.Remove(agent.id);
+                        if (agent.moveState == GridNavAgentMoveState.WaitForPath)
+                        {
+                            isPathRequesting = false;
+                        }
+                    }
+                    agent.moveState = GridNavAgentMoveState.None;
                 }
             }
         }
