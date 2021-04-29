@@ -205,20 +205,53 @@ public class GridNavManager
             {
                 continue;
             }
+            Debug.Assert(agent.path.Count > 0);
+            while (agent.path.Count > 1 && navMesh.DistanceApproximately(agent.squareIndex, agent.path[0]) <= 10.0f * navMesh.SquareSize)
+            {
+                agent.path.RemoveAt(0);
+            }
             var filter = new GridNavQueryFilterExtraBlockedCheck(agent.unitSize, (int index) =>
             {
                 if (squareAgents.TryGetValue(index, out var squareAgentList))
                 {
                     foreach (var squareAgent in squareAgentList)
                     {
-                        return squareAgent.param.teamID != agent.param.teamID;
+                        return squareAgent.param.teamID != agent.param.teamID && squareAgent.moveState != GridNavAgentMoveState.Moving;
                     }
                 }
                 return false;
             });
-            var circleIndex = navMesh.GetSquareCenterIndex(agent.squareIndex, agent.targetSquareIndex);
-            var circleRadius = navMesh.DistanceApproximately(agent.squareIndex, circleIndex) * 1.01f;
-            var constraint = new GridNavQueryConstraintCircle(agent.targetSquareIndex, agent.param.radius + 0.1f, circleIndex, circleRadius);
+            bool found = false;
+            while (agent.path.Count > 0 && navMesh.DistanceApproximately(agent.squareIndex, agent.path[0]) <= 15.0f * navMesh.SquareSize)
+            {
+                if (!filter.IsBlocked(navMesh, agent.path[0]))
+                {
+                    found = true;
+                    break;
+                }
+                agent.path.RemoveAt(0);
+            }
+            if (!found)
+            {
+                RequestMoveTarget(agent.id, agent.targetPos);
+                continue;
+            }
+            List<int> path;
+            if (!navQuery.Raycast(filter, agent.squareIndex, agent.path[0], out path, out _))
+            {
+                var constraint = new GridNavQueryConstraintCircle(agent.targetSquareIndex, agent.param.radius + 0.1f, agent.squareIndex, 16.0f * navMesh.SquareSize);
+                if (!navQuery.FindPath(filter, agent.squareIndex, constraint, out path))
+                {
+                    RequestMoveTarget(agent.id, agent.targetPos);
+                    continue;
+                }
+            }
+            var nextPos = agent.targetPos;
+            if (path.Count > 2)
+            {
+                nextPos = navMesh.GetSquarePos(path[1]);
+            }
+            //todo
         }
     }
     public bool RequestMoveTarget(int agentID, Vector3 pos)
