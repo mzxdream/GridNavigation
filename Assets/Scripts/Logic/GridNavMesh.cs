@@ -54,6 +54,13 @@ public class GridNavMesh
         z = index / xsize;
         x = index - z * xsize;
     }
+    public void GetSquareXZ(Vector3 pos, out int x, out int z)
+    {
+        x = (int)((pos.x - bmin.x) / squareSize);
+        z = (int)((pos.z - bmin.z) / squareSize);
+        x = Mathf.Clamp(x, 0, xsize - 1);
+        z = Mathf.Clamp(z, 0, zsize - 1);
+    }
     public int GetSquareIndex(int x, int z)
     {
         Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);

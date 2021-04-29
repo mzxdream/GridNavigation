@@ -29,10 +29,11 @@ public class GridNavAgent
     public int targetSquareIndex;
     public Vector3 targetPos;
     public List<int> path;
-    public Vector3 disp;
-    public Vector3 dvel;
-    public Vector3 nvel;
+    public List<GridNavAgent> nneis;
     public Vector3 vel;
+    public Vector3 nvel;
+    public Vector3 dvel;
+    public Vector3 disp;
 }
 
 public class GridNavManager
@@ -78,10 +79,6 @@ public class GridNavManager
             squareIndex = 0,
             pos = pos,
             targetPos = Vector3.zero,
-            disp = Vector3.zero,
-            dvel = Vector3.zero,
-            nvel = Vector3.zero,
-            vel = Vector3.zero,
         };
         navMesh.ClampInBounds(agent.pos, out agent.squareIndex, out agent.pos);
         var filter = new GridNavQueryFilterExtraBlockedCheck(unitSize, (int index) =>
@@ -252,7 +249,68 @@ public class GridNavManager
                 nextPos = navMesh.GetSquarePos(path[1]);
             }
             agent.dvel = (nextPos - agent.pos).normalized * agent.param.maxSpeed;
-            //todo
+            //separate
+        }
+        foreach (var a in agents)
+        {
+            var agent = a.Value;
+            agent.nvel = agent.dvel;
+
+            var maxDelta = agent.param.maxAcc * deltaTime;
+            var dv = agent.nvel - agent.vel;
+            var ds = dv.magnitude;
+            if (ds > agent.param.maxAcc)
+            {
+                dv = dv * maxDelta / ds;
+            }
+            agent.vel = agent.vel + dv;
+            if (agent.vel.magnitude > 0.0001f)
+            {
+                agent.pos = agent.pos + agent.vel * deltaTime;
+            }
+            else
+            {
+                agent.vel.Set(0, 0, 0);
+            }
+        }
+        foreach (var a in agents)
+        {
+            var agent = a.Value;
+            agent.nneis = new List<GridNavAgent>();
+            float radius = agent.param.radius + agent.param.maxSpeed * 2.0f;
+            navMesh.GetSquareXZ(new Vector3(agent.pos.x - radius, 0, agent.pos.z - radius), out var sx, out var sz);
+            navMesh.GetSquareXZ(new Vector3(agent.pos.x + radius, 0, agent.pos.z + radius), out var ex, out var ez);
+            for (int z = sz; z <= ez; z++)
+            {
+                for (int x = sx; x <= ex; x++)
+                {
+                    int index = navMesh.GetSquareIndex(x, z);
+                    if (!squareAgents.TryGetValue(index, out var agentList))
+                    {
+                        continue;
+                    }
+                    foreach (var t in agentList)
+                    {
+                        if (!agent.nneis.Contains(t))
+                        {
+                            agent.nneis.Add(t);
+                        }
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < 4; i++)
+        {
+            foreach (var a in agents)
+            {
+                var agent = a.Value;
+                agent.disp.Set(0, 0, 0);
+                float w = 0;
+                foreach (var n in agent.nneis)
+                {
+                    Vector3 diff = agent.pos - n.pos;
+                }
+            }
         }
     }
     public bool RequestMoveTarget(int agentID, Vector3 pos)
