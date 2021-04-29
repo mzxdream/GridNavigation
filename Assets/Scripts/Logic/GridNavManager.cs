@@ -240,7 +240,7 @@ public class GridNavManager
             if (!navQuery.Raycast(filter, agent.squareIndex, agent.path[0], out path, out _))
             {
                 var constraint = new GridNavQueryConstraintCircle(agent.targetSquareIndex, agent.param.radius + 0.1f, agent.squareIndex, 16.0f * navMesh.SquareSize);
-                if (!navQuery.FindPath(filter, agent.squareIndex, constraint, out path))
+                if (!navQuery.FindPath(filter, agent.squareIndex, constraint, out path) || path[path.Count - 1] != agent.path[0])
                 {
                     RequestMoveTarget(agent.id, agent.targetPos);
                     continue;
@@ -251,6 +251,7 @@ public class GridNavManager
             {
                 nextPos = navMesh.GetSquarePos(path[1]);
             }
+            agent.dvel = (nextPos - agent.pos).normalized * agent.param.maxSpeed;
             //todo
         }
     }
