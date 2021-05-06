@@ -309,7 +309,7 @@ public class GridNavManager
 
         float MAX_AVOIDEE_COSINE = Mathf.Cos(120.0f * Mathf.Deg2Rad);
 
-        float avoidanceRadius = Mathf.Max(avoider.param.maxSpeed, 1.0f) * (avoider.param.radius * 2.0f);
+        float avoidanceRadius = Mathf.Max(avoider.param.maxSpeed, 1.0f) + (avoider.param.radius * 2.0f);
         float avoiderRadius = Mathf.Sqrt(2) * avoider.unitSize * 0.5f * navMesh.SquareSize;
 
         foreach (var a in agents)
