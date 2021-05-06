@@ -1,37 +1,32 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum GridNavAgentFlags { EnemyPushResistant = 0x01, FriendPushResistant = 0x02 }
-
 public struct GridNavAgentParam
 {
-    public int teamID;
     public float mass;
     public float radius;
     public float maxSpeed;
     public float maxAcc;
     public float maxTurnAngle;
-    public int Flags;
 }
 
-public enum GridNavAgentMoveState { None, Requesting, WaitForPath, Moving }
+public enum GridNavAgentState { None, Requesting, WaitForPath, Moving }
 
 public class GridNavAgent
 {
     public int id;
     public GridNavAgentParam param;
-    public GridNavAgentMoveState moveState;
-    public int unitSize;
-    public int squareIndex;
     public Vector3 pos;
     public Vector3 frontDir;
-    public bool repath;
+    public GridNavAgentState state;
+    public int unitSize;
+    public float minExteriorRadius;
+    public int squareIndex;
     public int targetSquareIndex;
     public Vector3 targetPos;
     public List<int> path;
-    public Vector3 velocity;
     public float speed;
+    public Vector3 velocity;
 }
 
 public class GridNavManager
@@ -43,10 +38,11 @@ public class GridNavManager
     private Dictionary<int, List<GridNavAgent>> squareAgents;
     private List<int> pathRequestQueue;
     private GridNavQuery pathRequestNavQuery;
-    private bool isPathRequesting;
+    private int pathRequestAgentID;
 
-    public bool Init(GridNavMesh navMesh, int maxAgents)
+    public bool Init(GridNavMesh navMesh, int maxAgents = 1024)
     {
+        Debug.Assert(navMesh != null && maxAgents > 0);
         this.navMesh = navMesh;
         this.navQuery = new GridNavQuery();
         if (!navQuery.Init(navMesh))
@@ -56,14 +52,22 @@ public class GridNavManager
         this.agents = new Dictionary<int, GridNavAgent>();
         this.squareAgents = new Dictionary<int, List<GridNavAgent>>();
         this.pathRequestQueue = new List<int>();
+        this.pathRequestNavQuery = new GridNavQuery();
+        if (!this.pathRequestNavQuery.Init(navMesh))
+        {
+            return false;
+        }
+        this.pathRequestAgentID = 0;
         return true;
     }
     public void Clear()
     {
+        this.navQuery.Clear();
+        this.pathRequestNavQuery.Clear();
     }
-    public int AddAgent(Vector3 pos, GridNavAgentParam param)
+    public int AddAgent(Vector3 pos, Vector3 forward, GridNavAgentParam param)
     {
-        int unitSize = Mathf.CeilToInt(param.radius / navMesh.SquareSize);
+        int unitSize = (int)(param.radius * 2 / navMesh.SquareSize - 0.001f) + 1;
         if ((unitSize & 1) == 0)
         {
             unitSize++;
@@ -72,31 +76,38 @@ public class GridNavManager
         {
             id = ++lastAgentID,
             param = param,
-            moveState = GridNavAgentMoveState.None,
-            unitSize = unitSize,
-            squareIndex = 0,
             pos = pos,
+            frontDir = new Vector3(forward.x, 0, forward.z).normalized,
+            state = GridNavAgentState.None,
+            unitSize = unitSize,
+            minExteriorRadius = 1.41421356237f * unitSize * 0.5f * navMesh.SquareSize,
+            squareIndex = 0,
+            targetSquareIndex = 0,
             targetPos = Vector3.zero,
+            speed = 0.0f,
+            velocity = Vector3.zero,
         };
         navMesh.ClampInBounds(agent.pos, out agent.squareIndex, out agent.pos);
-        var filter = new GridNavQueryFilterExtraBlockedCheck(unitSize, (int index) =>
-        {
-            if (squareAgents.TryGetValue(index, out var squareAgentList))
-            {
-                foreach (var squareAgent in squareAgentList)
-                {
-                    return squareAgent != agent;
-                }
-            }
-            return false;
-        });
-        if (navQuery.FindNearestSquare(filter, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearesetPos))
-        {
-            agent.squareIndex = nearestIndex;
-            agent.pos = nearesetPos;
-        }
-        agents.Add(agent.id, agent);
-        AddSquareAgent(agent.squareIndex, agent);
+
+
+        //var filter = new GridNavQueryFilterExtraBlockedCheck(unitSize, (int index) =>
+        //{
+        //    if (squareAgents.TryGetValue(index, out var squareAgentList))
+        //    {
+        //        foreach (var squareAgent in squareAgentList)
+        //        {
+        //            return squareAgent != agent;
+        //        }
+        //    }
+        //    return false;
+        //});
+        //if (navQuery.FindNearestSquare(filter, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearesetPos))
+        //{
+        //    agent.squareIndex = nearestIndex;
+        //    agent.pos = nearesetPos;
+        //}
+        //agents.Add(agent.id, agent);
+        //AddSquareAgent(agent.squareIndex, agent);
         return agent.id;
     }
     public void RemoveAgent(int agentID)
