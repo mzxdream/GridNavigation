@@ -25,15 +25,13 @@ public class GridNavAgent
     public int unitSize;
     public int squareIndex;
     public Vector3 pos;
+    public Vector3 frontDir;
     public bool repath;
     public int targetSquareIndex;
     public Vector3 targetPos;
     public List<int> path;
-    public List<GridNavAgent> nneis;
-    public Vector3 vel;
-    public Vector3 nvel;
-    public Vector3 dvel;
-    public Vector3 disp;
+    public Vector3 velocity;
+    public float speed;
 }
 
 public class GridNavManager
@@ -299,6 +297,72 @@ public class GridNavManager
                 }
             }
         }
+    }
+    public Vector3 GetObstacleAvoidanceDir(GridNavAgent avoider, Vector3 desiredDir)
+    {
+        if (Vector3.Dot(avoider.frontDir, desiredDir) < 0.0f)
+        {
+            return desiredDir;
+        }
+        Vector3 avoidanceVec = Vector3.zero;
+        Vector3 avoidanceDir = desiredDir;
+
+        float MAX_AVOIDEE_COSINE = Mathf.Cos(120.0f * Mathf.Deg2Rad);
+
+        float avoidanceRadius = Mathf.Max(avoider.param.maxSpeed, 1.0f) * (avoider.param.radius * 2.0f);
+        float avoiderRadius = Mathf.Sqrt(2) * avoider.unitSize * 0.5f * navMesh.SquareSize;
+
+        foreach (var a in agents)
+        {
+            var avoidee = a.Value;
+            if (avoidee == avoider)
+            {
+                continue;
+            }
+            if (Vector3.Distance(avoider.pos, avoidee.pos) > avoidanceRadius)
+            {
+                continue;
+            }
+            Vector3 avoideeVector = (avoider.pos + avoider.velocity) - (avoidee.pos + avoidee.velocity);
+            float avoideeRadius = Mathf.Sqrt(2) * avoidee.unitSize * 0.5f * navMesh.SquareSize;
+            float avoidanceRadiusSum = avoiderRadius + avoideeRadius;
+            float avoidanceMassSum = avoider.param.mass + avoidee.param.mass;
+            float avoideeMassScale = avoidee.param.mass / avoidanceMassSum;
+            float avoideeDistSq = avoideeVector.sqrMagnitude;
+            float avoideeDist = Mathf.Sqrt(avoideeDistSq) + 0.01f;
+
+            if (Vector3.Dot(avoider.frontDir, -(avoideeVector / avoideeDist)) < MAX_AVOIDEE_COSINE)
+            {
+                continue;
+            }
+            if (avoideeDist >= Mathf.Max(avoider.param.maxSpeed, 1.0f) + avoidanceRadiusSum)
+            {
+                continue;
+            }
+            if (avoideeDistSq >= (avoider.pos - avoider.targetPos).sqrMagnitude)
+            {
+                continue;
+            }
+
+            var avoiderRightDir = Vector3.Cross(avoider.frontDir, Vector3.up);
+            var avoideeRightDir = Vector3.Cross(avoidee.frontDir, Vector3.up);
+            float avoiderTurnSign = Vector3.Dot(avoidee.pos, avoiderRightDir) - Vector3.Dot(avoider.pos, avoiderRightDir) > 0.0f ? -1.0f : 1.0f;
+            float avoideeTurnSign = Vector3.Dot(avoider.pos, avoideeRightDir) - Vector3.Dot(avoidee.pos, avoideeRightDir) > 0.0f ? -1.0f : 1.0f;
+
+            float avoidanceCosAngle = Mathf.Clamp(Vector3.Dot(avoider.frontDir, avoidee.frontDir), -1.0f, 1.0f);
+            float avoidanceResponse = (1.0f - avoidanceCosAngle) + 0.1f;
+            float avoidanceFallOff = (1.0f - Mathf.Min(1.0f, avoideeDist / (5.0f * avoidanceRadiusSum)));
+
+            if (avoidanceCosAngle < 0.0f)
+            {
+                avoiderTurnSign = Mathf.Max(avoiderTurnSign, avoideeTurnSign);
+            }
+            avoidanceDir = avoiderRightDir * 1.0f * avoiderTurnSign;
+            avoidanceVec += (avoidanceDir * avoidanceResponse * avoidanceFallOff * avoideeMassScale);
+        }
+        avoidanceDir = Vector3.Lerp(desiredDir, avoidanceVec, 0.5f).normalized;
+        avoidanceDir = Vector3.Lerp(avoidanceDir, desiredDir, 0.7f).normalized;
+        return avoidanceDir;
     }
     public bool RequestMoveTarget(int agentID, Vector3 pos)
     {
