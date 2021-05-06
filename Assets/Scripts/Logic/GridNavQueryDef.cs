@@ -154,3 +154,29 @@ public class GridNavQueryConstraintCircle : IGridNavQueryConstraint
         return navMesh.DistanceApproximately(index, goalIndex);
     }
 }
+
+public class GridNavQueryConstraintCircleStrict : IGridNavQueryConstraint
+{
+    private int goalIndex;
+    private int circleIndex;
+    private float circleRadius;
+
+    public GridNavQueryConstraintCircleStrict(int goalIndex, int circleIndex, float circleRadius)
+    {
+        this.goalIndex = goalIndex;
+        this.circleIndex = circleIndex;
+        this.circleRadius = circleRadius;
+    }
+    public bool IsGoal(GridNavMesh navMesh, int index)
+    {
+        return index == goalIndex;
+    }
+    public bool WithinConstraints(GridNavMesh navMesh, int index)
+    {
+        return navMesh.DistanceApproximately(index, circleIndex) <= circleRadius;
+    }
+    public float GetHeuristicCost(GridNavMesh navMesh, int index)
+    {
+        return navMesh.DistanceApproximately(index, goalIndex);
+    }
+}

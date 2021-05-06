@@ -35,4 +35,18 @@ public static class GridNavMath
     {
         return optToDirs[(int)(dirToOpts[(int)dir1] | dirToOpts[(int)dir2])];
     }
+    public static float SqrDistance2D(Vector3 a, Vector3 b)
+    {
+        return (b.x - a.x) * (b.x - a.x) + (b.z - a.z) * (b.z - a.z);
+    }
+    public static Vector3 Normalized2D(Vector3 a)
+    {
+        var mag = (a.x * a.x + a.z * a.z);
+        if (mag < 0.000001f)
+        {
+            return Vector3.zero;
+        }
+        mag = Mathf.Sqrt(mag);
+        return new Vector3(a.x / mag, 0.0f, a.z / mag);
+    }
 }
