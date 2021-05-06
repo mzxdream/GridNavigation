@@ -22,8 +22,9 @@ public class GridNavAgent
     public int unitSize;
     public float minExteriorRadius;
     public int squareIndex;
-    public int targetSquareIndex;
-    public Vector3 targetPos;
+    public Vector3 goalPos;
+    public float goalRadius;
+    public int goalSquareIndex;
     public List<int> path;
     public float speed;
     public Vector3 velocity;
@@ -83,12 +84,12 @@ public class GridNavManager
             unitSize = unitSize,
             minExteriorRadius = 1.41421356237f * unitSize * 0.5f * navMesh.SquareSize,
             squareIndex = 0,
-            targetSquareIndex = 0,
-            targetPos = Vector3.zero,
+            goalPos = Vector3.zero,
+            goalRadius = 0.0f,
+            goalSquareIndex = 0,
             speed = 0.0f,
-            velocity = Vector3.zero,
+            velocity = Vector3.zero, //可能有y轴的方向
         };
-        navMesh.ClampInBounds(agent.pos, out agent.squareIndex, out agent.pos);
         agent.filter = new GridNavQueryFilterExtraBlockedCheck(unitSize, (int index) =>
         {
             if (squareAgents.TryGetValue(index, out var squareAgentList))
@@ -97,7 +98,7 @@ public class GridNavManager
                 {
                     if (squareAgent != agent)
                     {
-                        return false;
+                        return true;
                     }
                 }
             }
@@ -109,9 +110,9 @@ public class GridNavManager
             {
                 foreach (var squareAgent in squareAgentList)
                 {
-                    if (squareAgent != agent && squareAgent.speed > 0.0f)
+                    if (squareAgent != agent && squareAgent.speed == 0.0f)
                     {
-                        return false;
+                        return true;
                     }
                 }
             }
@@ -221,21 +222,10 @@ public class GridNavManager
             {
                 agent.path.RemoveAt(0);
             }
-            var filter = new GridNavQueryFilterExtraBlockedCheck(agent.unitSize, (int index) =>
-            {
-                if (squareAgents.TryGetValue(index, out var squareAgentList))
-                {
-                    foreach (var squareAgent in squareAgentList)
-                    {
-                        return squareAgent.param.teamID != agent.param.teamID && squareAgent.moveState != GridNavAgentMoveState.Moving;
-                    }
-                }
-                return false;
-            });
             bool found = false;
             while (agent.path.Count > 0 && navMesh.DistanceApproximately(agent.squareIndex, agent.path[0]) <= 15.0f * navMesh.SquareSize)
             {
-                if (!filter.IsBlocked(navMesh, agent.path[0]))
+                if (!agent.pathFilter.IsBlocked(navMesh, agent.path[0]))
                 {
                     found = true;
                     break;
@@ -247,72 +237,49 @@ public class GridNavManager
                 RequestMoveTarget(agent.id, agent.targetPos);
                 continue;
             }
-            List<int> path;
-            if (!navQuery.Raycast(filter, agent.squareIndex, agent.path[0], out path, out _))
+            if (!navQuery.Raycast(agent.pathFilter, agent.squareIndex, agent.path[0], out var path, out var totalCost))
             {
                 var constraint = new GridNavQueryConstraintCircle(agent.targetSquareIndex, agent.param.radius + 0.1f, agent.squareIndex, 16.0f * navMesh.SquareSize);
-                if (!navQuery.FindPath(filter, agent.squareIndex, constraint, out path) || path[path.Count - 1] != agent.path[0])
+                if (!navQuery.FindPath(agent.pathFilter, agent.squareIndex, constraint, out path) || path[path.Count - 1] != agent.path[0])
                 {
                     RequestMoveTarget(agent.id, agent.targetPos);
                     continue;
                 }
             }
-            var nextPos = agent.targetPos;
-            if (path.Count > 2)
+            var nextSquareIndex = path.Count > 1 ? path[1] : path[0];
+            var nextPos = nextSquareIndex == agent.targetSquareIndex ? agent.targetPos : navMesh.GetSquarePos(nextSquareIndex);
+            if ((nextPos - agent.pos).sqrMagnitude <= agent.param.radius)
             {
-                nextPos = navMesh.GetSquarePos(path[1]);
             }
-            agent.dvel = (nextPos - agent.pos).normalized * agent.param.maxSpeed;
-            //separate
+            var disiredDir = GetObstacleAvoidanceDir(agent, (nextPos - agent.pos).normalized);
         }
-        foreach (var a in agents)
-        {
-            var agent = a.Value;
-            agent.nvel = agent.dvel;
-
-            var maxDelta = agent.param.maxAcc * deltaTime;
-            var dv = agent.nvel - agent.vel;
-            var ds = dv.magnitude;
-            if (ds > agent.param.maxAcc)
-            {
-                dv = dv * maxDelta / ds;
-            }
-            agent.vel = agent.vel + dv;
-            if (agent.vel.magnitude > 0.0001f)
-            {
-                agent.pos = agent.pos + agent.vel * deltaTime;
-            }
-            else
-            {
-                agent.vel.Set(0, 0, 0);
-            }
-        }
-        foreach (var a in agents)
-        {
-            var agent = a.Value;
-            agent.nneis = new List<GridNavAgent>();
-            float radius = agent.param.radius + agent.param.maxSpeed * 2.0f;
-            navMesh.GetSquareXZ(new Vector3(agent.pos.x - radius, 0, agent.pos.z - radius), out var sx, out var sz);
-            navMesh.GetSquareXZ(new Vector3(agent.pos.x + radius, 0, agent.pos.z + radius), out var ex, out var ez);
-            for (int z = sz; z <= ez; z++)
-            {
-                for (int x = sx; x <= ex; x++)
-                {
-                    int index = navMesh.GetSquareIndex(x, z);
-                    if (!squareAgents.TryGetValue(index, out var agentList))
-                    {
-                        continue;
-                    }
-                    foreach (var t in agentList)
-                    {
-                        if (!agent.nneis.Contains(t))
-                        {
-                            agent.nneis.Add(t);
-                        }
-                    }
-                }
-            }
-        }
+ 
+        //foreach (var a in agents)
+        //{
+        //    var agent = a.Value;
+        //    agent.nneis = new List<GridNavAgent>();
+        //    float radius = agent.param.radius + agent.param.maxSpeed * 2.0f;
+        //    navMesh.GetSquareXZ(new Vector3(agent.pos.x - radius, 0, agent.pos.z - radius), out var sx, out var sz);
+        //    navMesh.GetSquareXZ(new Vector3(agent.pos.x + radius, 0, agent.pos.z + radius), out var ex, out var ez);
+        //    for (int z = sz; z <= ez; z++)
+        //    {
+        //        for (int x = sx; x <= ex; x++)
+        //        {
+        //            int index = navMesh.GetSquareIndex(x, z);
+        //            if (!squareAgents.TryGetValue(index, out var agentList))
+        //            {
+        //                continue;
+        //            }
+        //            foreach (var t in agentList)
+        //            {
+        //                if (!agent.nneis.Contains(t))
+        //                {
+        //                    agent.nneis.Add(t);
+        //                }
+        //            }
+        //        }
+        //    }
+        //}
     }
     public Vector3 GetObstacleAvoidanceDir(GridNavAgent avoider, Vector3 desiredDir)
     {
