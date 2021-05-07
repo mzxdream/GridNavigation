@@ -33,6 +33,10 @@ public class GridNavQuery
     public void Clear()
     {
     }
+    public GridNavMesh GetNavMesh()
+    {
+        return navMesh;
+    }
     public bool FindPath(IGridNavQueryFilter filter, int startIndex, IGridNavQueryConstraint constraint, out List<int> path)
     {
         Debug.Assert(filter != null && constraint != null);
