@@ -22,8 +22,8 @@ public class Character
         {
             mass = 1.0f,
             radius = 0.6f,
-            maxSpeed = 1.0f,
-            maxAcc = 1.0f,
+            maxSpeed = 2.0f,
+            maxAcc = 5.0f,
             maxTurnAngle = 10.0f,
         };
         this.navManager = navManager;
