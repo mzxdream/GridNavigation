@@ -10,6 +10,8 @@ public class Character
     private int navAgentID;
 
     public CharacterType Type { get => type; }
+    public Vector3 Position { get => asset.transform.position; }
+    public float Radius { get => 0.6f; }
 
     public Character(CharacterAsset prefab, CharacterType type, Vector3 position, Vector3 forward, float radius, GridNavManager navManager)
     {
@@ -21,7 +23,7 @@ public class Character
         var param = new GridNavAgentParam
         {
             mass = 1.0f,
-            radius = 0.6f,
+            radius = Radius,
             maxSpeed = 2.0f,
             maxAcc = 5.0f,
             maxTurnAngle = 10.0f,

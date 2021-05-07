@@ -122,6 +122,12 @@ public class Game : MonoBehaviour
         var pz = (z - zsize * 0.5f + 0.5f) * tileSize;
         return new Vector3(px, 0.0f, pz);
     }
+    Vector3 GetTilePos(int x, int z)
+    {
+        var px = (x - xsize * 0.5f + 0.5f) * tileSize;
+        var pz = (z - zsize * 0.5f + 0.5f) * tileSize;
+        return new Vector3(px, 0.0f, pz);
+    }
     bool AddTile(int index, GameTileType type)
     {
         if (tiles.ContainsKey(index))
@@ -197,6 +203,27 @@ public class Game : MonoBehaviour
     }
     void OnDrawGizmos()
     {
-        Gizmos.DrawCube(transform.position, new Vector3(xsize * tileSize, zsize * tileSize, 0.1f));
+        if (characters != null)
+        {
+            foreach (var c in characters)
+            {
+                if (c.Type == CharacterType.Red)
+                {
+                    Gizmos.color = Color.red;
+                }
+                else
+                {
+                    Gizmos.color = Color.blue;
+                }
+                int x = (int)((c.Position.x + xsize * tileSize * 0.5f) / tileSize);
+                int z = (int)((c.Position.z + zsize * tileSize * 0.5f) / tileSize);
+                int unitSize = (int)(c.Radius * 2 / navMesh.SquareSize - 0.001f) + 1;
+                if ((unitSize & 1) == 0)
+                {
+                    unitSize++;
+                }
+                Gizmos.DrawCube(GetTilePos(x, z), new Vector3(tileSize * unitSize, 0.1f, tileSize * unitSize));
+            }
+        }
     }
 }
