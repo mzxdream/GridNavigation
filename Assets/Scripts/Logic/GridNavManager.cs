@@ -411,11 +411,12 @@ public class GridNavManager
     }
     private void AddSquareAgent(int index, GridNavAgent agent)
     {
+        int halfUnitSize = agent.unitSize >> 1;
         navMesh.GetSquareXZ(index, out var x, out var z);
-        int xmin = Mathf.Max(0, x - agent.unitSize + 1);
-        int xmax = Mathf.Min(navMesh.XSize - 1, x + agent.unitSize - 1);
-        int zmin = Mathf.Min(0, z - agent.unitSize + 1);
-        int zmax = Mathf.Max(navMesh.ZSize - 1, z + agent.unitSize - 1);
+        int xmin = Mathf.Max(0, x - halfUnitSize);
+        int zmin = Mathf.Max(0, z - halfUnitSize);
+        int xmax = Mathf.Min(navMesh.XSize - 1, x + halfUnitSize);
+        int zmax = Mathf.Min(navMesh.ZSize - 1, z + halfUnitSize);
         for (int tz = zmin; tz <= zmax; tz++)
         {
             for (int tx = xmin; tx <= xmax; tx++)
@@ -432,11 +433,12 @@ public class GridNavManager
     }
     private void RemoveSquareAgent(int index, GridNavAgent agent)
     {
+        int halfUnitSize = agent.unitSize >> 1;
         navMesh.GetSquareXZ(index, out var x, out var z);
-        int xmin = Mathf.Max(0, x - agent.unitSize + 1);
-        int xmax = Mathf.Min(navMesh.XSize - 1, x + agent.unitSize - 1);
-        int zmin = Mathf.Min(0, z - agent.unitSize + 1);
-        int zmax = Mathf.Max(navMesh.ZSize - 1, z + agent.unitSize - 1);
+        int xmin = Mathf.Max(0, x - halfUnitSize);
+        int zmin = Mathf.Max(0, z - halfUnitSize);
+        int xmax = Mathf.Min(navMesh.XSize - 1, x + halfUnitSize);
+        int zmax = Mathf.Min(navMesh.ZSize - 1, z + halfUnitSize);
         for (int tz = zmin; tz <= zmax; tz++)
         {
             for (int tx = xmin; tx <= xmax; tx++)
