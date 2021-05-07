@@ -257,7 +257,7 @@ public class GridNavManager
             var nextSquareIndex = path.Count > 1 ? path[1] : path[0];
             var nextPos = nextSquareIndex == agent.goalSquareIndex ? agent.goalPos : navMesh.GetSquarePos(nextSquareIndex);
             var disiredDir = GetObstacleAvoidanceDir(agent, GridNavMath.Normalized2D(nextPos - agent.pos));
-            //todo
+            agent.frontDir = GridNavMath.Rotate2D(agent.frontDir, disiredDir, agent.param.maxTurnAngle * deltaTime);
         }
  
         //foreach (var a in agents)
