@@ -261,7 +261,7 @@ public class GridNavManager
             var nextSquareIndex = path.Count > 1 ? path[1] : path[0];
             var nextPos = nextSquareIndex == agent.goalSquareIndex ? agent.goalPos : navMesh.GetSquarePos(nextSquareIndex);
             var disiredDir = GridNavMath.Normalized2D(nextPos - agent.pos);
-            //disiredDir = GetObstacleAvoidanceDir(agent, GridNavMath.Normalized2D(nextPos - agent.pos));
+            disiredDir = GetObstacleAvoidanceDir(agent, disiredDir);
             //todo 判断剩余距离还有转向速度
             agent.frontDir = GridNavMath.Rotate2D(agent.frontDir, disiredDir, agent.param.maxTurnAngle * deltaTime);
             agent.speed = Mathf.Min(agent.param.maxSpeed, agent.speed + agent.param.maxAcc * deltaTime);
@@ -371,7 +371,7 @@ public class GridNavManager
         {
             return false;
         }
-        StartMoving(agent, goalPos, agent.param.radius + 0.1f);
+        StartMoving(agent, goalPos, 0.1f);
         return true;
     }
     private void StartMoving(GridNavAgent agent, Vector3 goalPos, float goalRadius)

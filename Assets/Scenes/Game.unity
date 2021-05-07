@@ -446,6 +446,6 @@ MonoBehaviour:
     type: 3}
   blueCharacterPrefab: {fileID: 539214967020507659, guid: 27afe6d2f6d618942b6d5f6b3b84bf2a,
     type: 3}
-  xsize: 128
-  zsize: 128
-  tileSize: 0.2
+  xsize: 64
+  zsize: 64
+  tileSize: 0.6
