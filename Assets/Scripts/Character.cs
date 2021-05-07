@@ -21,7 +21,7 @@ public class Character
         var param = new GridNavAgentParam
         {
             mass = 1.0f,
-            radius = 0.4f,
+            radius = 0.6f,
             maxSpeed = 1.0f,
             maxAcc = 1.0f,
             maxTurnAngle = 10.0f,
