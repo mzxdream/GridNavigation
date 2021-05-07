@@ -109,6 +109,13 @@ public class GridNavMesh
         square.cost = cost;
         square.isBlocked = isBlocked;
     }
+    public void SetSquare(int x, int z, float cost, bool isBlocked)
+    {
+        Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
+        var square = squares[x + z * xsize];
+        square.cost = cost;
+        square.isBlocked = isBlocked;
+    }
     public Vector3 GetSquarePos(int index)
     {
         Debug.Assert(index >= 0 && index < xsize * zsize);

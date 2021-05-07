@@ -6,28 +6,28 @@ public class Character
 {
     private readonly CharacterAsset asset;
     private readonly CharacterType type;
-    //private GridMoveAgent moveAgent;
+    private readonly GridNavManager navManager;
+    private int navAgentID;
 
     public CharacterType Type { get => type; }
 
-    public Character(CharacterAsset prefab, CharacterType type, Vector3 position, Vector3 forward, float radius, GridNavManager moveManager)
+    public Character(CharacterAsset prefab, CharacterType type, Vector3 position, Vector3 forward, float radius, GridNavManager navManager)
     {
         asset = GameObject.Instantiate(prefab);
         this.type = type;
         asset.SetPosition(position);
         asset.SetForward(forward);
         asset.SetScale(new Vector3(radius, radius, radius));
-        //var param = new GridMoveAgentParam
-        //{
-        //    teamID = 1,
-        //    radius = 0.6f,
-        //    mass = 1.0f,
-        //    maxSpeed = 1.0f,
-        //    maxAcc = 1.0f,
-        //    maxDec = 1.0f,
-        //    isPushResistant = true,
-        //};
-        //moveAgent = moveManager.CreateAgent(position, forward, param);
+        var param = new GridNavAgentParam
+        {
+            mass = 1.0f,
+            radius = 0.4f,
+            maxSpeed = 1.0f,
+            maxAcc = 1.0f,
+            maxTurnAngle = 10.0f,
+        };
+        this.navManager = navManager;
+        navAgentID = navManager.AddAgent(position, forward, param);
     }
     public void Clear()
     {
@@ -35,7 +35,7 @@ public class Character
     }
     public void StartMoving(Vector3 position)
     {
-        //moveAgent.StartMoving(position, 0.01f);
+        navManager.StartMoving(navAgentID, position);
     }
     public void StopMoving()
     {
@@ -43,7 +43,10 @@ public class Character
     }
     public void Update()
     {
-        //asset.SetPosition(moveAgent.Pos);
-        //asset.SetForward(moveAgent.Forward);
+        if (navManager.GetLocation(navAgentID, out var pos, out var forward))
+        {
+            asset.SetPosition(pos);
+            asset.SetForward(forward);
+        }
     }
 }

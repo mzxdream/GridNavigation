@@ -397,6 +397,18 @@ public class GridNavManager
         agent.goalSquareIndex = neareastIndex;
         pathRequestQueue.Add(agent.id);
     }
+    public bool GetLocation(int agentID, out Vector3 pos, out Vector3 forward)
+    {
+        pos = Vector3.zero;
+        forward = Vector3.zero;
+        if (!agents.TryGetValue(agentID, out var agent))
+        {
+            return false;
+        }
+        pos = agent.pos;
+        forward = agent.frontDir;
+        return true;
+    }
     private void AddSquareAgent(int index, GridNavAgent agent)
     {
         navMesh.GetSquareXZ(index, out var x, out var z);

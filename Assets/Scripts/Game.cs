@@ -20,6 +20,7 @@ public class Game : MonoBehaviour
 
     Dictionary<int, GameTile> tiles;
     List<Character> characters;
+    GridNavMesh navMesh;
     GridNavManager navManager;
     int redDestinationIndex;
     int blueDestinationIndex;
@@ -35,8 +36,10 @@ public class Game : MonoBehaviour
         characters = new List<Character>();
 
         var offset = new Vector3(xsize * tileSize * 0.5f, 0, zsize * tileSize * 0.5f);
+        navMesh = new GridNavMesh();
+        navMesh.Init(transform.position - offset, xsize, zsize, tileSize);
         navManager = new GridNavManager();
-        navManager.Init(transform.position - offset, transform.position + offset, tileSize, 4096);
+        navManager.Init(navMesh);
 
         redDestinationIndex = -1;
         blueDestinationIndex = -1;
@@ -97,7 +100,7 @@ public class Game : MonoBehaviour
         {
             if (tile.Type == GameTileType.Wall)
             {
-                navManager.SetNodeBlocked(index % xsize, index / xsize, false);
+                navMesh.SetSquare(index % xsize, index / xsize, 1.0f, false);
             }
             else if (tile.Type == GameTileType.RedDestination)
             {
@@ -131,7 +134,7 @@ public class Game : MonoBehaviour
         if (type == GameTileType.Wall)
         {
             prefab = wallPrefab;
-            navManager.SetNodeBlocked(index % xsize, index / xsize, true);
+            navMesh.SetSquare(index % xsize, index / xsize, 1.0f, true);
         }
         else if (type == GameTileType.RedDestination)
         {
