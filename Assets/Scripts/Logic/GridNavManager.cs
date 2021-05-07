@@ -30,10 +30,12 @@ public class GridNavAgent
     public Vector3 velocity;
     public IGridNavQueryFilter filter;
     public IGridNavQueryFilter pathFilter;
+    public int tempNum;
 }
 
 public class GridNavManager
 {
+    private static float maxAvoideeCosine = Mathf.Cos(120.0f * Mathf.Deg2Rad);
     private GridNavMesh navMesh;
     private GridNavQuery navQuery;
     private int lastAgentID;
@@ -41,6 +43,7 @@ public class GridNavManager
     private Dictionary<int, List<GridNavAgent>> squareAgents;
     private GridNavQuery pathRequestNavQuery;
     private List<int> pathRequestQueue;
+    private int tempNum;
 
     public bool Init(GridNavMesh navMesh, int maxAgents = 1024)
     {
@@ -60,6 +63,7 @@ public class GridNavManager
             return false;
         }
         this.pathRequestQueue = new List<int>();
+        this.tempNum = 0;
         return true;
     }
     public void Clear()
@@ -257,7 +261,17 @@ public class GridNavManager
             var nextSquareIndex = path.Count > 1 ? path[1] : path[0];
             var nextPos = nextSquareIndex == agent.goalSquareIndex ? agent.goalPos : navMesh.GetSquarePos(nextSquareIndex);
             var disiredDir = GetObstacleAvoidanceDir(agent, GridNavMath.Normalized2D(nextPos - agent.pos));
+            //todo 判断剩余距离还有转向速度
             agent.frontDir = GridNavMath.Rotate2D(agent.frontDir, disiredDir, agent.param.maxTurnAngle * deltaTime);
+            agent.speed = Mathf.Max(agent.param.maxSpeed, agent.speed + agent.param.maxAcc * deltaTime);
+        }
+        foreach (var a in agents) //更改方向和移动速度
+        {
+            var agent = a.Value;
+            if (agent.speed <= 0.0f)
+            {
+                continue;
+            }
         }
  
         //foreach (var a in agents)
@@ -289,67 +303,69 @@ public class GridNavManager
     }
     public Vector3 GetObstacleAvoidanceDir(GridNavAgent avoider, Vector3 desiredDir)
     {
-        if (Vector3.Dot(avoider.frontDir, desiredDir) < 0.0f)
+        if (GridNavMath.Dot2D(avoider.frontDir, desiredDir) < 0.0f) //当前方向与期望方向相反
         {
             return desiredDir;
         }
+        this.tempNum++;
+        float avoidanceRadius = avoider.param.radius + avoider.param.maxSpeed * 2.0f;
         Vector3 avoidanceVec = Vector3.zero;
-        Vector3 avoidanceDir = desiredDir;
-
-        float MAX_AVOIDEE_COSINE = Mathf.Cos(120.0f * Mathf.Deg2Rad);
-
-        float avoidanceRadius = Mathf.Max(avoider.param.maxSpeed, 1.0f) + (avoider.param.radius * 2.0f);
-        float avoiderRadius = Mathf.Sqrt(2) * avoider.unitSize * 0.5f * navMesh.SquareSize;
-
-        foreach (var a in agents)
+        navMesh.GetSquareXZ(new Vector3(avoider.pos.x - avoidanceRadius, 0, avoider.pos.z - avoidanceRadius), out var sx, out var sz);
+        navMesh.GetSquareXZ(new Vector3(avoider.pos.x + avoidanceRadius, 0, avoider.pos.z + avoidanceRadius), out var ex, out var ez);
+        for (int z = sz; z <= ez; z++)
         {
-            var avoidee = a.Value;
-            if (avoidee == avoider)
+            for (int x = sx; x <= ex; x++)
             {
-                continue;
-            }
-            if (Vector3.Distance(avoider.pos, avoidee.pos) > avoidanceRadius)
-            {
-                continue;
-            }
-            Vector3 avoideeVector = (avoider.pos + avoider.velocity) - (avoidee.pos + avoidee.velocity);
-            float avoideeRadius = Mathf.Sqrt(2) * avoidee.unitSize * 0.5f * navMesh.SquareSize;
-            float avoidanceRadiusSum = avoiderRadius + avoideeRadius;
-            float avoidanceMassSum = avoider.param.mass + avoidee.param.mass;
-            float avoideeMassScale = avoidee.param.mass / avoidanceMassSum;
-            float avoideeDistSq = avoideeVector.sqrMagnitude;
-            float avoideeDist = Mathf.Sqrt(avoideeDistSq) + 0.01f;
+                if (!squareAgents.TryGetValue(navMesh.GetSquareIndex(x, z), out var agentList))
+                {
+                    continue;
+                }
+                foreach (var avoidee in agentList)
+                {
+                    if (avoidee.tempNum == this.tempNum || avoidee == avoider)
+                    {
+                        continue;
+                    }
+                    avoidee.tempNum = this.tempNum;
+                    if (avoidee.speed <= 0.0f) //寻路的时候，已排除未移动的物体
+                    {
+                        continue;
+                    }
+                    Vector3 avoideeVector = (avoider.pos + avoider.velocity) - (avoidee.pos + avoidee.velocity);
+                    float avoideeDist = avoideeVector.magnitude + 0.01f;
+                    float avoidanceRadiusSum = avoider.minExteriorRadius + avoidee.minExteriorRadius;
+                    if (avoideeDist >= avoider.param.maxSpeed + avoidanceRadiusSum) //筛选距离
+                    {
+                        continue;
+                    }
+                    if (GridNavMath.Dot2D(avoider.frontDir, -(avoideeVector / avoideeDist)) < maxAvoideeCosine)//忽略与碰撞体偏离中心度数过大的对象
+                    {
+                        continue;
+                    }
+                    if (avoideeDist * avoideeDist >= (avoider.pos - avoider.goalPos).sqrMagnitude) //如果avoider离目标点距离小于碰撞避免距离
+                    {
+                        continue;
+                    }
+                    Vector3 avoiderRightDir = Vector3.Cross(avoider.frontDir, Vector3.up);
+                    Vector3 avoideeRightDir = Vector3.Cross(avoidee.frontDir, Vector3.up);
+                    float avoiderTurnSign = Vector3.Dot(avoidee.pos, avoiderRightDir) - Vector3.Dot(avoider.pos, avoiderRightDir) > 0.0f ? -1.0f : 1.0f;
+                    float avoideeTurnSign = Vector3.Dot(avoider.pos, avoideeRightDir) - Vector3.Dot(avoidee.pos, avoideeRightDir) > 0.0f ? -1.0f : 1.0f;
 
-            if (Vector3.Dot(avoider.frontDir, -(avoideeVector / avoideeDist)) < MAX_AVOIDEE_COSINE)
-            {
-                continue;
-            }
-            if (avoideeDist >= Mathf.Max(avoider.param.maxSpeed, 1.0f) + avoidanceRadiusSum)
-            {
-                continue;
-            }
-            if (avoideeDistSq >= (avoider.pos - avoider.targetPos).sqrMagnitude)
-            {
-                continue;
-            }
+                    float avoidanceCosAngle = Mathf.Clamp(Vector3.Dot(avoider.frontDir, avoidee.frontDir), -1.0f, 1.0f);
+                    float avoidanceResponse = (1.0f - avoidanceCosAngle) + 0.1f;
+                    float avoidanceFallOff = (1.0f - Mathf.Min(1.0f, avoideeDist / (5.0f * avoidanceRadiusSum)));
 
-            var avoiderRightDir = Vector3.Cross(avoider.frontDir, Vector3.up);
-            var avoideeRightDir = Vector3.Cross(avoidee.frontDir, Vector3.up);
-            float avoiderTurnSign = Vector3.Dot(avoidee.pos, avoiderRightDir) - Vector3.Dot(avoider.pos, avoiderRightDir) > 0.0f ? -1.0f : 1.0f;
-            float avoideeTurnSign = Vector3.Dot(avoider.pos, avoideeRightDir) - Vector3.Dot(avoidee.pos, avoideeRightDir) > 0.0f ? -1.0f : 1.0f;
-
-            float avoidanceCosAngle = Mathf.Clamp(Vector3.Dot(avoider.frontDir, avoidee.frontDir), -1.0f, 1.0f);
-            float avoidanceResponse = (1.0f - avoidanceCosAngle) + 0.1f;
-            float avoidanceFallOff = (1.0f - Mathf.Min(1.0f, avoideeDist / (5.0f * avoidanceRadiusSum)));
-
-            if (avoidanceCosAngle < 0.0f)
-            {
-                avoiderTurnSign = Mathf.Max(avoiderTurnSign, avoideeTurnSign);
+                    if (avoidanceCosAngle < 0.0f)
+                    {
+                        avoiderTurnSign = Mathf.Max(avoiderTurnSign, avoideeTurnSign);
+                    }
+                    float avoidanceMassSum = avoider.param.mass + avoidee.param.mass;
+                    float avoideeMassScale = avoidee.param.mass / avoidanceMassSum;
+                    avoidanceVec += (avoiderRightDir * 1.0f * avoiderTurnSign * avoidanceResponse * avoidanceFallOff * avoideeMassScale);
+                }
             }
-            avoidanceDir = avoiderRightDir * 1.0f * avoiderTurnSign;
-            avoidanceVec += (avoidanceDir * avoidanceResponse * avoidanceFallOff * avoideeMassScale);
         }
-        avoidanceDir = Vector3.Lerp(desiredDir, avoidanceVec, 0.5f).normalized;
+        Vector3 avoidanceDir = Vector3.Lerp(desiredDir, avoidanceVec, 0.5f).normalized;
         avoidanceDir = Vector3.Lerp(avoidanceDir, desiredDir, 0.7f).normalized;
         return avoidanceDir;
     }

@@ -103,4 +103,8 @@ public static class GridNavMath
         }
         return from.x * to.z - from.z * to.x > 0 ? Rotate2D(from, -angle) : Rotate2D(from, angle);
     }
+    public static float Dot2D(Vector3 a, Vector3 b)
+    {
+        return a.x * b.x + a.z * b.z;
+    }
 }
