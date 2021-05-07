@@ -27,19 +27,19 @@ public class GridNavQueryFilterDef : IGridNavQueryFilter
 
 public class GridNavQueryFilterUnitSize : IGridNavQueryFilter
 {
-    private int unitSize;
+    private int halfUnitSize;
 
     public GridNavQueryFilterUnitSize(int unitSize)
     {
-        this.unitSize = unitSize;
+        this.halfUnitSize = unitSize >> 1;
     }
     public bool IsBlocked(GridNavMesh navMesh, int index)
     {
         navMesh.GetSquareXZ(index, out var x, out var z);
-        int xmin = x - unitSize + 1;
-        int xmax = x + unitSize - 1;
-        int zmin = z - unitSize + 1;
-        int zmax = z + unitSize - 1;
+        int xmin = x - halfUnitSize;
+        int xmax = x + halfUnitSize;
+        int zmin = z - halfUnitSize;
+        int zmax = z + halfUnitSize;
         if (xmin < 0 || xmax >= navMesh.XSize || zmin < 0 || zmax >= navMesh.ZSize)
         {
             return true;
@@ -65,21 +65,21 @@ public class GridNavQueryFilterUnitSize : IGridNavQueryFilter
 
 public class GridNavQueryFilterExtraBlockedCheck : IGridNavQueryFilter
 {
-    private int unitSize;
+    private int halfUnitSize;
     private Func<int, bool> extraBlockedFunc;
 
     public GridNavQueryFilterExtraBlockedCheck(int unitSize, Func<int, bool> extraBlockedFunc)
     {
-        this.unitSize = unitSize;
+        this.halfUnitSize = unitSize >> 1;
         this.extraBlockedFunc = extraBlockedFunc;
     }
     public bool IsBlocked(GridNavMesh navMesh, int index)
     {
         navMesh.GetSquareXZ(index, out var x, out var z);
-        int xmin = x - unitSize + 1;
-        int xmax = x + unitSize - 1;
-        int zmin = z - unitSize + 1;
-        int zmax = z + unitSize - 1;
+        int xmin = x - halfUnitSize;
+        int xmax = x + halfUnitSize;
+        int zmin = z - halfUnitSize;
+        int zmax = z + halfUnitSize;
         if (xmin < 0 || xmax >= navMesh.XSize || zmin < 0 || zmax >= navMesh.ZSize)
         {
             return true;

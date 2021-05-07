@@ -265,41 +265,15 @@ public class GridNavManager
             agent.frontDir = GridNavMath.Rotate2D(agent.frontDir, disiredDir, agent.param.maxTurnAngle * deltaTime);
             agent.speed = Mathf.Max(agent.param.maxSpeed, agent.speed + agent.param.maxAcc * deltaTime);
         }
-        foreach (var a in agents) //更改方向和移动速度
+        foreach (var a in agents) //移动
         {
             var agent = a.Value;
             if (agent.speed <= 0.0f)
             {
                 continue;
             }
+            //movealong
         }
- 
-        //foreach (var a in agents)
-        //{
-        //    var agent = a.Value;
-        //    agent.nneis = new List<GridNavAgent>();
-        //    float radius = agent.param.radius + agent.param.maxSpeed * 2.0f;
-        //    navMesh.GetSquareXZ(new Vector3(agent.pos.x - radius, 0, agent.pos.z - radius), out var sx, out var sz);
-        //    navMesh.GetSquareXZ(new Vector3(agent.pos.x + radius, 0, agent.pos.z + radius), out var ex, out var ez);
-        //    for (int z = sz; z <= ez; z++)
-        //    {
-        //        for (int x = sx; x <= ex; x++)
-        //        {
-        //            int index = navMesh.GetSquareIndex(x, z);
-        //            if (!squareAgents.TryGetValue(index, out var agentList))
-        //            {
-        //                continue;
-        //            }
-        //            foreach (var t in agentList)
-        //            {
-        //                if (!agent.nneis.Contains(t))
-        //                {
-        //                    agent.nneis.Add(t);
-        //                }
-        //            }
-        //        }
-        //    }
-        //}
     }
     public Vector3 GetObstacleAvoidanceDir(GridNavAgent avoider, Vector3 desiredDir)
     {
