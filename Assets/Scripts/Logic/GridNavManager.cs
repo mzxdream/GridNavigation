@@ -263,7 +263,7 @@ public class GridNavManager
             var disiredDir = GetObstacleAvoidanceDir(agent, GridNavMath.Normalized2D(nextPos - agent.pos));
             //todo 判断剩余距离还有转向速度
             agent.frontDir = GridNavMath.Rotate2D(agent.frontDir, disiredDir, agent.param.maxTurnAngle * deltaTime);
-            agent.speed = Mathf.Max(agent.param.maxSpeed, agent.speed + agent.param.maxAcc * deltaTime);
+            agent.speed = Mathf.Min(agent.param.maxSpeed, agent.speed + agent.param.maxAcc * deltaTime);
         }
         foreach (var a in agents) //移动
         {
