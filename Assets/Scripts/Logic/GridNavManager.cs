@@ -448,7 +448,7 @@ public class GridNavManager
                 if (squareAgents.TryGetValue(index, out var agentList))
                 {
                     agentList.Remove(agent);
-                    if (squareAgents.Count == 0)
+                    if (agentList.Count == 0)
                     {
                         squareAgents.Remove(index);
                     }
