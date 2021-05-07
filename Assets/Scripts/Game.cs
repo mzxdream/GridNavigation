@@ -4,8 +4,6 @@ using UnityEngine;
 public class Game : MonoBehaviour
 {
     [SerializeField]
-    Transform ground = default;
-    [SerializeField]
     Texture2D tileTexture = default;
     [SerializeField]
     GameTileAsset wallPrefab = default, redDestinationPrefab = default, blueDestinationPrefab = default;
@@ -28,8 +26,8 @@ public class Game : MonoBehaviour
     void Awake()
     {
         tiles = new Dictionary<int, GameTile>();
-        ground.localScale = new Vector3(xsize * tileSize, zsize * tileSize, 1f);
-        var material = ground.GetComponent<MeshRenderer>().material;
+        transform.localScale = new Vector3(xsize * tileSize, 0.01f, zsize * tileSize);
+        var material = this.GetComponent<MeshRenderer>().material;
         material.mainTexture = tileTexture;
         material.SetTextureScale("_MainTex", new Vector2(xsize, zsize));
 
@@ -196,5 +194,9 @@ public class Game : MonoBehaviour
                 }
             }
         }
+    }
+    void OnDrawGizmos()
+    {
+        Gizmos.DrawCube(transform.position, new Vector3(xsize * tileSize, zsize * tileSize, 0.1f));
     }
 }
