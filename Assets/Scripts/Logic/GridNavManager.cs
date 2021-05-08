@@ -152,39 +152,6 @@ public class GridNavManager
     }
     public void Update(float deltaTime)
     {
-        foreach (var a in agents) //移到合法点
-        {
-            var agent = a.Value;
-            if (agent.filter.IsBlocked(navMesh, agent.squareIndex))
-            {
-                if (navQuery.FindNearestSquare(agent.filter, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearesetPos))
-                {
-                    RemoveSquareAgent(agent.squareIndex, agent);
-                    AddSquareAgent(nearestIndex, agent);
-                    agent.squareIndex = nearestIndex;
-                    agent.pos = nearesetPos;
-                    if (agent.state == GridNavAgentState.WaitForPath)
-                    {
-                        Debug.Assert(pathRequestQueue[0] == agent.id);
-                        pathRequestQueue.RemoveAt(0);
-                        pathRequestQueue.Add(agent.id);
-                    }
-                }
-                else
-                {
-                    if (agent.state == GridNavAgentState.WaitForPath)
-                    {
-                        Debug.Assert(pathRequestQueue[0] == agent.id);
-                        pathRequestQueue.RemoveAt(0);
-                    }
-                    else if (agent.state == GridNavAgentState.Requesting)
-                    {
-                        pathRequestQueue.Remove(agent.id);
-                    }
-                    agent.state = GridNavAgentState.None;
-                }
-            }
-        }
         int maxNodes = 10240;
         while (pathRequestQueue.Count > 0 && maxNodes > 0) //寻路
         {
@@ -299,6 +266,39 @@ public class GridNavManager
                 agent.squareIndex = newSquareIndex;
             }
         }
+        foreach (var a in agents) //移到合法点
+        {
+            var agent = a.Value;
+            if (agent.filter.IsBlocked(navMesh, agent.squareIndex))
+            {
+                if (navQuery.FindNearestSquare(agent.filter, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearesetPos))
+                {
+                    RemoveSquareAgent(agent.squareIndex, agent);
+                    AddSquareAgent(nearestIndex, agent);
+                    agent.squareIndex = nearestIndex;
+                    agent.pos = nearesetPos;
+                    if (agent.state == GridNavAgentState.WaitForPath)
+                    {
+                        Debug.Assert(pathRequestQueue[0] == agent.id);
+                        pathRequestQueue.RemoveAt(0);
+                        pathRequestQueue.Add(agent.id);
+                    }
+                }
+                else
+                {
+                    if (agent.state == GridNavAgentState.WaitForPath)
+                    {
+                        Debug.Assert(pathRequestQueue[0] == agent.id);
+                        pathRequestQueue.RemoveAt(0);
+                    }
+                    else if (agent.state == GridNavAgentState.Requesting)
+                    {
+                        pathRequestQueue.Remove(agent.id);
+                    }
+                    agent.state = GridNavAgentState.None;
+                }
+            }
+        }
     }
     public void HandleObjectCollisions(GridNavAgent collider, Vector3 oldPos)
     {
@@ -344,7 +344,7 @@ public class GridNavManager
                         //var summedVec = strafeVec + bounceVec;
 
                         //var summedSquareIndex = navMesh.GetSquareIndex(collider.pos + summedVec);
-                        //if (collider.filter.IsBlocked(navMesh, summedSquareIndex)) //todo test move square 
+                        //if (!collider.filter.IsBlocked(navMesh, summedSquareIndex)) //todo test move square 
                         //{
                         //    collider.pos += summedVec;
                         //}
@@ -359,17 +359,17 @@ public class GridNavManager
                         //float collideeRelRadius = collideeParams.y / (colliderParams.y + collideeParams.y);
                         float collisionRadiusSum = collider.maxInteriorRadius + collidee.maxInteriorRadius;
 
-                        float sepDistance = separationVec.magnitude + 0.1f;
-                        float penDistance = Mathf.Max(collisionRadiusSum - sepDistance, 1.0f);
-                        float sepResponse = Mathf.Min(navMesh.SquareSize * 2.0f, penDistance * 0.5f);
+                        float sepDistance = separationVec.magnitude;
+                        float penDistance = Mathf.Max(collisionRadiusSum - sepDistance, 0.001f);
+                        float sepResponse = penDistance * 0.5f;
 
                         Vector3 sepDirection = separationVec / sepDistance;
                         Vector3 colResponseVec = new Vector3(sepDirection.x, 0, sepDirection.z) * sepResponse;
 
                         float m1 = collider.param.mass;
                         float m2 = collidee.param.mass;
-                        float v1 = Mathf.Max(1.0f, collider.speed);
-                        float v2 = Mathf.Max(1.0f, collidee.speed);
+                        float v1 = collider.speed;
+                        float v2 = collidee.speed;
                         float c1 = 1.0f + (1.0f - Mathf.Abs(GridNavMath.Dot2D(collider.frontDir, -sepDirection))) * 5.0f;
                         float c2 = 1.0f + (1.0f - Mathf.Abs(GridNavMath.Dot2D(collidee.frontDir, sepDirection))) * 5.0f;
                         float s1 = m1 * v1 * c1;
@@ -386,15 +386,15 @@ public class GridNavManager
 
                         Vector3 colliderPushVec = colResponseVec * colliderMassScale;
                         Vector3 collideePushVec = -colResponseVec * collideeMassScale;
-                        Vector3 colliderSlideVec = colliderRightDir * colliderSlideSign * (1.0f / penDistance) * r2;
-                        Vector3 collideeSlideVec = collideeRightDir * collideeSlideSign * (1.0f / penDistance) * r1;
+                        Vector3 colliderSlideVec = colliderRightDir * colliderSlideSign * ((penDistance)) * r2;
+                        Vector3 collideeSlideVec = collideeRightDir * collideeSlideSign * ((penDistance)) * r1;
                         Vector3 colliderMoveVec = colliderPushVec + colliderSlideVec;
                         Vector3 collideeMoveVec = collideePushVec + collideeSlideVec;
 
                         if (pushCollider)
                         {
                             var tIndex = navMesh.GetSquareIndex(collider.pos + colliderMoveVec);
-                            if (collider.filter.IsBlocked(navMesh, tIndex)) //todo test move square 
+                            if (!collider.filter.IsBlocked(navMesh, tIndex)) //todo test move square 
                             {
                                 collider.pos += colliderMoveVec;
                             }
@@ -402,7 +402,7 @@ public class GridNavManager
                         if (pushCollidee)
                         {
                             var tIndex = navMesh.GetSquareIndex(collidee.pos + collideeMoveVec);
-                            if (collidee.filter.IsBlocked(navMesh, tIndex)) //todo test move square 
+                            if (!collidee.filter.IsBlocked(navMesh, tIndex)) //todo test move square 
                             {
                                 collidee.pos += collideeMoveVec;
                             }
