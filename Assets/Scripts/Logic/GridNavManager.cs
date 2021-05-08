@@ -273,27 +273,26 @@ public class GridNavManager
             {
                 continue;
             }
+            var oldPos = agent.pos;
             agent.velocity = agent.speed * agent.frontDir; //todo 暂不考虑y轴
             navMesh.ClampInBounds(agent.pos + agent.velocity * deltaTime, out var nextSquareIndex, out var nextPos);
-            var oldSquareIndex = agent.squareIndex;
-            //todo movealong
-            if (!navQuery.Raycast(agent.filter, agent.squareIndex, nextSquareIndex, out var path, out var totalCost))
+            if (!navQuery.Raycast(agent.pathFilter, agent.squareIndex, nextSquareIndex, out var path, out var totalCost))
             {
-                if (path.Count > 0)
+                if (path.Count > 0 && path[path.Count - 1] != agent.squareIndex)
                 {
-                    agent.squareIndex = path[path.Count - 1];
-                    agent.pos = navMesh.GetSquarePos(agent.squareIndex);
+                    agent.pos = navMesh.GetSquarePos(path[path.Count - 1]);
                 }
             }
             else
             {
-                agent.squareIndex = nextSquareIndex;
                 agent.pos = nextPos;
             }
-            if (oldSquareIndex != agent.squareIndex)
+            var newSquareIndex = navMesh.GetSquareIndex(agent.pos);
+            if (newSquareIndex != agent.squareIndex)
             {
-                RemoveSquareAgent(oldSquareIndex, agent);
-                AddSquareAgent(agent.squareIndex, agent);
+                RemoveSquareAgent(agent.squareIndex, agent);
+                AddSquareAgent(newSquareIndex, agent);
+                agent.squareIndex = newSquareIndex;
             }
         }
     }
