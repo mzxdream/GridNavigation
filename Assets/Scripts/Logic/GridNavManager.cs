@@ -287,12 +287,38 @@ public class GridNavManager
             {
                 agent.pos = nextPos;
             }
+            HandleObjectCollisions(agent);
             var newSquareIndex = navMesh.GetSquareIndex(agent.pos);
             if (newSquareIndex != agent.squareIndex)
             {
                 RemoveSquareAgent(agent.squareIndex, agent);
                 AddSquareAgent(newSquareIndex, agent);
                 agent.squareIndex = newSquareIndex;
+            }
+        }
+    }
+    public void HandleObjectCollisions(GridNavAgent collider)
+    {
+        this.tempNum++;
+        float collisionsRadius = collider.speed + collider.minExteriorRadius * 2.0f;
+        navMesh.GetSquareXZ(new Vector3(collider.pos.x - collisionsRadius, 0, collider.pos.z - collisionsRadius), out var sx, out var sz);
+        navMesh.GetSquareXZ(new Vector3(collider.pos.x + collisionsRadius, 0, collider.pos.z + collisionsRadius), out var ex, out var ez);
+        for (int z = sz; z <= ez; z++)
+        {
+            for (int x = sx; x <= ex; x++)
+            {
+                if (!squareAgents.TryGetValue(navMesh.GetSquareIndex(x, z), out var agentList))
+                {
+                    continue;
+                }
+                foreach (var collidee in agentList)
+                {
+                    if (collidee.tempNum == this.tempNum || collidee == collider)
+                    {
+                        continue;
+                    }
+                    collidee.tempNum = this.tempNum;
+                }
             }
         }
     }
