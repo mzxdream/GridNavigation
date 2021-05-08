@@ -159,6 +159,8 @@ public class GridNavManager
             {
                 if (navQuery.FindNearestSquare(agent.filter, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearesetPos))
                 {
+                    RemoveSquareAgent(agent.squareIndex, agent);
+                    AddSquareAgent(nearestIndex, agent);
                     agent.squareIndex = nearestIndex;
                     agent.pos = nearesetPos;
                     if (agent.state == GridNavAgentState.WaitForPath)
