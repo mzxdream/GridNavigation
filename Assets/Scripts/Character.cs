@@ -48,7 +48,14 @@ public class Character
         if (navManager.GetLocation(navAgentID, out var pos, out var forward))
         {
             asset.SetPosition(pos);
-            asset.SetForward(forward);
+            if (forward == Vector3.zero)
+            {
+                asset.SetForward(Vector3.forward);
+            }
+            else
+            {
+                asset.SetForward(forward);
+            }
         }
     }
 }

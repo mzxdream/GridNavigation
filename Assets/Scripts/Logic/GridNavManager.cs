@@ -279,6 +279,10 @@ public class GridNavManager
             var agent = a.Value;
             //agent.newVelocity = agent.prefVelocity;
             agent.velocity = agent.newVelocity;
+            //if (agent.velocity != Vector3.zero)
+            {
+                agent.frontDir = agent.velocity.normalized;
+            }
             navMesh.ClampInBounds(agent.pos + agent.velocity * deltaTime, out var nextSquareIndex, out var nextPos);
             if (!navQuery.Raycast(agent.pathFilter2, agent.squareIndex, nextSquareIndex, out var path, out var totalCost))
             {
