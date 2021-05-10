@@ -446,7 +446,7 @@ public class GridNavManager
                 }
                 foreach (var other in agentList)
                 {
-                    if (other.tempNum == this.tempNum || other == agent)
+                    if (other.tempNum == this.tempNum || other == agent || other.velocity.sqrMagnitude <= 0.0f)
                     {
                         continue;
                     }
