@@ -250,7 +250,16 @@ public class GridNavManager
                             continue;
                         }
                     }
-                    var nextSquareIndex = path[path.Count - 1];
+                    int i = 0;
+                    while (navMesh.DistanceApproximately(agent.squareIndex, path[i]) <= 0.0001f)
+                    {
+                        if (i >= path.Count - 1)
+                        {
+                            break;
+                        }
+                        i++;
+                    }
+                    var nextSquareIndex = path[i];
                     var nextPos = nextSquareIndex == agent.goalSquareIndex ? agent.goalPos : navMesh.GetSquarePos(nextSquareIndex);
                     var disiredDir = GridNavMath.Normalized2D(nextPos - agent.pos);
                     //agent.prefVelocity = (nextPos - agent.pos);
