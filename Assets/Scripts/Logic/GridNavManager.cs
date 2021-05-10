@@ -1,6 +1,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+public struct Line
+{
+    public Vector3 direction;
+    public Vector3 point;
+}
+
 public struct GridNavAgentParam
 {
     public float mass;
@@ -244,7 +250,7 @@ public class GridNavManager
             //agent.frontDir = GridNavMath.Rotate2D(agent.frontDir, disiredDir, agent.param.maxTurnAngle * deltaTime);
             //agent.speed = Mathf.Min(agent.param.maxSpeed, agent.speed + agent.param.maxAcc * deltaTime);
             CollectNeighbors(agent);
-            ComputeNewVelocity(agent);
+            ComputeNewVelocity(agent, deltaTime);
         }
         //更新坐标
         foreach (var a in agents)
@@ -324,8 +330,96 @@ public class GridNavManager
         //    }
         //}
     }
-    private void ComputeNewVelocity(GridNavAgent agent)
+    private void ComputeNewVelocity(GridNavAgent agent, float deltaTime)
     {
+        var orcaLines = new List<Line>();
+        //obstacle
+        int numObstLines = orcaLines.Count;
+        var timeHorizon = 1.0f;
+        float invTimeHorizon = 1.0f / timeHorizon;
+
+        /* Create agent ORCA lines. */
+        for (int i = 0; i < agent.neighbors.Count; ++i)
+        {
+            var other = agent.neighbors[i];
+            Vector3 relativePosition = other.pos - agent.pos;
+            // mass
+            float massRatio = (other.param.mass / (agent.param.mass + other.param.mass));
+            float neighborMassRatio = (agent.param.mass / (agent.param.mass + other.param.mass));
+            Vector3 velocityOpt = (massRatio >= 0.5f ? (agent.velocity - massRatio * agent.velocity) * 2 : agent.prefVelocity + (agent.velocity - agent.prefVelocity) * massRatio * 2);
+            Vector3 neighborVelocityOpt = (neighborMassRatio >= 0.5f ? 2 * other.velocity * (1 - neighborMassRatio) : other.prefVelocity + (other.velocity - other.prefVelocity) * neighborMassRatio * 2);
+
+            Vector3 relativeVelocity = velocityOpt - neighborVelocityOpt;
+            float distSq = GridNavMath.SqrMagnitude2D(relativePosition);
+            float combinedRadius = agent.maxInteriorRadius + other.maxInteriorRadius;
+            float combinedRadiusSq = combinedRadius * combinedRadius;
+
+            Line line;
+            Vector3 u;
+
+            if (distSq > combinedRadiusSq)
+            {
+                /* No collision. */
+                Vector3 w = relativeVelocity - invTimeHorizon * relativePosition;
+
+                /* Vector from cutoff center to relative velocity. */
+                float wLengthSq = GridNavMath.SqrMagnitude2D(w);
+                float dotProduct1 = GridNavMath.Dot2D(w, relativePosition);
+
+                if (dotProduct1 < 0.0f && dotProduct1 * dotProduct1 > combinedRadiusSq * wLengthSq)
+                {
+                    /* Project on cut-off circle. */
+                    float wLength = Mathf.Sqrt(wLengthSq);
+                    Vector3 unitW = w / wLength;
+
+                    line.direction = new Vector3(unitW.z, 0.0f, -unitW.x);
+                    u = (combinedRadius * invTimeHorizon - wLength) * unitW;
+                }
+                else
+                {
+                    /* Project on legs. */
+                    float leg = Mathf.Sqrt(distSq - combinedRadiusSq);
+
+                    if (GridNavMath.Det2D(relativePosition, w) > 0.0f)
+                    {
+                        /* Project on left leg. */
+                        line.direction = new Vector3(relativePosition.x * leg - relativePosition.z * combinedRadius, 0.0f, relativePosition.x * combinedRadius + relativePosition.z * leg) / distSq;
+                    }
+                    else
+                    {
+                        /* Project on right leg. */
+                        line.direction = -new Vector3(relativePosition.x * leg + relativePosition.z * combinedRadius, 0.0f, -relativePosition.x * combinedRadius + relativePosition.z * leg) / distSq;
+                    }
+
+                    float dotProduct2 = GridNavMath.Dot2D(relativeVelocity, line.direction);
+                    u = dotProduct2 * line.direction - relativeVelocity;
+                }
+            }
+            else
+            {
+                /* Collision. Project on cut-off circle of time timeStep. */
+                float invTimeStep = 1.0f / deltaTime;
+
+                /* Vector from cutoff center to relative velocity. */
+                Vector3 w = relativeVelocity - invTimeStep * relativePosition;
+
+                float wLength = GridNavMath.Magnitude2D(w);
+                Vector3 unitW = w / wLength;
+
+                line.direction = new Vector3(unitW.z, 0, -unitW.x);
+                u = (combinedRadius * invTimeStep - wLength) * unitW;
+            }
+
+            //line.point = velocityOpt + 0.5f * u;
+            line.point = velocityOpt + massRatio * u;
+            orcaLines.Add(line);
+        }
+        bool msDirectionOpt = false;
+        int lineFail = linearProgram2(orcaLines, agent.param.maxSpeed, agent.prefVelocity, msDirectionOpt, ref agent.newVelocity);
+        if (lineFail < orcaLines.Count)
+        {
+            linearProgram3(orcaLines, numObstLines, lineFail, agent.param.maxSpeed, ref agent.newVelocity);
+        }
     }
     private void CollectNeighbors(GridNavAgent agent)
     {

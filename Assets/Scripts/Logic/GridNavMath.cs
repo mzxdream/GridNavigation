@@ -39,6 +39,14 @@ public static class GridNavMath
     {
         return (b.x - a.x) * (b.x - a.x) + (b.z - a.z) * (b.z - a.z);
     }
+    public static float SqrMagnitude2D(Vector3 a)
+    {
+        return a.x * a.x + a.z * a.z;
+    }
+    public static float Magnitude2D(Vector3 a)
+    {
+        return Mathf.Sqrt(a.x * a.x + a.z * a.z);
+    }
     public static Vector3 Normalized2D(Vector3 a)
     {
         var mag = (a.x * a.x + a.z * a.z);
@@ -106,5 +114,9 @@ public static class GridNavMath
     public static float Dot2D(Vector3 a, Vector3 b)
     {
         return a.x * b.x + a.z * b.z;
+    }
+    public static float Det2D(Vector3 a, Vector3 b)
+    {
+        return a.x * b.z - a.z * b.x;
     }
 }
