@@ -256,7 +256,7 @@ public class GridNavManager
         foreach (var a in agents)
         {
             var agent = a.Value;
-            agent.newVelocity = agent.prefVelocity;
+            //agent.newVelocity = agent.prefVelocity;
             agent.velocity = agent.newVelocity;
             agent.pos += agent.velocity * deltaTime;
             var newSquareIndex = navMesh.GetSquareIndex(agent.pos);
@@ -716,6 +716,203 @@ public class GridNavManager
                         squareAgents.Remove(index);
                     }
                 }
+            }
+        }
+    }
+
+    private static bool linearProgram1(IList<Line> lines, int lineNo, float radius, Vector3 optVelocity, bool directionOpt, ref Vector3 result)
+    {
+        float dotProduct = GridNavMath.Dot2D(lines[lineNo].point, lines[lineNo].direction);
+        float discriminant = dotProduct * dotProduct + radius * radius - GridNavMath.SqrMagnitude2D(lines[lineNo].point);
+
+        if (discriminant < 0.0f)
+        {
+            /* Max speed circle fully invalidates line lineNo. */
+            return false;
+        }
+
+        float sqrtDiscriminant = Mathf.Sqrt(discriminant);
+        float tLeft = -dotProduct - sqrtDiscriminant;
+        float tRight = -dotProduct + sqrtDiscriminant;
+
+        for (int i = 0; i < lineNo; ++i)
+        {
+            float denominator = GridNavMath.Det2D(lines[lineNo].direction, lines[i].direction);
+            float numerator = GridNavMath.Det2D(lines[i].direction, lines[lineNo].point - lines[i].point);
+
+            if (Mathf.Abs(denominator) <= 0.00001f)
+            {
+                /* Lines lineNo and i are (almost) parallel. */
+                if (numerator < 0.0f)
+                {
+                    return false;
+                }
+
+                continue;
+            }
+
+            float t = numerator / denominator;
+
+            if (denominator >= 0.0f)
+            {
+                /* Line i bounds line lineNo on the right. */
+                tRight = Mathf.Min(tRight, t);
+            }
+            else
+            {
+                /* Line i bounds line lineNo on the left. */
+                tLeft = Mathf.Max(tLeft, t);
+            }
+
+            if (tLeft > tRight)
+            {
+                return false;
+            }
+        }
+
+        if (directionOpt)
+        {
+            /* Optimize direction. */
+            if (GridNavMath.Dot2D(optVelocity, lines[lineNo].direction) > 0.0f)
+            {
+                /* Take right extreme. */
+                result = lines[lineNo].point + tRight * lines[lineNo].direction;
+            }
+            else
+            {
+                /* Take left extreme. */
+                result = lines[lineNo].point + tLeft * lines[lineNo].direction;
+            }
+        }
+        else
+        {
+            /* Optimize closest point. */
+            float t = GridNavMath.Dot2D(lines[lineNo].direction, (optVelocity - lines[lineNo].point));
+
+            if (t < tLeft)
+            {
+                result = lines[lineNo].point + tLeft * lines[lineNo].direction;
+            }
+            else if (t > tRight)
+            {
+                result = lines[lineNo].point + tRight * lines[lineNo].direction;
+            }
+            else
+            {
+                result = lines[lineNo].point + t * lines[lineNo].direction;
+            }
+        }
+
+        return true;
+    }
+
+    private int linearProgram2(IList<Line> lines, float radius, Vector3 optVelocity, bool directionOpt, ref Vector3 result)
+    {
+        // directionOpt 第一次为false，第二次为true，directionOpt主要用在 linearProgram1 里面
+        if (directionOpt)
+        {
+            /*
+             * Optimize direction. Note that the optimization velocity is of
+             * unit length in this case.
+             */
+            // 1.这个其实没什么用，只是因为velocity是归一化的所以直接乘 radius
+            result = optVelocity * radius;
+        }
+        else if (GridNavMath.SqrMagnitude2D(optVelocity) > radius * radius)
+        {
+            /* Optimize closest point and outside circle. */
+            // 2.当 optVelocity 太大时，先归一化optVelocity，再乘 radius
+            result = GridNavMath.Normalized2D(optVelocity) * radius;
+        }
+        else
+        {
+            /* Optimize closest point and inside circle. */
+            // 3.当 optVelocity 小于maxSpeed时
+            result = optVelocity;
+        }
+
+        for (int i = 0; i < lines.Count; ++i)
+        {
+            if (GridNavMath.Det2D(lines[i].direction, lines[i].point - result) > 0.0f)
+            {
+                /* Result does not satisfy constraint i. Compute new optimal result. */
+                Vector3 tempResult = result;
+                if (!linearProgram1(lines, i, radius, optVelocity, directionOpt, ref result))
+                {
+                    result = tempResult;
+
+                    return i;
+                }
+            }
+        }
+
+        return lines.Count;
+    }
+
+    private void linearProgram3(IList<Line> lines, int numObstLines, int beginLine, float radius, ref Vector3 result)
+    {
+
+        float distance = 0.0f;
+        // 遍历所有剩余ORCA线
+        for (int i = beginLine; i < lines.Count; ++i)
+        {
+            // 每一条 ORCA 线都需要精确的做出处理，distance 为 最大违规的速度
+            if (GridNavMath.Det2D(lines[i].direction, lines[i].point - result) > distance)
+            {
+                /* Result does not satisfy constraint of line i. */
+                IList<Line> projLines = new List<Line>();
+                // 1.静态阻挡的orca线直接加到projLines中
+                for (int ii = 0; ii < numObstLines; ++ii)
+                {
+                    projLines.Add(lines[ii]);
+                }
+                // 2.动态阻挡的orca线需要重新计算line，从第一个非静态阻挡到当前的orca线
+                for (int j = numObstLines; j < i; ++j)
+                {
+                    Line line;
+
+                    float determinant = GridNavMath.Det2D(lines[i].direction, lines[j].direction);
+
+                    if (Mathf.Abs(determinant) <= 0.00001f)
+                    {
+                        /* Line i and line j are parallel. */
+                        if (GridNavMath.Dot2D(lines[i].direction, lines[j].direction) > 0.0f)
+                        {
+                            /* Line i and line j point in the same direction. */
+                            // 2-1 两条线平行且同向
+                            continue;
+                        }
+                        else
+                        {
+                            /* Line i and line j point in opposite direction. */
+                            // 2-2 两条线平行且反向
+                            line.point = 0.5f * (lines[i].point + lines[j].point);
+                        }
+                    }
+                    else
+                    {
+                        // 2-3 两条线不平行
+                        line.point = lines[i].point + (GridNavMath.Det2D(lines[j].direction, lines[i].point - lines[j].point) / determinant) * lines[i].direction;
+                    }
+                    // 计算ORCA线的方向
+                    line.direction = GridNavMath.Normalized2D(lines[j].direction - lines[i].direction);
+                    projLines.Add(line);
+                }
+                // 3.再次计算最优速度
+                Vector2 tempResult = result;
+                // 注意这里的 new Vector2(-lines[i].direction.y(), lines[i].direction.x()) 是方向向量
+                if (linearProgram2(projLines, radius, new Vector3(-lines[i].direction.z, 0.0f, lines[i].direction.x), true, ref result) < projLines.Count)
+                {
+                    /*
+                     * This should in principle not happen. The result is by
+                     * definition already in the feasible region of this
+                     * linear program. If it fails, it is due to small
+                     * floating point error, and the current result is kept.
+                     */
+                    result = tempResult;
+                }
+
+                distance = GridNavMath.Det2D(lines[i].direction, lines[i].point - result);
             }
         }
     }
