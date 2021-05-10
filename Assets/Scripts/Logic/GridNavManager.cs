@@ -34,6 +34,7 @@ public class GridNavAgent
     public IGridNavQueryFilter filter;
     public IGridNavQueryFilter pathFilter;
     public int tempNum;
+    public List<GridNavAgent> neighbors = new List<GridNavAgent>();
 }
 
 public class GridNavManager
@@ -236,11 +237,14 @@ public class GridNavManager
             var nextSquareIndex = path.Count > 1 ? path[1] : path[0];
             var nextPos = nextSquareIndex == agent.goalSquareIndex ? agent.goalPos : navMesh.GetSquarePos(nextSquareIndex);
             var disiredDir = GridNavMath.Normalized2D(nextPos - agent.pos);
-            agent.prefVelocity = (nextPos - agent.pos);
+            //agent.prefVelocity = (nextPos - agent.pos);
+            agent.prefVelocity = disiredDir * agent.param.maxSpeed;
             //disiredDir = GetObstacleAvoidanceDir(agent, disiredDir);
             //todo 判断剩余距离还有转向速度
             //agent.frontDir = GridNavMath.Rotate2D(agent.frontDir, disiredDir, agent.param.maxTurnAngle * deltaTime);
             //agent.speed = Mathf.Min(agent.param.maxSpeed, agent.speed + agent.param.maxAcc * deltaTime);
+            CollectNeighbors(agent);
+            ComputeNewVelocity(agent);
         }
         //更新坐标
         foreach (var a in agents)
@@ -319,6 +323,36 @@ public class GridNavManager
         //        }
         //    }
         //}
+    }
+    private void ComputeNewVelocity(GridNavAgent agent)
+    {
+    }
+    private void CollectNeighbors(GridNavAgent agent)
+    {
+        agent.neighbors.Clear();
+        tempNum++;
+        float radius = 10f * navMesh.SquareSize;
+        navMesh.GetSquareXZ(new Vector3(agent.pos.x - radius, 0, agent.pos.z - radius), out var sx, out var sz);
+        navMesh.GetSquareXZ(new Vector3(agent.pos.x + radius, 0, agent.pos.z + radius), out var ex, out var ez);
+        for (int z = sz; z <= ez; z++)
+        {
+            for (int x = sx; x <= ex; x++)
+            {
+                if (!squareAgents.TryGetValue(navMesh.GetSquareIndex(x, z), out var agentList))
+                {
+                    continue;
+                }
+                foreach (var other in agentList)
+                {
+                    if (other.tempNum == this.tempNum || other == agent)
+                    {
+                        continue;
+                    }
+                    other.tempNum = this.tempNum;
+                    agent.neighbors.Add(other);
+                }
+            }
+        }
     }
     //public void HandleObjectCollisions(GridNavAgent collider, Vector3 oldPos)
     //{
