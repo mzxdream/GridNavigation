@@ -223,6 +223,17 @@ public class Game : MonoBehaviour
                     unitSize++;
                 }
                 Gizmos.DrawCube(GetTilePos(x, z), new Vector3(tileSize * unitSize, 0.1f, tileSize * unitSize));
+                //
+                var prefVelocity = navManager.GetPrefVelocity(c.NavAgentID);
+                Gizmos.color = Color.black;
+                var p1 = c.Position + Vector3.up;
+                var p2 = p1 + prefVelocity;
+                UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.black, null, 5);
+
+                Gizmos.color = Color.blue;
+                var velocity = navManager.GetVelocity(c.NavAgentID);
+                p2 = p1 + velocity;
+                UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 5);
             }
         }
     }

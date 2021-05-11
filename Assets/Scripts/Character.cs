@@ -12,6 +12,7 @@ public class Character
     public CharacterType Type { get => type; }
     public Vector3 Position { get => asset.transform.position; }
     public float Radius { get => 0.6f; }
+    public int NavAgentID { get => navAgentID; }
 
     public Character(CharacterAsset prefab, CharacterType type, Vector3 position, Vector3 forward, float radius, GridNavManager navManager)
     {

@@ -230,6 +230,7 @@ public class GridNavManager
         foreach (var a in agents) //更改方向和移动速度
         {
             var agent = a.Value;
+            agent.pos.y = 0.0f;
             if (agent.state != GridNavAgentState.Moving)
             {
                 agent.prefVelocity = Vector3.zero;
@@ -264,26 +265,26 @@ public class GridNavManager
                 StartMoving(agent, agent.goalPos, agent.goalRadius);
                 continue;
             }
-            if (!navQuery.Raycast(agent.pathFilter, agent.squareIndex, agent.path[0], out var path, out var totalCost))
+            var nextSquareIndex = agent.squareIndex;
+            if (agent.path[0] != agent.squareIndex)
             {
-                var constraint = new GridNavQueryConstraintCircleStrict(agent.path[0], agent.squareIndex, 16.0f * navMesh.SquareSize);
-                if (!navQuery.FindPath(agent.pathFilter, agent.squareIndex, constraint, out path) || path[path.Count - 1] != agent.path[0])
+                if (!navQuery.Raycast(agent.pathFilter, agent.squareIndex, agent.path[0], out var path, out var totalCost))
                 {
-                    agent.prefVelocity = Vector3.zero;
-                    StartMoving(agent, agent.goalPos, agent.goalRadius);
-                    continue;
+                    var constraint = new GridNavQueryConstraintCircleStrict(agent.path[0], agent.squareIndex, 16.0f * navMesh.SquareSize);
+                    if (!navQuery.FindPath(agent.pathFilter, agent.squareIndex, constraint, out path) || path[path.Count - 1] != agent.path[0])
+                    {
+                        agent.prefVelocity = Vector3.zero;
+                        StartMoving(agent, agent.goalPos, agent.goalRadius);
+                        continue;
+                    }
+                    navQuery.FindStraightPath(agent.pathFilter, path, out var straightPath);
+                    nextSquareIndex = path[1];
+                }
+                else
+                {
+                    nextSquareIndex = path[path.Count - 1];
                 }
             }
-            int i = 0;
-            while (navMesh.DistanceApproximately(agent.squareIndex, path[i]) <= 0.0001f)
-            {
-                if (i >= path.Count - 1)
-                {
-                    break;
-                }
-                i++;
-            }
-            var nextSquareIndex = path[i];
             var nextPos = nextSquareIndex == agent.goalSquareIndex ? agent.goalPos : navMesh.GetSquarePos(nextSquareIndex);
             var disiredDir = GridNavMath.Normalized2D(nextPos - agent.pos);
             agent.prefVelocity = disiredDir * agent.param.maxSpeed;
@@ -302,11 +303,19 @@ public class GridNavManager
             {
                 continue;
             }
-            //agent.newVelocity = agent.prefVelocity;
             agent.velocity = agent.newVelocity;
-            //if (agent.velocity != Vector3.zero)
+            if (agent.velocity.y > 0.0f)
+            {
+                var t = 1;
+                t++;
+            }
+            if (agent.velocity.sqrMagnitude > 0.0001f)
             {
                 agent.frontDir = agent.velocity.normalized;
+            }
+            else
+            {
+                agent.velocity = Vector3.zero;
             }
             navMesh.ClampInBounds(agent.pos + agent.velocity * deltaTime, out var nextSquareIndex, out var nextPos);
             if (!navQuery.Raycast(agent.filter, agent.squareIndex, nextSquareIndex, out var path, out var totalCost))
@@ -320,7 +329,6 @@ public class GridNavManager
             {
                 agent.pos = nextPos;
             }
-            //agent.pos += agent.velocity * deltaTime;
             var newSquareIndex = navMesh.GetSquareIndex(agent.pos);
             if (newSquareIndex != agent.squareIndex)
             {
@@ -449,186 +457,6 @@ public class GridNavManager
             }
         }
     }
-    //public void HandleObjectCollisions(GridNavAgent collider, Vector3 oldPos)
-    //{
-    //    this.tempNum++;
-    //    float collisionsRadius = collider.speed + collider.maxInteriorRadius * 2.0f;
-    //    navMesh.GetSquareXZ(new Vector3(collider.pos.x - collisionsRadius, 0, collider.pos.z - collisionsRadius), out var sx, out var sz);
-    //    navMesh.GetSquareXZ(new Vector3(collider.pos.x + collisionsRadius, 0, collider.pos.z + collisionsRadius), out var ex, out var ez);
-    //    for (int z = sz; z <= ez; z++)
-    //    {
-    //        for (int x = sx; x <= ex; x++)
-    //        {
-    //            if (!squareAgents.TryGetValue(navMesh.GetSquareIndex(x, z), out var agentList))
-    //            {
-    //                continue;
-    //            }
-    //            foreach (var collidee in agentList)
-    //            {
-    //                if (collidee.tempNum == this.tempNum || collidee == collider)
-    //                {
-    //                    continue;
-    //                }
-    //                collidee.tempNum = this.tempNum;
-    //                var separationRadius = collider.maxInteriorRadius + collidee.maxInteriorRadius;
-    //                if (GridNavMath.SqrDistance2D(collider.pos, collidee.pos) >= separationRadius * separationRadius)
-    //                {
-    //                    continue;
-    //                }
-    //                Vector3 separationVec = new Vector3(collider.pos.x - collidee.pos.x, 0.0f, collider.pos.z - collidee.pos.z);
-    //                bool pushCollider = collider.speed > 0.0f;
-    //                bool pushCollidee = collidee.speed > 0.0f;
-    //                if (!pushCollider && !pushCollidee)
-    //                {
-    //                    //var colRadiusSum = collider.maxInteriorRadius + collidee.maxInteriorRadius;
-    //                    //var sepDistance = separationVec.magnitude + 0.1f;
-    //                    //var penDistance = Mathf.Min(0.0f, sepDistance - colRadiusSum);
-    //                    //var rgt = Vector3.Cross(collider.frontDir, Vector3.up);
-    //                    //var colSlideSign = GridNavMath.Dot2D(collidee.pos, rgt) - GridNavMath.Dot2D(collider.pos, rgt) > 0.0f ? -1.0f : 1.0f;
-    //                    //var strafeScale = Mathf.Min(collider.speed, Mathf.Max(0.0f, -penDistance * 0.5f));
-    //                    //var bounceScale = Mathf.Min(collider.speed, Mathf.Max(0.0f, -penDistance));
-
-    //                    //var strafeVec = (rgt * colSlideSign) * strafeScale;
-    //                    //var bounceVec = (separationVec / sepDistance) * bounceScale;
-    //                    //var summedVec = strafeVec + bounceVec;
-
-    //                    //var summedSquareIndex = navMesh.GetSquareIndex(collider.pos + summedVec);
-    //                    //if (!collider.filter.IsBlocked(navMesh, summedSquareIndex)) //todo test move square 
-    //                    //{
-    //                    //    collider.pos += summedVec;
-    //                    //}
-    //                    //else
-    //                    //{
-    //                    //    collider.pos = oldPos + summedVec * 0.25f * (GridNavMath.Dot2D(collider.frontDir, separationVec) < 0.25f ? 1.0f : 0.0f);
-    //                    //}
-    //                }
-    //                else
-    //                {
-    //                    //float colliderRelRadius = colliderParams.y / (colliderParams.y + collideeParams.y);
-    //                    //float collideeRelRadius = collideeParams.y / (colliderParams.y + collideeParams.y);
-    //                    float collisionRadiusSum = collider.maxInteriorRadius + collidee.maxInteriorRadius;
-
-    //                    float sepDistance = separationVec.magnitude;
-    //                    float penDistance = Mathf.Max(collisionRadiusSum - sepDistance, 0.001f);
-    //                    float sepResponse = penDistance * 0.5f;
-
-    //                    Vector3 sepDirection = separationVec / sepDistance;
-    //                    Vector3 colResponseVec = new Vector3(sepDirection.x, 0, sepDirection.z) * sepResponse;
-
-    //                    float m1 = collider.param.mass;
-    //                    float m2 = collidee.param.mass;
-    //                    float v1 = collider.speed;
-    //                    float v2 = collidee.speed;
-    //                    float c1 = 1.0f + (1.0f - Mathf.Abs(GridNavMath.Dot2D(collider.frontDir, -sepDirection))) * 5.0f;
-    //                    float c2 = 1.0f + (1.0f - Mathf.Abs(GridNavMath.Dot2D(collidee.frontDir, sepDirection))) * 5.0f;
-    //                    float s1 = m1 * v1 * c1;
-    //                    float s2 = m2 * v2 * c2;
-    //                    float r1 = s1 / (s1 + s2 + 1.0f);
-    //                    float r2 = s2 / (s1 + s2 + 1.0f);
-
-    //                    float colliderMassScale = Mathf.Clamp(1.0f - r1, 0.01f, 0.99f);
-    //                    float collideeMassScale = Mathf.Clamp(1.0f - r2, 0.01f, 0.99f);
-    //                    var colliderRightDir = Vector3.Cross(collider.frontDir, Vector3.up);
-    //                    var collideeRightDir = Vector3.Cross(collidee.frontDir, Vector3.up);
-    //                    float colliderSlideSign = GridNavMath.Dot2D(separationVec, colliderRightDir) > 0.0f ? 1.0f : -1.0f;
-    //                    float collideeSlideSign = GridNavMath.Dot2D(-separationVec, collideeRightDir) > 0.0f ? 1.0f : -1.0f;
-
-    //                    Vector3 colliderPushVec = colResponseVec * colliderMassScale;
-    //                    Vector3 collideePushVec = -colResponseVec * collideeMassScale;
-    //                    Vector3 colliderSlideVec = colliderRightDir * colliderSlideSign * ((penDistance)) * r2;
-    //                    Vector3 collideeSlideVec = collideeRightDir * collideeSlideSign * ((penDistance)) * r1;
-    //                    Vector3 colliderMoveVec = colliderPushVec + colliderSlideVec;
-    //                    Vector3 collideeMoveVec = collideePushVec + collideeSlideVec;
-
-    //                    if (pushCollider)
-    //                    {
-    //                        var tIndex = navMesh.GetSquareIndex(collider.pos + colliderMoveVec);
-    //                        if (!collider.filter.IsBlocked(navMesh, tIndex)) //todo test move square 
-    //                        {
-    //                            collider.pos += colliderMoveVec;
-    //                        }
-    //                    }
-    //                    if (pushCollidee)
-    //                    {
-    //                        var tIndex = navMesh.GetSquareIndex(collidee.pos + collideeMoveVec);
-    //                        if (!collidee.filter.IsBlocked(navMesh, tIndex)) //todo test move square 
-    //                        {
-    //                            collidee.pos += collideeMoveVec;
-    //                        }
-    //                    }
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
-    //public Vector3 GetObstacleAvoidanceDir(GridNavAgent avoider, Vector3 desiredDir)
-    //{
-    //    if (GridNavMath.Dot2D(avoider.frontDir, desiredDir) < 0.0f) //当前方向与期望方向相反
-    //    {
-    //        return desiredDir;
-    //    }
-    //    this.tempNum++;
-    //    float avoidanceRadius = avoider.minExteriorRadius + avoider.param.maxSpeed * 2.0f;
-    //    Vector3 avoidanceVec = Vector3.zero;
-    //    navMesh.GetSquareXZ(new Vector3(avoider.pos.x - avoidanceRadius, 0, avoider.pos.z - avoidanceRadius), out var sx, out var sz);
-    //    navMesh.GetSquareXZ(new Vector3(avoider.pos.x + avoidanceRadius, 0, avoider.pos.z + avoidanceRadius), out var ex, out var ez);
-    //    for (int z = sz; z <= ez; z++)
-    //    {
-    //        for (int x = sx; x <= ex; x++)
-    //        {
-    //            if (!squareAgents.TryGetValue(navMesh.GetSquareIndex(x, z), out var agentList))
-    //            {
-    //                continue;
-    //            }
-    //            foreach (var avoidee in agentList)
-    //            {
-    //                if (avoidee.tempNum == this.tempNum || avoidee == avoider)
-    //                {
-    //                    continue;
-    //                }
-    //                avoidee.tempNum = this.tempNum;
-    //                if (avoidee.speed <= 0.0f) //寻路的时候，已排除未移动的物体
-    //                {
-    //                    continue;
-    //                }
-    //                Vector3 avoideeVector = (avoider.pos + avoider.velocity) - (avoidee.pos + avoidee.velocity);
-    //                float avoideeDist = avoideeVector.magnitude + 0.01f;
-    //                float avoidanceRadiusSum = avoider.minExteriorRadius + avoidee.minExteriorRadius;
-    //                if (avoideeDist >= avoider.param.maxSpeed + avoidanceRadiusSum) //筛选距离
-    //                {
-    //                    continue;
-    //                }
-    //                if (GridNavMath.Dot2D(avoider.frontDir, -(avoideeVector / avoideeDist)) < maxAvoideeCosine)//忽略与碰撞体偏离中心度数过大的对象
-    //                {
-    //                    continue;
-    //                }
-    //                if (avoideeDist * avoideeDist >= (avoider.pos - avoider.goalPos).sqrMagnitude) //如果avoider离目标点距离小于碰撞避免距离
-    //                {
-    //                    continue;
-    //                }
-    //                Vector3 avoiderRightDir = Vector3.Cross(avoider.frontDir, Vector3.up);
-    //                Vector3 avoideeRightDir = Vector3.Cross(avoidee.frontDir, Vector3.up);
-    //                float avoiderTurnSign = Vector3.Dot(avoidee.pos, avoiderRightDir) - Vector3.Dot(avoider.pos, avoiderRightDir) > 0.0f ? -1.0f : 1.0f;
-    //                float avoideeTurnSign = Vector3.Dot(avoider.pos, avoideeRightDir) - Vector3.Dot(avoidee.pos, avoideeRightDir) > 0.0f ? -1.0f : 1.0f;
-
-    //                float avoidanceCosAngle = Mathf.Clamp(Vector3.Dot(avoider.frontDir, avoidee.frontDir), -1.0f, 1.0f);
-    //                float avoidanceResponse = (1.0f - avoidanceCosAngle) + 0.1f;
-    //                float avoidanceFallOff = (1.0f - Mathf.Min(1.0f, avoideeDist / (5.0f * avoidanceRadiusSum)));
-
-    //                if (avoidanceCosAngle < 0.0f)
-    //                {
-    //                    avoiderTurnSign = Mathf.Max(avoiderTurnSign, avoideeTurnSign);
-    //                }
-    //                float avoidanceMassSum = avoider.param.mass + avoidee.param.mass;
-    //                float avoideeMassScale = avoidee.param.mass / avoidanceMassSum;
-    //                avoidanceVec += (avoiderRightDir * 1.0f * avoiderTurnSign * avoidanceResponse * avoidanceFallOff * avoideeMassScale);
-    //            }
-    //        }
-    //    }
-    //    Vector3 avoidanceDir = Vector3.Lerp(desiredDir, avoidanceVec, 0.5f).normalized;
-    //    avoidanceDir = Vector3.Lerp(avoidanceDir, desiredDir, 0.7f).normalized;
-    //    return avoidanceDir;
-    //}
     public bool StartMoving(int agentID, Vector3 goalPos)
     {
         if (!agents.TryGetValue(agentID, out var agent))
@@ -660,6 +488,7 @@ public class GridNavManager
         agent.goalPos = nearestPos;
         agent.goalRadius = goalRadius;
         agent.goalSquareIndex = neareastIndex;
+        agent.prefVelocity = Vector3.zero;
         pathRequestQueue.Add(agent.id);
     }
     public bool GetLocation(int agentID, out Vector3 pos, out Vector3 forward)
@@ -673,6 +502,22 @@ public class GridNavManager
         pos = agent.pos;
         forward = agent.frontDir;
         return true;
+    }
+    public Vector3 GetPrefVelocity(int agentID)
+    {
+        if (!agents.TryGetValue(agentID, out var agent))
+        {
+            return Vector3.zero;
+        }
+        return agent.prefVelocity;
+    }
+    public Vector3 GetVelocity(int agentID)
+    {
+        if (!agents.TryGetValue(agentID, out var agent))
+        {
+            return Vector3.zero;
+        }
+        return agent.velocity;
     }
     private void AddSquareAgent(int index, GridNavAgent agent)
     {
