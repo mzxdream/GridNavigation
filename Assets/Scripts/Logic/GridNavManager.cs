@@ -241,8 +241,15 @@ public class GridNavManager
             var goalPos = pathSquareIndex == agent.goalSquareIndex ? agent.goalPos : navMesh.GetSquarePos(pathSquareIndex);
             if (GridNavMath.SqrDistance2D(agent.pos, goalPos) <= agent.goalRadius * agent.goalRadius)
             {
-                agent.prefVelocity = Vector3.zero;
-                agent.state = GridNavAgentState.None;
+                if (pathSquareIndex == agent.goalSquareIndex)
+                {
+                    agent.prefVelocity = Vector3.zero;
+                    agent.state = GridNavAgentState.None;
+                }
+                else
+                {
+                    StartMoving(agent, agent.goalPos, agent.goalRadius);
+                }
                 continue;
             }
             while (agent.path.Count > 1 && navMesh.DistanceApproximately(agent.squareIndex, agent.path[0]) <= 10.0f * navMesh.SquareSize)
