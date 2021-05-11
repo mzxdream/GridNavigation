@@ -292,6 +292,11 @@ public class GridNavManager
         foreach (var a in agents)
         {
             var agent = a.Value;
+            if (agent.state != GridNavAgentState.Moving)
+            {
+                agent.newVelocity = Vector3.zero;
+                continue;
+            }
             CollectNeighbors(agent);
             ComputeNewVelocity(agent, deltaTime);
         }
@@ -299,10 +304,6 @@ public class GridNavManager
         foreach (var a in agents)
         {
             var agent = a.Value;
-            if (agent.state != GridNavAgentState.Moving)
-            {
-                continue;
-            }
             agent.velocity = agent.newVelocity;
             if (agent.velocity.y > 0.0f)
             {
@@ -316,19 +317,25 @@ public class GridNavManager
             else
             {
                 agent.velocity = Vector3.zero;
+                continue;
             }
             navMesh.ClampInBounds(agent.pos + agent.velocity * deltaTime, out var nextSquareIndex, out var nextPos);
             if (!navQuery.Raycast(agent.filter, agent.squareIndex, nextSquareIndex, out var path, out var totalCost))
             {
                 if (path.Count > 0 && path[path.Count - 1] != agent.squareIndex)
                 {
-                    agent.pos = navMesh.GetSquarePos(path[path.Count - 1]);
+                    nextPos = navMesh.GetSquarePos(path[path.Count - 1]);
+                }
+                else
+                {
+                    nextPos = agent.pos;
                 }
             }
-            else
+            if (GridNavMath.SqrDistance2D(agent.pos, nextPos) <= 1e-4f)
             {
-                agent.pos = nextPos;
+                agent.velocity = Vector3.zero;
             }
+            agent.pos = nextPos;
             var newSquareIndex = navMesh.GetSquareIndex(agent.pos);
             if (newSquareIndex != agent.squareIndex)
             {
