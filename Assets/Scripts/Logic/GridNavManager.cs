@@ -330,17 +330,28 @@ public class GridNavManager
                 continue;
             }
             navMesh.ClampInBounds(agent.pos + agent.velocity * deltaTime, out var nextSquareIndex, out var nextPos);
-            if (!navQuery.Raycast(agent.filter, agent.squareIndex, nextSquareIndex, out var path, out var totalCost))
+            if (agent.filter.IsBlocked(navMesh, nextSquareIndex))
             {
-                if (path.Count > 0 && path[path.Count - 1] != agent.squareIndex)
+                if (navQuery.FindNearestSquare(agent.filter, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearesetPos))
                 {
-                    nextPos = navMesh.GetSquarePos(path[path.Count - 1]);
+                    nextPos = nearesetPos;
                 }
                 else
                 {
                     nextPos = agent.pos;
                 }
             }
+            //if (!navQuery.Raycast(agent.filter, agent.squareIndex, nextSquareIndex, out var path, out var totalCost))
+            //{
+            //    if (path.Count > 0 && path[path.Count - 1] != agent.squareIndex)
+            //    {
+            //        nextPos = navMesh.GetSquarePos(path[path.Count - 1]);
+            //    }
+            //    else
+            //    {
+            //        nextPos = agent.pos;
+            //    }
+            //}
             if (GridNavMath.SqrDistance2D(agent.pos, nextPos) <= 1e-4f)
             {
                 agent.velocity = Vector3.zero;
@@ -464,7 +475,7 @@ public class GridNavManager
                 }
                 foreach (var other in agentList)
                 {
-                    if (other.tempNum == this.tempNum || other == agent || other.velocity.sqrMagnitude <= 0.0f)
+                    if (other.tempNum == this.tempNum || other == agent)
                     {
                         continue;
                     }
