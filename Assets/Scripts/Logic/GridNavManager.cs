@@ -101,7 +101,10 @@ public class GridNavManager
             goalPos = Vector3.zero,
             goalRadius = 0.0f,
             goalSquareIndex = 0,
-            velocity = Vector3.zero, //可能有y轴的方向
+            prefVelocity = Vector3.zero,
+            velocity = Vector3.zero,
+            newVelocity = Vector3.zero,
+            tempNum = 0,
         };
         agent.filter = new GridNavQueryFilterExtraBlockedCheck(unitSize, (int index) =>
         {
@@ -123,7 +126,7 @@ public class GridNavManager
             {
                 foreach (var squareAgent in squareAgentList)
                 {
-                    if (squareAgent != agent && squareAgent.state != GridNavAgentState.Moving)
+                    if (squareAgent != agent && squareAgent.velocity.sqrMagnitude < 0.00001f)
                     {
                         return true;
                     }
