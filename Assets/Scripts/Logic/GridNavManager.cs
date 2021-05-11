@@ -33,6 +33,7 @@ public class GridNavAgent
     public float goalRadius;
     public int goalSquareIndex;
     public List<int> path;
+    public List<int> path2;
     public Vector3 prefVelocity;
     public Vector3 velocity;
     public Vector3 newVelocity;
@@ -272,6 +273,7 @@ public class GridNavManager
                 StartMoving(agent, agent.goalPos, agent.goalRadius);
                 continue;
             }
+            agent.path2 = null;
             var nextSquareIndex = agent.squareIndex;
             if (agent.path[0] != agent.squareIndex)
             {
@@ -291,6 +293,7 @@ public class GridNavManager
                 {
                     nextSquareIndex = path[path.Count - 1];
                 }
+                agent.path2 = path;
             }
             var nextPos = nextSquareIndex == agent.goalSquareIndex ? agent.goalPos : navMesh.GetSquarePos(nextSquareIndex);
             var disiredDir = GridNavMath.Normalized2D(nextPos - agent.pos);
