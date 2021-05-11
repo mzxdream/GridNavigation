@@ -33,13 +33,11 @@ public class GridNavAgent
     public float goalRadius;
     public int goalSquareIndex;
     public List<int> path;
-    //public float speed;
-    public Vector3 velocity;
     public Vector3 prefVelocity;
+    public Vector3 velocity;
     public Vector3 newVelocity;
     public IGridNavQueryFilter filter;
     public IGridNavQueryFilter pathFilter;
-    public IGridNavQueryFilter pathFilter2;
     public int tempNum;
     public List<GridNavAgent> neighbors = new List<GridNavAgent>();
 }
@@ -103,7 +101,6 @@ public class GridNavManager
             goalPos = Vector3.zero,
             goalRadius = 0.0f,
             goalSquareIndex = 0,
-            //speed = 0.0f,
             velocity = Vector3.zero, //可能有y轴的方向
         };
         agent.filter = new GridNavQueryFilterExtraBlockedCheck(unitSize, (int index) =>
@@ -131,13 +128,6 @@ public class GridNavManager
                         return true;
                     }
                 }
-            }
-            return false;
-        });
-        agent.pathFilter2 = new GridNavQueryFilterExtraBlockedCheck(unitSize, (int index) =>
-        {
-            if (squareAgents.TryGetValue(index, out var squareAgentList))
-            {
             }
             return false;
         });
