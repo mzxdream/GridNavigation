@@ -138,6 +138,7 @@ public class GridNavQuery
         var dirX = dx > 0 ? GridNavDirection.Right : GridNavDirection.Left;
         var dirZ = dz > 0 ? GridNavDirection.Up : GridNavDirection.Down;
         var dirXZ = GridNavMath.CombineDirection(dirX, dirZ);
+        var prevDir = GridNavDirection.None;
         while (ix < nx || iz < nz)
         {
             var t1 = (2 * ix + 1) * nz;
@@ -146,6 +147,19 @@ public class GridNavQuery
             {
                 x += signX;
                 ix++;
+                if (prevDir == dirZ) //防止对角线过不去，但是可以先上下再左右
+                {
+                    var tIndex = navMesh.GetSquareIndex(x, z);
+                    if (filter.IsBlocked(navMesh, tIndex))
+                    {
+                        return false;
+                    }
+                    var tCost = filter.GetCost(navMesh, tIndex, dirXZ);
+                    if (tCost < 0)
+                    {
+                        return false;
+                    }
+                }
                 var index = navMesh.GetSquareIndex(x, z);
                 if (filter.IsBlocked(navMesh, index))
                 {
@@ -158,11 +172,25 @@ public class GridNavQuery
                 }
                 totalCost += cost;
                 path.Add(index);
+                prevDir = dirX;
             }
             else if (t1 > t2) //Vertical
             {
                 z += signZ;
                 iz++;
+                if (prevDir == dirX) //防止对角线过不去，但是可以先上下再左右
+                {
+                    var tIndex = navMesh.GetSquareIndex(x, z);
+                    if (filter.IsBlocked(navMesh, tIndex))
+                    {
+                        return false;
+                    }
+                    var tCost = filter.GetCost(navMesh, tIndex, dirXZ);
+                    if (tCost < 0)
+                    {
+                        return false;
+                    }
+                }
                 var index = navMesh.GetSquareIndex(x, z);
                 if (filter.IsBlocked(navMesh, index))
                 {
@@ -175,6 +203,7 @@ public class GridNavQuery
                 }
                 totalCost += cost;
                 path.Add(index);
+                prevDir = dirZ;
             }
             else //Cross
             {
@@ -201,6 +230,7 @@ public class GridNavQuery
                 }
                 totalCost += cost;
                 path.Add(index);
+                prevDir = dirXZ;
             }
         }
         return true;
