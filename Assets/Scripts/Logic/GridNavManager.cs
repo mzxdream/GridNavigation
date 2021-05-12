@@ -93,7 +93,7 @@ public class GridNavManager
     }
     public int AddAgent(Vector3 pos, Vector3 forward, GridNavAgentParam param)
     {
-        int unitSize = (int)(param.radius * 2 / navMesh.SquareSize - 0.001f) + 1;
+        int unitSize = (int)(param.radius * 2 / navMesh.SquareSize - 1e-4f) + 1;
         if ((unitSize & 1) == 0)
         {
             unitSize++;
@@ -105,7 +105,7 @@ public class GridNavManager
             pos = pos,
             frontDir = new Vector3(forward.x, 0, forward.z).normalized,
             unitSize = unitSize,
-            maxInteriorRadius = param.radius,
+            maxInteriorRadius = unitSize * navMesh.SquareSize / 2.0f - 1e-4f,
             state = GridNavAgentState.None,
             squareIndex = 0,
             goalPos = Vector3.zero,
@@ -332,6 +332,11 @@ public class GridNavManager
             if (agent.velocity.sqrMagnitude > 0.0001f)
             {
                 agent.frontDir = agent.velocity.normalized;
+                if (agent.frontDir.y > 0.0f)
+                {
+                    int t = 1;
+                    t++;
+                }
             }
             else
             {
@@ -383,7 +388,7 @@ public class GridNavManager
         float timeHorizonObst = 1.0f;
         float invTimeHorizonObst = 1.0f / timeHorizonObst;
 
-        float radius = agent.param.radius;
+        float radius = agent.maxInteriorRadius;
         /* Create obstacle ORCA lines. */
         for (int i = 0; i < agent.obstacleNeighbors.Count; ++i)
         {
@@ -519,7 +524,7 @@ public class GridNavManager
                 if (obstacle2.convex_)
                 {
                     float leg2 = Mathf.Sqrt(distSq2 - radiusSq);
-                    rightLegDirection = new Vector3(relativePosition2.x * leg2 + relativePosition2.z * radius, -relativePosition2.x * radius + relativePosition2.z * leg2) / distSq2;
+                    rightLegDirection = new Vector3(relativePosition2.x * leg2 + relativePosition2.z * radius, 0, -relativePosition2.x * radius + relativePosition2.z * leg2) / distSq2;
                 }
                 else
                 {
