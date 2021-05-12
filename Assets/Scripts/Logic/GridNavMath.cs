@@ -57,6 +57,10 @@ public static class GridNavMath
         mag = Mathf.Sqrt(mag);
         return new Vector3(a.x / mag, 0.0f, a.z / mag);
     }
+    public static float LeftOf2D(Vector3 a, Vector3 b, Vector3 c)
+    {
+        return Det2D(a - c, b - a);
+    }
     public static float Angle2D(Vector3 a, Vector3 b)
     {
         var x1 = a.x;

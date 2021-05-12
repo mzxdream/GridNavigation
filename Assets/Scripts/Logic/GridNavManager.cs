@@ -7,6 +7,15 @@ public struct Line
     public Vector3 point;
 }
 
+public class Obstacle
+{
+    public Obstacle next_;
+    public Obstacle previous_;
+    public Vector3 direction_;
+    public Vector3 point_;
+    public bool convex_;
+}
+
 public struct GridNavAgentParam
 {
     public float mass;
@@ -41,7 +50,7 @@ public class GridNavAgent
     public IGridNavQueryFilter pathFilter;
     public int tempNum;
     public List<GridNavAgent> neighbors = new List<GridNavAgent>();
-    public List<int> obstacleNeighbors = new List<int>();
+    public List<Obstacle> obstacleNeighbors = new List<Obstacle>();
 }
 
 public class GridNavManager
@@ -371,8 +380,263 @@ public class GridNavManager
     private void ComputeNewVelocity(GridNavAgent agent, float deltaTime)
     {
         var orcaLines = new List<Line>();
+
+        float timeHorizonObst = 1.0f;
+        float invTimeHorizonObst = 1.0f / timeHorizonObst;
+
+        float radius = agent.param.radius;
+        /* Create obstacle ORCA lines. */
+        for (int i = 0; i < agent.obstacleNeighbors.Count; ++i)
+        {
+            Obstacle obstacle1 = agent.obstacleNeighbors[i];
+            Obstacle obstacle2 = obstacle1.next_;
+
+            Vector3 relativePosition1 = obstacle1.point_ - agent.pos;
+            Vector3 relativePosition2 = obstacle2.point_ - agent.pos;
+
+            bool alreadyCovered = false;
+
+            for (int j = 0; j < orcaLines.Count; ++j)
+            {
+                if (GridNavMath.Det2D(invTimeHorizonObst * relativePosition1 - orcaLines[j].point, orcaLines[j].direction) - invTimeHorizonObst * agent.maxInteriorRadius >= -1e-5f
+                     && GridNavMath.Det2D(invTimeHorizonObst * relativePosition2 - orcaLines[j].point, orcaLines[j].direction) - invTimeHorizonObst * agent.maxInteriorRadius >= -1e-5f)
+                {
+                    alreadyCovered = true;
+
+                    break;
+                }
+            }
+            if (alreadyCovered)
+            {
+                continue;
+            }
+            /* Not yet covered. Check for collisions. */
+            float distSq1 = GridNavMath.SqrMagnitude2D(relativePosition1);
+            float distSq2 = GridNavMath.SqrMagnitude2D(relativePosition2);
+
+            float radiusSq = agent.maxInteriorRadius * agent.maxInteriorRadius;
+
+            Vector3 obstacleVector = obstacle2.point_ - obstacle1.point_;
+            float s = GridNavMath.Dot2D(-relativePosition1, obstacleVector) / GridNavMath.SqrMagnitude2D(obstacleVector);
+            float distSqLine = GridNavMath.SqrMagnitude2D(-relativePosition1 - s * obstacleVector);
+
+            Line line;
+
+            if (s < 0.0f && distSq1 <= radiusSq)
+            {
+                /* Collision with left vertex. Ignore if non-convex. */
+                if (obstacle1.convex_)
+                {
+                    line.point = new Vector3(0.0f, 0.0f, 0.0f);
+                    line.direction = GridNavMath.Normalized2D(new Vector3(-relativePosition1.z, 0, relativePosition1.x));
+                    orcaLines.Add(line);
+                }
+
+                continue;
+            }
+            else if (s > 1.0f && distSq2 <= radiusSq)
+            {
+                /*
+                 * Collision with right vertex. Ignore if non-convex or if
+                 * it will be taken care of by neighboring obstacle.
+                 */
+                if (obstacle2.convex_ && GridNavMath.Det2D(relativePosition2, obstacle2.direction_) >= 0.0f)
+                {
+                    line.point = new Vector3(0.0f, 0.0f, 0.0f);
+                    line.direction = GridNavMath.Normalized2D(new Vector3(-relativePosition2.z, 0, relativePosition2.x));
+                    orcaLines.Add(line);
+                }
+
+                continue;
+            }
+            else if (s >= 0.0f && s < 1.0f && distSqLine <= radiusSq)
+            {
+                /* Collision with obstacle segment. */
+                line.point = new Vector3(0.0f, 0.0f, 0.0f);
+                line.direction = -obstacle1.direction_;
+                orcaLines.Add(line);
+
+                continue;
+            }
+
+            /*
+             * No collision. Compute legs. When obliquely viewed, both legs
+             * can come from a single vertex. Legs extend cut-off line when
+             * non-convex vertex.
+             */
+
+            Vector3 leftLegDirection, rightLegDirection;
+
+            if (s < 0.0f && distSqLine <= radiusSq)
+            {
+                /*
+                 * Obstacle viewed obliquely so that left vertex
+                 * defines velocity obstacle.
+                 */
+                if (!obstacle1.convex_)
+                {
+                    /* Ignore obstacle. */
+                    continue;
+                }
+
+                obstacle2 = obstacle1;
+
+                float leg1 = Mathf.Sqrt(distSq1 - radiusSq);
+                leftLegDirection = new Vector3(relativePosition1.x * leg1 - relativePosition1.z * radius, 0, relativePosition1.x * radius + relativePosition1.z * leg1) / distSq1;
+                rightLegDirection = new Vector3(relativePosition1.x * leg1 + relativePosition1.z * radius, 0, -relativePosition1.x * radius + relativePosition1.z * leg1) / distSq1;
+            }
+            else if (s > 1.0f && distSqLine <= radiusSq)
+            {
+                /*
+                 * Obstacle viewed obliquely so that
+                 * right vertex defines velocity obstacle.
+                 */
+                if (!obstacle2.convex_)
+                {
+                    /* Ignore obstacle. */
+                    continue;
+                }
+
+                obstacle1 = obstacle2;
+
+                float leg2 = Mathf.Sqrt(distSq2 - radiusSq);
+                leftLegDirection = new Vector3(relativePosition2.x * leg2 - relativePosition2.z * radius, 0, relativePosition2.x * radius + relativePosition2.z * leg2) / distSq2;
+                rightLegDirection = new Vector3(relativePosition2.x * leg2 + relativePosition2.z * radius, 0, -relativePosition2.x * radius + relativePosition2.z * leg2) / distSq2;
+            }
+            else
+            {
+                /* Usual situation. */
+                if (obstacle1.convex_)
+                {
+                    float leg1 = Mathf.Sqrt(distSq1 - radiusSq);
+                    leftLegDirection = new Vector3(relativePosition1.x * leg1 - relativePosition1.z * radius, 0, relativePosition1.x * radius + relativePosition1.z * leg1) / distSq1;
+                }
+                else
+                {
+                    /* Left vertex non-convex; left leg extends cut-off line. */
+                    leftLegDirection = -obstacle1.direction_;
+                }
+
+                if (obstacle2.convex_)
+                {
+                    float leg2 = Mathf.Sqrt(distSq2 - radiusSq);
+                    rightLegDirection = new Vector3(relativePosition2.x * leg2 + relativePosition2.z * radius, -relativePosition2.x * radius + relativePosition2.z * leg2) / distSq2;
+                }
+                else
+                {
+                    /* Right vertex non-convex; right leg extends cut-off line. */
+                    rightLegDirection = obstacle1.direction_;
+                }
+            }
+
+            /*
+             * Legs can never point into neighboring edge when convex
+             * vertex, take cutoff-line of neighboring edge instead. If
+             * velocity projected on "foreign" leg, no constraint is added.
+             */
+
+            Obstacle leftNeighbor = obstacle1.previous_;
+
+            bool isLeftLegForeign = false;
+            bool isRightLegForeign = false;
+
+            if (obstacle1.convex_ && GridNavMath.Det2D(leftLegDirection, -leftNeighbor.direction_) >= 0.0f)
+            {
+                /* Left leg points into obstacle. */
+                leftLegDirection = -leftNeighbor.direction_;
+                isLeftLegForeign = true;
+            }
+
+            if (obstacle2.convex_ && GridNavMath.Det2D(rightLegDirection, obstacle2.direction_) <= 0.0f)
+            {
+                /* Right leg points into obstacle. */
+                rightLegDirection = obstacle2.direction_;
+                isRightLegForeign = true;
+            }
+
+            /* Compute cut-off centers. */
+            Vector3 leftCutOff = invTimeHorizonObst * (obstacle1.point_ - agent.pos);
+            Vector3 rightCutOff = invTimeHorizonObst * (obstacle2.point_ - agent.pos);
+            Vector3 cutOffVector = rightCutOff - leftCutOff;
+
+            /* Project current velocity on velocity obstacle. */
+
+            /* Check if current velocity is projected on cutoff circles. */
+            float t = obstacle1 == obstacle2 ? 0.5f : GridNavMath.Dot2D(agent.velocity - leftCutOff, cutOffVector) / GridNavMath.SqrMagnitude2D(cutOffVector);
+            float tLeft = GridNavMath.Dot2D(agent.velocity - leftCutOff, leftLegDirection);
+            float tRight = GridNavMath.Dot2D(agent.velocity - rightCutOff, rightLegDirection);
+
+            if ((t < 0.0f && tLeft < 0.0f) || (obstacle1 == obstacle2 && tLeft < 0.0f && tRight < 0.0f))
+            {
+                /* Project on left cut-off circle. */
+                Vector3 unitW = GridNavMath.Normalized2D(agent.velocity - leftCutOff);
+
+                line.direction = new Vector3(unitW.z, 0, -unitW.x);
+                line.point = leftCutOff + radius * invTimeHorizonObst * unitW;
+                orcaLines.Add(line);
+
+                continue;
+            }
+            else if (t > 1.0f && tRight < 0.0f)
+            {
+                /* Project on right cut-off circle. */
+                Vector3 unitW = GridNavMath.Normalized2D(agent.velocity - rightCutOff);
+
+                line.direction = new Vector3(unitW.z, 0, -unitW.x);
+                line.point = rightCutOff + radius * invTimeHorizonObst * unitW;
+                orcaLines.Add(line);
+
+                continue;
+            }
+
+            /*
+             * Project on left leg, right leg, or cut-off line, whichever is
+             * closest to velocity.
+             */
+            float distSqCutoff = (t < 0.0f || t > 1.0f || obstacle1 == obstacle2) ? float.PositiveInfinity : GridNavMath.SqrMagnitude2D(agent.velocity - (leftCutOff + t * cutOffVector));
+            float distSqLeft = tLeft < 0.0f ? float.PositiveInfinity : GridNavMath.SqrMagnitude2D(agent.velocity - (leftCutOff + tLeft * leftLegDirection));
+            float distSqRight = tRight < 0.0f ? float.PositiveInfinity : GridNavMath.SqrMagnitude2D(agent.velocity - (rightCutOff + tRight * rightLegDirection));
+
+            if (distSqCutoff <= distSqLeft && distSqCutoff <= distSqRight)
+            {
+                /* Project on cut-off line. */
+                line.direction = -obstacle1.direction_;
+                line.point = leftCutOff + radius * invTimeHorizonObst * new Vector3(-line.direction.z, 0, line.direction.x);
+                orcaLines.Add(line);
+
+                continue;
+            }
+
+            if (distSqLeft <= distSqRight)
+            {
+                /* Project on left leg. */
+                if (isLeftLegForeign)
+                {
+                    continue;
+                }
+
+                line.direction = leftLegDirection;
+                line.point = leftCutOff + radius * invTimeHorizonObst * new Vector3(-line.direction.z, 0, line.direction.x);
+                orcaLines.Add(line);
+
+                continue;
+            }
+
+            /* Project on right leg. */
+            if (isRightLegForeign)
+            {
+                continue;
+            }
+
+            line.direction = -rightLegDirection;
+            line.point = rightCutOff + radius * invTimeHorizonObst * new Vector3(-line.direction.z, 0, line.direction.x);
+            orcaLines.Add(line);
+        }
+
+
         //obstacle
         int numObstLines = orcaLines.Count;
+
         var timeHorizon = 1.0f;
         float invTimeHorizon = 1.0f / timeHorizon;
 
@@ -491,11 +755,57 @@ public class GridNavManager
                 }
                 if (isBlocked || navMesh.IsSquareBlocked(index))
                 {
-                    agent.obstacleNeighbors.Add(index);
+                    List<Vector3> vertices = new List<Vector3>();
+
+                    var point = navMesh.GetSquarePos(index);
+                    vertices.Add(new Vector3(point.x + navMesh.SquareSize / 2, 0, point.z + navMesh.SquareSize / 2));
+                    vertices.Add(new Vector3(point.x - navMesh.SquareSize / 2, 0, point.z + navMesh.SquareSize / 2));
+                    vertices.Add(new Vector3(point.x - navMesh.SquareSize / 2, 0, point.z - navMesh.SquareSize / 2));
+                    vertices.Add(new Vector3(point.x + navMesh.SquareSize / 2, 0, point.z - navMesh.SquareSize / 2));
+                    AddObstacle(vertices, ref agent.obstacleNeighbors);
                 }
             }
         }
     }
+
+    public void AddObstacle(IList<Vector3> vertices, ref List<Obstacle> obstacles)
+    {
+        if (vertices.Count < 2)
+        {
+            return;
+        }
+        int obstacleNo = obstacles.Count;
+        for (int i = 0; i < vertices.Count; ++i)
+        {
+            Obstacle obstacle = new Obstacle();
+            obstacle.point_ = vertices[i];
+
+            if (i != 0)
+            {
+                obstacle.previous_ = obstacles[obstacles.Count - 1];
+                obstacle.previous_.next_ = obstacle;
+            }
+
+            if (i == vertices.Count - 1)
+            {
+                obstacle.next_ = obstacles[obstacleNo];
+                obstacle.next_.previous_ = obstacle;
+            }
+
+            obstacle.direction_ = GridNavMath.Normalized2D(vertices[(i == vertices.Count - 1 ? 0 : i + 1)] - vertices[i]);
+
+            if (vertices.Count == 2)
+            {
+                obstacle.convex_ = true;
+            }
+            else
+            {
+                obstacle.convex_ = (GridNavMath.LeftOf2D(vertices[(i == 0 ? vertices.Count - 1 : i - 1)], vertices[i], vertices[(i == vertices.Count - 1 ? 0 : i + 1)]) >= 0.0f);
+            }
+            obstacles.Add(obstacle);
+        }
+    }
+
     public bool StartMoving(int agentID, Vector3 goalPos)
     {
         if (!agents.TryGetValue(agentID, out var agent))
