@@ -50,14 +50,14 @@ public class GridNavMesh
     }
     public void GetSquareXZ(int index, out int x, out int z)
     {
-        z = index / 100;
-        x = index - z * 100;
+        x = index & 0xFFFF;
+        z = index >> 16;
         Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
     }
     public int GetSquareIndex(int x, int z)
     {
         Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
-        return x + z * 100;
+        return x + (z << 16);
     }
     public void GetSquareXZ(Vector3 pos, out int x, out int z)
     {
