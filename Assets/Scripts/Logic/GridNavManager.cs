@@ -41,6 +41,7 @@ public class GridNavAgent
     public IGridNavQueryFilter pathFilter;
     public int tempNum;
     public List<GridNavAgent> neighbors = new List<GridNavAgent>();
+    public List<int> obstacleNeighbors = new List<int>();
 }
 
 public class GridNavManager
@@ -461,6 +462,7 @@ public class GridNavManager
     private void CollectNeighbors(GridNavAgent agent)
     {
         agent.neighbors.Clear();
+        agent.obstacleNeighbors.Clear();
         tempNum++;
         float radius = 10f * navMesh.SquareSize;
         navMesh.GetSquareXZ(new Vector3(agent.pos.x - radius, 0, agent.pos.z - radius), out var sx, out var sz);
@@ -469,18 +471,27 @@ public class GridNavManager
         {
             for (int x = sx; x <= ex; x++)
             {
-                if (!squareAgents.TryGetValue(navMesh.GetSquareIndex(x, z), out var agentList))
+                var index = navMesh.GetSquareIndex(x, z);
+                var isBlocked = false;
+                if (squareAgents.TryGetValue(index, out var agentList))
                 {
-                    continue;
-                }
-                foreach (var other in agentList)
-                {
-                    if (other.tempNum == this.tempNum || other == agent)
+                    foreach (var other in agentList)
                     {
-                        continue;
+                        if (other.tempNum == this.tempNum || other == agent)
+                        {
+                            continue;
+                        }
+                        other.tempNum = this.tempNum;
+                        agent.neighbors.Add(other);
+                        if (other.velocity.sqrMagnitude <= 0.00001f)
+                        {
+                            isBlocked = true;
+                        }
                     }
-                    other.tempNum = this.tempNum;
-                    agent.neighbors.Add(other);
+                }
+                if (isBlocked || navMesh.IsSquareBlocked(index))
+                {
+                    agent.obstacleNeighbors.Add(index);
                 }
             }
         }
