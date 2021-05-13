@@ -96,7 +96,7 @@ public class Game : MonoBehaviour
         {
             AddWall();
         }
-        if (Input.GetKeyDown(KeyCode.Delete))
+        if (Input.GetKeyDown(KeyCode.Alpha6))
         {
             RemoveObject();
         }
@@ -139,7 +139,7 @@ public class Game : MonoBehaviour
     }
     void DrawCharacterDetail(Character c, Color color)
     {
-        Gizmos.color = Color.red;
+        Gizmos.color = color;
         navMesh.ClampInBounds(c.asset.transform.position, out var index, out var pos);
         pos = navMesh.GetSquarePos(index);
 
@@ -174,7 +174,7 @@ public class Game : MonoBehaviour
         var asset = GameObject.Instantiate(redCharacterPrefab).gameObject;
         asset.transform.position = hit.point;
         asset.transform.forward = Vector3.forward;
-        asset.transform.localScale = new Vector3(radius, radius, radius);
+        asset.transform.localScale = new Vector3(radius, 0.5f, radius);
         var param = new GridNavAgentParam
         {
             mass = mass,
@@ -182,7 +182,7 @@ public class Game : MonoBehaviour
             maxSpeed = maxSpeed,
         };
         var navAgentID = navManager.AddAgent(asset.transform.position, asset.transform.forward, param);
-        var c = new Character { asset = asset, navAgentID = navAgentID };
+        var c = new Character { asset = asset, navAgentID = navAgentID, radius = radius };
         redCharacters.Add(c);
     }
     void AddBlueCharacter()
@@ -195,7 +195,7 @@ public class Game : MonoBehaviour
         var asset = GameObject.Instantiate(blueCharacterPrefab).gameObject;
         asset.transform.position = hit.point;
         asset.transform.forward = Vector3.forward;
-        asset.transform.localScale = new Vector3(radius, radius, radius);
+        asset.transform.localScale = new Vector3(radius, 0.5f, radius);
         var param = new GridNavAgentParam
         {
             mass = mass,
@@ -203,7 +203,7 @@ public class Game : MonoBehaviour
             maxSpeed = maxSpeed,
         };
         var navAgentID = navManager.AddAgent(asset.transform.position, asset.transform.forward, param);
-        var c = new Character { asset = asset, navAgentID = navAgentID };
+        var c = new Character { asset = asset, navAgentID = navAgentID, radius = radius };
         blueCharacters.Add(c);
     }
     void AddWall()
@@ -220,6 +220,8 @@ public class Game : MonoBehaviour
         }
         navMesh.SetSquare(index, 1.0f, true);
         var asset = GameObject.Instantiate(wallPrefab).gameObject;
+        asset.transform.position = navMesh.GetSquarePos(index);
+        asset.transform.localScale = new Vector3(navMesh.SquareSize, 0.2f, navMesh.SquareSize);
         var wall = new Wall { asset = asset };
         walls.Add(index, wall);
     }
@@ -264,6 +266,7 @@ public class Game : MonoBehaviour
         if (walls.TryGetValue(index, out var wall))
         {
             navMesh.SetSquare(index, 1.0f, false);
+            Destroy(wall.asset);
             walls.Remove(index);
         }
         foreach (var c in redCharacters)
