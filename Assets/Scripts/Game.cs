@@ -1,242 +1,289 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
+class Wall
+{
+    public GameObject asset;
+}
+
+class Destination
+{
+    public int index;
+    public GameObject asset;
+}
+
+class Character
+{
+    public GameObject asset;
+    public int navAgentID;
+    public float radius;
+}
+
 public class Game : MonoBehaviour
 {
-    [SerializeField]
-    Texture2D tileTexture = default;
-    [SerializeField]
-    GameTileAsset wallPrefab = default, redDestinationPrefab = default, blueDestinationPrefab = default;
-    [SerializeField]
-    CharacterAsset redCharacterPrefab = default, blueCharacterPrefab = default;
-    [SerializeField, Range(2, 128)]
-    int xsize = 128;
-    [SerializeField, Range(2, 128)]
-    int zsize = 128;
-    [SerializeField, Range(0.1f, 1.0f)]
-    float tileSize = 0.2f;
 
-    Dictionary<int, GameTile> tiles;
-    List<Character> characters;
+    [SerializeField, Range(0.1f, 1.0f)]
+    float squareSize = 0.2f;
+    [SerializeField]
+    Texture2D squareTexture = default;
+    [SerializeField]
+    Transform wallPrefab = default, redDestinationPrefab = default, blueDestinationPrefab = default;
+    [SerializeField]
+    Transform redCharacterPrefab = default, blueCharacterPrefab = default;
+    [SerializeField]
+    float mass = 1.0f;
+    [SerializeField]
+    float radius = 0.6f;
+    [SerializeField]
+    float maxSpeed = 2.0f;
+
+    Dictionary<int, Wall> walls;
+    List<Character> redCharacters;
+    List<Character> blueCharacters;
+    Destination redDestination;
+    Destination blueDestination;
     GridNavMesh navMesh;
     GridNavManager navManager;
-    int redDestinationIndex;
-    int blueDestinationIndex;
 
     void Awake()
     {
-        tiles = new Dictionary<int, GameTile>();
-        transform.localScale = new Vector3(xsize * tileSize, 0.01f, zsize * tileSize);
+        var xsize = (int)(transform.localScale.x / squareSize);
+        var zsize = (int)(transform.localScale.z / squareSize);
+        //transform.localScale = new Vector3(xsize * squareSize, 0.1f, zsize * squareSize);
         var material = this.GetComponent<MeshRenderer>().material;
-        material.mainTexture = tileTexture;
+        material.mainTexture = squareTexture;
         material.SetTextureScale("_MainTex", new Vector2(xsize, zsize));
 
-        characters = new List<Character>();
-
-        var offset = new Vector3(xsize * tileSize * 0.5f, 0, zsize * tileSize * 0.5f);
+        walls = new Dictionary<int, Wall>();
+        redCharacters = new List<Character>();
+        blueCharacters = new List<Character>();
+        redDestination = new Destination
+        {
+            index = 0,
+            asset = GameObject.Instantiate(redDestinationPrefab).gameObject,
+        };
+        blueDestination = new Destination
+        {
+            index = 1,
+            asset = GameObject.Instantiate(blueDestinationPrefab).gameObject,
+        };
         navMesh = new GridNavMesh();
-        navMesh.Init(transform.position - offset, xsize, zsize, tileSize);
+        navMesh.Init(transform.position - new Vector3(xsize * squareSize * 0.5f, 0, zsize * squareSize * 0.5f), xsize, zsize, squareSize);
         navManager = new GridNavManager();
         navManager.Init(navMesh);
-
-        redDestinationIndex = -1;
-        blueDestinationIndex = -1;
+        redDestination.asset.transform.position = navMesh.GetSquarePos(redDestination.index);
+        blueDestination.asset.transform.position = navMesh.GetSquarePos(blueDestination.index);
     }
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            AddCharacter(CharacterType.Red);
+            AddRedCharacter();
         }
         if (Input.GetKeyDown(KeyCode.Alpha2))
         {
-            AddCharacter(CharacterType.Blue);
+            AddBlueCharacter();
         }
         if (Input.GetKeyDown(KeyCode.Alpha3))
         {
-            SetTile(GameTileType.RedDestination);
+            SetRedDesitination();
         }
         if (Input.GetKeyDown(KeyCode.Alpha4))
         {
-            SetTile(GameTileType.BlueDestination);
+            SetBlueDestination();
         }
         if (Input.GetKeyDown(KeyCode.Alpha5))
         {
-            SetTile(GameTileType.Wall);
+            AddWall();
         }
-        foreach (var c in characters)
+        if (Input.GetKeyDown(KeyCode.Delete))
         {
-            c.Update();
+            RemoveObject();
         }
         navManager.Update(Time.deltaTime);
-    }
-    void AddCharacter(CharacterType type)
-    {
-        var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
+        foreach (var c in redCharacters)
         {
-            CharacterAsset prefab = null;
-            switch (type)
+            if (!navManager.GetLocation(c.navAgentID, out var pos, out var forward))
             {
-                case CharacterType.Red:
-                    prefab = redCharacterPrefab;
-                    break;
-                case CharacterType.Blue:
-                    prefab = blueCharacterPrefab;
-                    break;
-                default:
-                    Debug.Assert(false, "unsupported character type:" + type);
-                    break;
+                continue;
             }
-            var character = new Character(prefab, type, hit.point, Vector3.forward, 0.6f, navManager);
-            characters.Add(character);
+            c.asset.transform.position = pos;
+            c.asset.transform.forward = forward;
         }
-    }
-    bool RemoveTile(int index)
-    {
-        if (tiles.TryGetValue(index, out var tile))
+        foreach (var c in blueCharacters)
         {
-            if (tile.Type == GameTileType.Wall)
+            if (!navManager.GetLocation(c.navAgentID, out var pos, out var forward))
             {
-                navMesh.SetSquare(index % xsize, index / xsize, 1.0f, false);
+                continue;
             }
-            else if (tile.Type == GameTileType.RedDestination)
+            c.asset.transform.position = pos;
+            c.asset.transform.forward = forward;
+        }
+    }
+    void OnDrawGizmos()
+    {
+        if (redCharacters != null)
+        {
+            foreach (var c in redCharacters)
             {
-                redDestinationIndex = -1;
+                DrawCharacterDetail(c, Color.red);
             }
-            else if (tile.Type == GameTileType.BlueDestination)
+        }
+        if (blueCharacters != null)
+        {
+            foreach (var c in blueCharacters)
             {
-                blueDestinationIndex = -1;
+                DrawCharacterDetail(c, Color.blue);
             }
-            tile.Clear();
-            tiles.Remove(index);
-            return true;
         }
-        return false;
     }
-    Vector3 GetTilePos(int index)
+    void DrawCharacterDetail(Character c, Color color)
     {
-        var x = index % xsize;
-        var z = index / xsize;
-        var px = (x - xsize * 0.5f + 0.5f) * tileSize;
-        var pz = (z - zsize * 0.5f + 0.5f) * tileSize;
-        return new Vector3(px, 0.0f, pz);
+        Gizmos.color = Color.red;
+        navMesh.ClampInBounds(c.asset.transform.position, out var index, out var pos);
+        pos = navMesh.GetSquarePos(index);
+
+        int unitSize = (int)(c.radius * 2 / navMesh.SquareSize - 1e-4f) + 1;
+        if ((unitSize & 1) == 0)
+        {
+            unitSize++;
+        }
+        Gizmos.DrawCube(pos, new Vector3(unitSize * navMesh.SquareSize, 0.1f, unitSize * navMesh.SquareSize));
+
+        var p1 = c.asset.transform.position + Vector3.up;
+        var prefVelocity = navManager.GetPrefVelocity(c.navAgentID);
+        if (prefVelocity.sqrMagnitude >= 1e-4f)
+        {
+            var p2 = p1 + prefVelocity;
+            UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.black, null, 5);
+        }
+        var velocity = navManager.GetVelocity(c.navAgentID);
+        if (velocity.sqrMagnitude >= 1e-5f)
+        {
+            var p2 = p1 + velocity;
+            UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.white, null, 5);
+        }
     }
-    Vector3 GetTilePos(int x, int z)
-    {
-        var px = (x - xsize * 0.5f + 0.5f) * tileSize;
-        var pz = (z - zsize * 0.5f + 0.5f) * tileSize;
-        return new Vector3(px, 0.0f, pz);
-    }
-    bool AddTile(int index, GameTileType type)
-    {
-        if (tiles.ContainsKey(index))
-        {
-            return false;
-        }
-        GameTileAsset prefab = null;
-        if (type == GameTileType.Wall)
-        {
-            prefab = wallPrefab;
-            navMesh.SetSquare(index % xsize, index / xsize, 1.0f, true);
-        }
-        else if (type == GameTileType.RedDestination)
-        {
-            RemoveTile(redDestinationIndex);
-            prefab = redDestinationPrefab;
-            redDestinationIndex = index;
-        }
-        else if (type == GameTileType.BlueDestination)
-        {
-            RemoveTile(blueDestinationIndex);
-            prefab = blueDestinationPrefab;
-            blueDestinationIndex = index;
-        }
-        else
-        {
-            return false;
-        }
-        var tile = new GameTile(prefab, type, index, GetTilePos(index), tileSize);
-        tiles.Add(index, tile);
-        return true;
-    }
-    void SetTile(GameTileType type)
+    void AddRedCharacter()
     {
         var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
         {
             return;
         }
-        var pos = hit.point;
-        int x = (int)((pos.x + xsize * tileSize * 0.5f) / tileSize);
-        int z = (int)((pos.z + zsize * tileSize * 0.5f) / tileSize);
-        if (x < 0 || x >= xsize || z < 0 || z >= zsize)
+        var asset = GameObject.Instantiate(redCharacterPrefab).gameObject;
+        asset.transform.position = hit.point;
+        asset.transform.forward = Vector3.forward;
+        asset.transform.localScale = new Vector3(radius, radius, radius);
+        var param = new GridNavAgentParam
+        {
+            mass = mass,
+            radius = radius,
+            maxSpeed = maxSpeed,
+        };
+        var navAgentID = navManager.AddAgent(asset.transform.position, asset.transform.forward, param);
+        var c = new Character { asset = asset, navAgentID = navAgentID };
+        redCharacters.Add(c);
+    }
+    void AddBlueCharacter()
+    {
+        var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
         {
             return;
         }
-        var index = x + z * xsize;
-        if (RemoveTile(index))
+        var asset = GameObject.Instantiate(blueCharacterPrefab).gameObject;
+        asset.transform.position = hit.point;
+        asset.transform.forward = Vector3.forward;
+        asset.transform.localScale = new Vector3(radius, radius, radius);
+        var param = new GridNavAgentParam
+        {
+            mass = mass,
+            radius = radius,
+            maxSpeed = maxSpeed,
+        };
+        var navAgentID = navManager.AddAgent(asset.transform.position, asset.transform.forward, param);
+        var c = new Character { asset = asset, navAgentID = navAgentID };
+        blueCharacters.Add(c);
+    }
+    void AddWall()
+    {
+        var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
         {
             return;
         }
-        AddTile(index, type);
-        if (type == GameTileType.RedDestination)
+        var index = navMesh.GetSquareIndex(hit.point);
+        if (navMesh.IsSquareBlocked(index))
         {
-            foreach (var c in characters)
-            {
-                if (c.Type == CharacterType.Red)
-                {
-                    c.StartMoving(pos);
-                }
-            }
+            return;
         }
-        else if (type == GameTileType.BlueDestination)
+        navMesh.SetSquare(index, 1.0f, true);
+        var asset = GameObject.Instantiate(wallPrefab).gameObject;
+        var wall = new Wall { asset = asset };
+        walls.Add(index, wall);
+    }
+    void SetRedDesitination()
+    {
+        var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
         {
-            foreach (var c in characters)
-            {
-                if (c.Type == CharacterType.Blue)
-                {
-                    c.StartMoving(pos);
-                }
-            }
+            return;
+        }
+        navMesh.ClampInBounds(hit.point, out var index, out var pos);
+        redDestination.index = index;
+        redDestination.asset.transform.position = pos;
+        foreach (var c in redCharacters)
+        {
+            navManager.StartMoving(c.navAgentID, pos);
         }
     }
-    void OnDrawGizmos()
+    void SetBlueDestination()
     {
-        if (characters != null)
+        var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
         {
-            foreach (var c in characters)
+            return;
+        }
+        navMesh.ClampInBounds(hit.point, out var index, out var pos);
+        blueDestination.index = index;
+        blueDestination.asset.transform.position = pos;
+        foreach (var c in blueCharacters)
+        {
+            navManager.StartMoving(c.navAgentID, pos);
+        }
+    }
+    void RemoveObject()
+    {
+        var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
+        {
+            return;
+        }
+        var index = navMesh.GetSquareIndex(hit.point);
+        if (walls.TryGetValue(index, out var wall))
+        {
+            navMesh.SetSquare(index, 1.0f, false);
+            walls.Remove(index);
+        }
+        foreach (var c in redCharacters)
+        {
+            if ((c.asset.transform.position - hit.point).sqrMagnitude <= c.radius * c.radius)
             {
-                if (c.Type == CharacterType.Red)
-                {
-                    Gizmos.color = Color.red;
-                }
-                else
-                {
-                    Gizmos.color = Color.blue;
-                }
-                int x = (int)((c.Position.x + xsize * tileSize * 0.5f) / tileSize);
-                int z = (int)((c.Position.z + zsize * tileSize * 0.5f) / tileSize);
-                int unitSize = (int)(c.Radius * 2 / navMesh.SquareSize - 0.001f) + 1;
-                if ((unitSize & 1) == 0)
-                {
-                    unitSize++;
-                }
-                Gizmos.DrawCube(GetTilePos(x, z), new Vector3(tileSize * unitSize, 0.1f, tileSize * unitSize));
-                //
-                var p1 = c.Position + Vector3.up;
-                var prefVelocity = navManager.GetPrefVelocity(c.NavAgentID);
-                if (prefVelocity.sqrMagnitude >= 1e-5f)
-                {
-                    var p2 = p1 + prefVelocity;
-                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.black, null, 5);
-                }
-                var velocity = navManager.GetVelocity(c.NavAgentID);
-                if (velocity.sqrMagnitude >= 1e-5f)
-                {
-                    var p2 = p1 + velocity;
-                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.white, null, 5);
-                }
+                navManager.RemoveAgent(c.navAgentID);
+                Destroy(c.asset);
+                redCharacters.Remove(c);
+                break;
+            }
+        }
+        foreach (var c in blueCharacters)
+        {
+            if ((c.asset.transform.position - hit.point).sqrMagnitude <= c.radius * c.radius)
+            {
+                navManager.RemoveAgent(c.navAgentID);
+                Destroy(c.asset);
+                blueCharacters.Remove(c);
+                break;
             }
         }
     }
