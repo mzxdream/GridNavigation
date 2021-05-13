@@ -174,7 +174,7 @@ public class Game : MonoBehaviour
         var asset = GameObject.Instantiate(redCharacterPrefab).gameObject;
         asset.transform.position = hit.point;
         asset.transform.forward = Vector3.forward;
-        asset.transform.localScale = new Vector3(radius, 0.5f, radius);
+        asset.transform.localScale = new Vector3(radius * 2.0f, 0.5f, radius * 2.0f);
         var param = new GridNavAgentParam
         {
             mass = mass,
@@ -195,7 +195,7 @@ public class Game : MonoBehaviour
         var asset = GameObject.Instantiate(blueCharacterPrefab).gameObject;
         asset.transform.position = hit.point;
         asset.transform.forward = Vector3.forward;
-        asset.transform.localScale = new Vector3(radius, 0.5f, radius);
+        asset.transform.localScale = new Vector3(radius * 2.0f, 0.5f, radius * 2.0f);
         var param = new GridNavAgentParam
         {
             mass = mass,
