@@ -16,6 +16,9 @@ public static class GridNavMath
         GridNavDirectionOpt.Left | GridNavDirectionOpt.Up, GridNavDirectionOpt.Right | GridNavDirectionOpt.Up,
         GridNavDirectionOpt.Left | GridNavDirectionOpt.Down, GridNavDirectionOpt.Right | GridNavDirectionOpt.Down
     };
+    private static readonly int[] dirX = { 0, -1, 1, 0, 0, -1, 1, -1, 1 };
+    private static readonly int[] dirZ = { 0, 0, 0, 1, -1, 1, 1, -1, -1 };
+    private static readonly float[] dirCost = { 0, 1.0f, 1.0f, 1.0f, 1.0f, 1.4142f, 1.4142f, 1.4142f, 1.4142f };
 
     public static GridNavDirection CombineDirection(GridNavDirection dir1, GridNavDirection dir2)
     {

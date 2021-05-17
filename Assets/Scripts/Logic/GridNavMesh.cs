@@ -1,21 +1,18 @@
 using UnityEngine;
 
-class GridNavSquare
-{
-    public float cost;
-    public bool isBlocked;
-}
-
 public class GridNavMesh
 {
-    private static readonly int[] dirX = { 0, -1, 1, 0, 0, -1, 1, -1, 1 };
-    private static readonly int[] dirZ = { 0, 0, 0, 1, -1, 1, 1, -1, -1 };
-    private static readonly float[] dirCost = { 0, 1.0f, 1.0f, 1.0f, 1.0f, 1.4142f, 1.4142f, 1.4142f, 1.4142f };
     private Vector3 bmin;
     private int xsize;
     private int zsize;
     private float squareSize;
-    private GridNavSquare[] squares;
+    private int[] squareTypeMap; // xsize * zsize origin data
+    private float[] cornerHeightMap; // (xsize + 1) * (zsize + 1) origin data
+    private float[] centerHeightMap; // xsize * zsize
+    private Vector3[] faceNormals; // xsize * zsize * 2
+    private Vector3[] centerNormals; // xsize * zsize
+    private Vector3[] centerNormals2D; // xsize * zsize
+    private float[] slopeMap; // (xsize / 2) * (zsize / 2)
 
     public int XSize { get => xsize; }
     public int ZSize { get => zsize; }
@@ -31,23 +28,35 @@ public class GridNavMesh
         this.xsize = xsize;
         this.zsize = zsize;
         this.squareSize = squareSize;
-        this.squares = new GridNavSquare[xsize * zsize];
-        for (int z = 0; z < zsize; z++)
-        {
-            for (int x = 0; x < xsize; x++)
-            {
-                this.squares[x + z * xsize] = new GridNavSquare
-                {
-                    cost = 1.0f,
-                    isBlocked = false,
-                };
-            }
-        }
+        this.squareTypeMap = new int[xsize * zsize];
+        this.cornerHeightMap = new float[(xsize + 1) * (zsize + 1)];
+        this.centerHeightMap = new float[xsize * zsize];
+        this.faceNormals = new Vector3[xsize * zsize * 2];
+        this.centerNormals = new Vector3[xsize * zsize];
+        this.centerNormals2D = new Vector3[xsize * zsize];
+        this.slopeMap = new float[(xsize / 2) * (zsize / 2)];
         return true;
     }
     public void Clear()
     {
     }
+    public void SetSquareType(int x, int z, int type)
+    {
+        Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
+        squareTypeMap[x + z * xsize] = type;
+    }
+    public void SetCornerHeight(int x, int z, float height)
+    {
+        Debug.Assert(x >= 0 && x <= xsize && z >= 0 && z <= zsize);
+        cornerHeightMap[x + z * (xsize + 1)] = height;
+    }
+    public void UpdateHeightMap()
+    {
+    }
+
+
+
+
     public void GetSquareXZ(int index, out int x, out int z)
     {
         x = index & 0xFFFF;
@@ -152,5 +161,37 @@ public class GridNavMesh
         int dx = Mathf.Abs(ex - sx);
         int dz = Mathf.Abs(ez - sz);
         return (dx * dx + dz * dz) * squareSize * squareSize;
+    }
+    private void UpdateCenterHeightMap(int xmin, int xmax, int zmin, int zmax)
+    {
+        for (int z = zmin; z <= zmax; z++)
+        {
+            for (int x = xmin; x <= xmax; x++)
+            {
+                float height = cornerHeightMap[x + z * (xsize + 1)]
+                    + cornerHeightMap[x + 1 + z * (xsize + 1)]
+                    + cornerHeightMap[x + (z + 1) * (xsize + 1)]
+                    + cornerHeightMap[(x + 1) + (z + 1) * (xsize + 1)];
+
+                centerHeightMap[x + z * xsize] = height * 0.25f;
+            }
+        }
+    }
+    private void UpdateFaceNormals(int xmin, int xmax, int zmin, int zmax)
+    {
+        xmin = Mathf.Max(0, xmin - 1);
+        xmax = Mathf.Min(xsize - 1, xmax + 1);
+        zmin = Mathf.Max(0, zmin - 1);
+        zmax = Mathf.Min(zsize - 1, zmax + 1);
+        for (int z = zmin; z <= zmax; z++)
+        {
+            for (int x = xmin; x <= xmax; x++)
+            {
+                float hTL = cornerHeightMap[x + z * (xsize + 1)];
+                float hTR = cornerHeightMap[x + 1 + z * (xsize + 1)];
+                float hBL = cornerHeightMap[x + (z + 1) * (xsize + 1)];
+                float hBR = cornerHeightMap[(x + 1) + (z + 1) * (xsize + 1)];
+            }
+        }
     }
 }
