@@ -191,6 +191,67 @@ public class GridNavMesh
                 float hTR = cornerHeightMap[x + 1 + z * (xsize + 1)];
                 float hBL = cornerHeightMap[x + (z + 1) * (xsize + 1)];
                 float hBR = cornerHeightMap[(x + 1) + (z + 1) * (xsize + 1)];
+                //  *---> e1
+                //  |
+                //  |
+                //  v
+                //  e2
+                // Vector3 e1(squareSize, hTR - hTL, 0);
+                // Vector3 e2(0, hBL - hTL, squareSize);
+                // Vector3 fnTL = Vector3.Cross(e2, e1).normalized
+                Vector3 fnTL = new Vector3(-(hTR - hTL), squareSize, -(hBL - hTL)).normalized;
+                //         e3
+                //         ^
+                //         |
+                //         |
+                //  e4 <---*
+                // Vector3 e3(-squareSize, hBL - hBR, 0);
+                // Vector3 e4(0, hTR - hBR, -squareSize);
+                // Vector3 fnBR = Vector3.Cross(e4, e3).normalized;
+                Vector3 fnBR = new Vector3(hBL - hBR, squareSize, hTR - hBR).normalized;
+                faceNormals[(x + z * xsize) * 2] = fnTL;
+                faceNormals[(x + z * xsize) * 2 + 1] = fnBR;
+                centerNormals[x + z * xsize] = (fnTL + fnBR).normalized;
+                centerNormals2D[x + z * xsize] = GridNavMath.Normalized2D(fnTL + fnBR);
+            }
+        }
+    }
+    private void UpdateSlopeMap(int xmin, int xmax, int zmin, int zmax)
+    {
+        xmin = Mathf.Max(0, xmin / 2 - 1);
+        xmax = Mathf.Min(xsize / 2 - 1, xmax / 2 + 1);
+        zmin = Mathf.Max(0, zmin / 2 - 1);
+        zmax = Mathf.Min(zsize / 2 - 1, zmax / 2 + 1);
+
+        for (int z = zmin; z <= zmax; z++)
+        {
+            for (int x = xmin; x <= xmax; x++)
+            {
+                int idx0 = x * 2 + (z * 2) * xsize;
+                int idx1 = x * 2 + (z * 2 + 1) * xsize;
+
+                float avgSlope = 0.0f;
+                avgSlope += faceNormals[(idx0) * 2].y;
+                avgSlope += faceNormals[(idx0) * 2 + 1].y;
+                avgSlope += faceNormals[(idx0 + 1) * 2].y;
+                avgSlope += faceNormals[(idx0 + 1) * 2 + 1].y;
+                avgSlope += faceNormals[(idx1) * 2].y;
+                avgSlope += faceNormals[(idx1) * 2 + 1].y;
+                avgSlope += faceNormals[(idx1 + 1) * 2].y;
+                avgSlope += faceNormals[(idx1 + 1) * 2 + 1].y;
+                avgSlope *= 0.125f;
+
+                float maxSlope = faceNormals[(idx0) * 2].y;
+                maxSlope = Mathf.Min(maxSlope, faceNormals[(idx0) * 2 + 1].y);
+                maxSlope = Mathf.Min(maxSlope, faceNormals[(idx0 + 1) * 2].y);
+                maxSlope = Mathf.Min(maxSlope, faceNormals[(idx0 + 1) * 2 + 1].y);
+                maxSlope = Mathf.Min(maxSlope, faceNormals[(idx1) * 2].y);
+                maxSlope = Mathf.Min(maxSlope, faceNormals[(idx1) * 2 + 1].y);
+                maxSlope = Mathf.Min(maxSlope, faceNormals[(idx1 + 1) * 2].y);
+                maxSlope = Mathf.Min(maxSlope, faceNormals[(idx1 + 1) * 2 + 1].y);
+
+                float slope = maxSlope + (avgSlope - maxSlope) * (maxSlope / avgSlope);
+                slopeMap[x + z * (xsize / 2)] = 1.0f - slope;
             }
         }
     }
