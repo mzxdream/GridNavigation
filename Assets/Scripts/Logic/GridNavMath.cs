@@ -20,6 +20,15 @@ public static class GridNavMath
     private static readonly int[] dirZ = { 0, 0, 0, 1, -1, 1, 1, -1, -1 };
     private static readonly float[] dirCost = { 0, 1.0f, 1.0f, 1.0f, 1.0f, 1.4142f, 1.4142f, 1.4142f, 1.4142f };
 
+    public static void SquareXZ(int index, out int x, out int z)
+    {
+        x = index & 0xFFFF;
+        z = index >> 16;
+    }
+    public static int SquareIndex(int x, int z)
+    {
+        return x + (z << 16);
+    }
     public static GridNavDirection CombineDirection(GridNavDirection dir1, GridNavDirection dir2)
     {
         return optToDirs[(int)(dirToOpts[(int)dir1] | dirToOpts[(int)dir2])];

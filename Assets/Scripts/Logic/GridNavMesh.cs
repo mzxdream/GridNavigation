@@ -52,21 +52,9 @@ public class GridNavMesh
     }
     public void UpdateHeightMap()
     {
-    }
-
-
-
-
-    public void GetSquareXZ(int index, out int x, out int z)
-    {
-        x = index & 0xFFFF;
-        z = index >> 16;
-        Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
-    }
-    public int GetSquareIndex(int x, int z)
-    {
-        Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
-        return x + (z << 16);
+        UpdateCenterHeightMap(0, xsize - 1, 0, zsize - 1);
+        UpdateFaceNormals(0, xsize - 1, 0, zsize - 1);
+        UpdateSlopeMap(0, xsize - 1, 0, zsize - 1);
     }
     public void GetSquareXZ(Vector3 pos, out int x, out int z)
     {
@@ -75,92 +63,23 @@ public class GridNavMesh
         x = Mathf.Clamp(x, 0, xsize - 1);
         z = Mathf.Clamp(z, 0, zsize - 1);
     }
-    public int GetSquareIndex(Vector3 pos)
+    public void ClampInBounds(Vector3 pos, out int nearestX, out int nearestZ, out Vector3 nearestPos)
     {
-        int x = (int)((pos.x - bmin.x) / squareSize);
-        int z = (int)((pos.z - bmin.z) / squareSize);
-        x = Mathf.Clamp(x, 0, xsize - 1);
-        z = Mathf.Clamp(z, 0, zsize - 1);
-        return GetSquareIndex(x, z);
-    }
-    public int GetSquareCenterIndex(int startIndex, int endIndex)
-    {
-        GetSquareXZ(startIndex, out var sx, out var sz);
-        GetSquareXZ(endIndex, out var ex, out var ez);
-        var mx = (sx + ex) >> 1;
-        var mz = (sz + ez) >> 1;
-        return GetSquareIndex(mx, mz);
-    }
-    public int GetSuqareNeighbourIndex(int index, GridNavDirection dir)
-    {
-        GetSquareXZ(index, out var x, out var z);
-        x += dirX[(int)dir];
-        z += dirZ[(int)dir];
-        if (x < 0 || x >= xsize || z < 0 || z >= zsize)
+        nearestX = (int)((pos.x - bmin.x) / squareSize);
+        nearestZ = (int)((pos.z - bmin.z) / squareSize);
+        if (nearestX >= 0 && nearestX < xsize && nearestZ >= 0 && nearestZ < zsize)
         {
-            return -1;
-        }
-        return GetSquareIndex(x, z);
-    }
-    public void ClampInBounds(Vector3 pos, out int nearestIndex, out Vector3 nearestPos)
-    {
-        int x = (int)((pos.x - bmin.x) / squareSize);
-        int z = (int)((pos.z - bmin.z) / squareSize);
-        if (x < 0 || x >= xsize || z < 0 || z >= zsize)
-        {
-            x = Mathf.Clamp(x, 0, xsize - 1);
-            z = Mathf.Clamp(z, 0, zsize - 1);
-            nearestIndex = GetSquareIndex(x, z);
-            nearestPos = GetSquarePos(nearestIndex);
-        }
-        else
-        {
-            nearestIndex = GetSquareIndex(x, z);
             nearestPos = pos;
+            return;
         }
+        nearestX = Mathf.Clamp(nearestX, 0, xsize - 1);
+        nearestZ = Mathf.Clamp(nearestZ, 0, zsize - 1);
+        nearestPos = GetSquarePos(nearestX, nearestZ);
     }
-    public void SetSquare(int index, float cost, bool isBlocked)
-    {
-        GetSquareXZ(index, out var x, out var z);
-        SetSquare(x, z, cost, isBlocked);
-    }
-    public void SetSquare(int x, int z, float cost, bool isBlocked)
+    public Vector3 GetSquarePos(int x, int z)
     {
         Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
-        var square = squares[x + z * xsize];
-        square.cost = cost;
-        square.isBlocked = isBlocked;
-    }
-    public Vector3 GetSquarePos(int index)
-    {
-        GetSquareXZ(index, out var x, out var z);
         return new Vector3(bmin.x + (x + 0.5f) * squareSize, 0, bmin.z + (z + 0.5f) * squareSize);
-    }
-    public bool IsSquareBlocked(int index)
-    {
-        GetSquareXZ(index, out var x, out var z);
-        return squares[x + z * xsize].isBlocked;
-    }
-    public float GetSquareCost(int index, GridNavDirection dir)
-    {
-        GetSquareXZ(index, out var x, out var z);
-        return squares[x + z * xsize].cost + dirCost[(int)dir] * squareSize;
-    }
-    public float DistanceApproximately(int startIndex, int endIndex)
-    {
-        GetSquareXZ(startIndex, out var sx, out var sz);
-        GetSquareXZ(endIndex, out var ex, out var ez);
-        int dx = Mathf.Abs(ex - sx);
-        int dz = Mathf.Abs(ez - sz);
-        return ((dx + dz) + Mathf.Min(dx, dz) * (1.4142f - 2.0f)) * squareSize;
-    }
-    public float SqrDistance(int startIndex, int endIndex)
-    {
-        GetSquareXZ(startIndex, out var sx, out var sz);
-        GetSquareXZ(endIndex, out var ex, out var ez);
-        int dx = Mathf.Abs(ex - sx);
-        int dz = Mathf.Abs(ez - sz);
-        return (dx * dx + dz * dz) * squareSize * squareSize;
     }
     private void UpdateCenterHeightMap(int xmin, int xmax, int zmin, int zmax)
     {
