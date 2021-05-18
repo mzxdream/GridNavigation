@@ -29,7 +29,6 @@ public class GridNavManager
             return false;
         }
         this.pathRequestQueue = new List<int>();
-        this.tempNum = 0;
         return true;
     }
     public void Clear()

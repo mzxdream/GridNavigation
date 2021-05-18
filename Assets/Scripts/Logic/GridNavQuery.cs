@@ -1,32 +1,63 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum GridNavQueryStatus { Success, Failed, InProgress, }
-
-class GridNavQueryData
+public class GridNavQueryFilter
 {
-    public GridNavQueryStatus status;
-    public IGridNavQueryFilter filter;
-    public int startIndex;
-    public IGridNavQueryConstraint constraint;
-    public GridNavQueryNode lastBestNode;
-    public float lastBestNodeCost;
+    public GridNavAgent agent;
+    public Vector3 startPos;
+    public Vector3 goalPos;
+    public float goalRadius;
 }
+
+//public class GridNavQueryFilterDef
+//{
+//    public GridNavAgent agent;
+//    public int startIndex;
+//    public Vector3 startPos;
+//    public int goalIndex;
+//    public Vector3 goalPos;
+//
+//    public virtual bool IsGoal(GridNavQuery navQuery, int x, int z)
+//    {
+//        return true;
+//    }
+//    public virtual bool WithinConstraints(GridNavQuery navQuery, int x, int z)
+//    {
+//        return true;
+//    }
+//    public virtual float GetHeuristicCost(GridNavQuery navQuery, int x, int z)
+//    {
+//        return 0;
+//    }
+//}
+
+public enum GridNavQueryStatus { Success = 1, Failed = 2, InProgress = 4, Partial = 8 }
 
 public class GridNavQuery
 {
+    class QueryData
+    {
+        public GridNavQueryStatus status;
+        public GridNavQueryFilter filter;
+        public GridNavQueryNode startNode;
+        public GridNavQueryNode lastBestNode;
+        public float lastBestNodeCost;
+    }
+
     private GridNavMesh navMesh;
+    private GridNavBlockingObjectMap blockingObjectMap;
     private GridNavQueryNodePool nodePool;
     private GridNavQueryPriorityQueue openQueue;
-    private GridNavQueryData queryData;
+    private QueryData queryData;
 
-    public bool Init(GridNavMesh navMesh, int maxNodes = 8192)
+    public bool Init(GridNavMesh navMesh, GridNavBlockingObjectMap blockingObjectMap, int maxNodes = 8192)
     {
-        Debug.Assert(maxNodes > 0);
+        Debug.Assert(navMesh != null && blockingObjectMap != null && maxNodes > 0);
         this.navMesh = navMesh;
+        this.blockingObjectMap = blockingObjectMap;
         this.nodePool = new GridNavQueryNodePool(maxNodes);
         this.openQueue = new GridNavQueryPriorityQueue(maxNodes);
-        this.queryData = new GridNavQueryData();
+        this.queryData = new QueryData();
         return true;
     }
     public void Clear()
@@ -36,246 +67,16 @@ public class GridNavQuery
     {
         return navMesh;
     }
-    public bool FindPath(IGridNavQueryFilter filter, int startIndex, IGridNavQueryConstraint constraint, out List<int> path)
+    public GridNavBlockingObjectMap GetBlockingObjectMap()
     {
-        Debug.Assert(filter != null && constraint != null);
-        path = new List<int>();
-        if (filter.IsBlocked(navMesh, startIndex))
-        {
-            return false;
-        }
-
-        nodePool.Clear();
-        openQueue.Clear();
-
-        var snode = nodePool.GetNode(startIndex);
-        if (snode == null)
-        {
-            return false;
-        }
-        snode.gCost = 0;
-        snode.fCost = constraint.GetHeuristicCost(navMesh, startIndex);
-        snode.parent = null;
-        snode.flags |= (int)GridNavNodeFlags.Open;
-        openQueue.Push(snode);
-
-        var lastBestNode = snode;
-        var lastBestNodeCost = snode.fCost;
-        GridNavQueryNode bestNode = null;
-        while ((bestNode = openQueue.Pop()) != null)
-        {
-            bestNode.flags &= ~(int)GridNavNodeFlags.Open;
-            bestNode.flags |= (int)GridNavNodeFlags.Closed;
-            if (constraint.IsGoal(navMesh, bestNode.index))
-            {
-                lastBestNode = bestNode;
-                break;
-            }
-            var leftBlocked = TestNeighbourBlocked(filter, constraint, bestNode, GridNavDirection.Left, ref lastBestNodeCost, ref lastBestNode);
-            var rightBlocked = TestNeighbourBlocked(filter, constraint, bestNode, GridNavDirection.Right, ref lastBestNodeCost, ref lastBestNode);
-            var upBlocked = TestNeighbourBlocked(filter, constraint, bestNode, GridNavDirection.Up, ref lastBestNodeCost, ref lastBestNode);
-            var downBlocked = TestNeighbourBlocked(filter, constraint, bestNode, GridNavDirection.Down, ref lastBestNodeCost, ref lastBestNode);
-            if (!leftBlocked)
-            {
-                if (!upBlocked)
-                {
-                    TestNeighbourBlocked(filter, constraint, bestNode, GridNavDirection.LeftUp, ref lastBestNodeCost, ref lastBestNode);
-                }
-                if (!downBlocked)
-                {
-                    TestNeighbourBlocked(filter, constraint, bestNode, GridNavDirection.LeftDown, ref lastBestNodeCost, ref lastBestNode);
-                }
-            }
-            if (!rightBlocked)
-            {
-                if (!upBlocked)
-                {
-                    TestNeighbourBlocked(filter, constraint, bestNode, GridNavDirection.RightUp, ref lastBestNodeCost, ref lastBestNode);
-                }
-                if (!downBlocked)
-                {
-                    TestNeighbourBlocked(filter, constraint, bestNode, GridNavDirection.RightDown, ref lastBestNodeCost, ref lastBestNode);
-                }
-            }
-        }
-        var curNode = lastBestNode;
-        do
-        {
-            path.Add(curNode.index);
-            curNode = curNode.parent;
-        } while (curNode != null);
-        path.Reverse();
-        return true;
+        return blockingObjectMap;
     }
-    public bool Raycast(IGridNavQueryFilter filter, int startIndex, int endIndex, out List<int> path, out float totalCost)
+    public GridNavQueryStatus InitSlicedFindPath(GridNavQueryFilter filter)
     {
         Debug.Assert(filter != null);
-        path = new List<int>();
-        totalCost = 0.0f;
-        if (filter.IsBlocked(navMesh, startIndex))
-        {
-            return false;
-        }
-        if (startIndex == endIndex)
-        {
-            path.Add(startIndex);
-            return true;
-        }
-        path.Add(startIndex);
-        navMesh.GetSquareXZ(startIndex, out var sx, out var sz);
-        navMesh.GetSquareXZ(endIndex, out var ex, out var ez);
-        int dx = ex - sx;
-        int dz = ez - sz;
-        int nx = Mathf.Abs(dx);
-        int nz = Mathf.Abs(dz);
-        int signX = dx > 0 ? 1 : -1;
-        int signZ = dz > 0 ? 1 : -1;
-        int x = sx;
-        int z = sz;
-        int ix = 0;
-        int iz = 0;
-        var dirX = dx > 0 ? GridNavDirection.Right : GridNavDirection.Left;
-        var dirZ = dz > 0 ? GridNavDirection.Up : GridNavDirection.Down;
-        var dirXZ = GridNavMath.CombineDirection(dirX, dirZ);
-        var prevDir = GridNavDirection.None;
-        while (ix < nx || iz < nz)
-        {
-            var t1 = (2 * ix + 1) * nz;
-            var t2 = (2 * iz + 1) * nx;
-            if (t1 < t2) //Horizontal
-            {
-                x += signX;
-                ix++;
-                if (prevDir == dirZ) //防止对角线过不去，但是可以先上下再左右
-                {
-                    var tIndex = navMesh.GetSquareIndex(x, z);
-                    if (filter.IsBlocked(navMesh, tIndex))
-                    {
-                        return false;
-                    }
-                    var tCost = filter.GetCost(navMesh, tIndex, dirXZ);
-                    if (tCost < 0)
-                    {
-                        return false;
-                    }
-                }
-                var index = navMesh.GetSquareIndex(x, z);
-                if (filter.IsBlocked(navMesh, index))
-                {
-                    return false;
-                }
-                var cost = filter.GetCost(navMesh, index, dirX);
-                if (cost < 0)
-                {
-                    return false;
-                }
-                totalCost += cost;
-                path.Add(index);
-                prevDir = dirX;
-            }
-            else if (t1 > t2) //Vertical
-            {
-                z += signZ;
-                iz++;
-                if (prevDir == dirX) //防止对角线过不去，但是可以先上下再左右
-                {
-                    var tIndex = navMesh.GetSquareIndex(x, z);
-                    if (filter.IsBlocked(navMesh, tIndex))
-                    {
-                        return false;
-                    }
-                    var tCost = filter.GetCost(navMesh, tIndex, dirXZ);
-                    if (tCost < 0)
-                    {
-                        return false;
-                    }
-                }
-                var index = navMesh.GetSquareIndex(x, z);
-                if (filter.IsBlocked(navMesh, index))
-                {
-                    return false;
-                }
-                var cost = filter.GetCost(navMesh, index, dirZ);
-                if (cost < 0)
-                {
-                    return false;
-                }
-                totalCost += cost;
-                path.Add(index);
-                prevDir = dirZ;
-            }
-            else //Cross
-            {
-                var xIndex = navMesh.GetSquareIndex(x + signX, z);
-                var zIndex = navMesh.GetSquareIndex(x, z + signZ);
-                if (filter.IsBlocked(navMesh, xIndex) || filter.GetCost(navMesh, xIndex, dirX) < 0
-                    || filter.IsBlocked(navMesh, zIndex) || filter.GetCost(navMesh, zIndex, dirZ) < 0)
-                {
-                    return false;
-                }
-                x += signX;
-                z += signZ;
-                ix++;
-                iz++;
-                var index = navMesh.GetSquareIndex(x, z);
-                if (filter.IsBlocked(navMesh, index))
-                {
-                    return false;
-                }
-                var cost = filter.GetCost(navMesh, index, dirXZ);
-                if (cost < 0)
-                {
-                    return false;
-                }
-                totalCost += cost;
-                path.Add(index);
-                prevDir = dirXZ;
-            }
-        }
-        return true;
-    }
-    public bool FindStraightPath(IGridNavQueryFilter filter, List<int> path, out List<int> straightPath)
-    {
-        Debug.Assert(filter != null);
-        straightPath = new List<int>();
-        if (path.Count <= 1)
-        {
-            return false;
-        }
-        //去除直线上的点
-        straightPath.Add(path[0]);
-        int oldDir = path[1] - path[0];
-        for (int i = 2; i < path.Count; i++)
-        {
-            int newDir = path[i] - path[i - 1];
-            if (oldDir != newDir)
-            {
-                oldDir = newDir;
-                straightPath.Add(path[i - 1]);
-            }
-        }
-        straightPath.Add(path[path.Count - 1]);
-        //去除可以直达的拐点
-        for (int i = straightPath.Count - 1; i > 1; i--)
-        {
-            for (int j = 0; j < i - 1; j++)
-            {
-                if (Raycast(filter, straightPath[i], straightPath[j], out _, out _))
-                {
-                    for (int k = i - 1; k > j; k--)
-                    {
-                        straightPath.RemoveAt(k);
-                    }
-                    i = j + 1;
-                    break;
-                }
-            }
-        }
-        return true;
-    }
-    public GridNavQueryStatus InitSlicedFindPath(IGridNavQueryFilter filter, int startIndex, IGridNavQueryConstraint constraint)
-    {
-        Debug.Assert(filter != null && constraint != null);
+
+        navMesh.GetSquareXZ(pos, x, z);
+
         queryData.status = GridNavQueryStatus.Failed;
         queryData.filter = filter;
         queryData.startIndex = startIndex;

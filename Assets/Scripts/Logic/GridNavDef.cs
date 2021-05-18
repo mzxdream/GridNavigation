@@ -1,6 +1,21 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+public struct GridNavVector2d : IEqualityComparer<GridNavVector2d>
+{
+    public short x;
+    public short y;
+
+    public bool Equals(GridNavVector2d a, GridNavVector2d b)
+    {
+        return a.x == b.x && a.y == b.y;
+    }
+    public int GetHashCode(GridNavVector2d a)
+    {
+        return ((int)a.x << 16 + a.y).GetHashCode();
+    }
+}
+
 public class GridNavMoveDef
 {
     //speed = (1.0f / (1.0f + slope * slopeMod)) * speedMod * speedModMult
@@ -22,21 +37,21 @@ public struct GridNavAgentParam
     public float maxSpeed;
 }
 
-class GridNavAgent
+public class GridNavAgent
 {
     public enum MoveState { Idle = 0, Requesting = 1, WaitForPath = 2, Moving = 3 }
 
     public int id;
-    public Vector3 pos;
     public GridNavAgentParam param;
     public int unitSize;
     public float radius;
     public MoveState moveState;
-    public int squareIndex;
+    public Vector3 pos;
+    public GridNavVector2d squareIndex;
     public Vector3 goalPos;
+    public GridNavVector2d goalSquareIndex;
     public float goalRadius;
-    public int goalSquareIndex;
-    public List<int> path;
+    public List<Vector3> path;
     public Vector3 prefVelocity;
     public Vector3 velocity;
     public Vector3 newVelocity;
@@ -57,3 +72,5 @@ class GridNavORCAObstacle
     public GridNavORCAObstacle prev;
     public GridNavORCAObstacle next;
 }
+
+public enum GridNavBlockType { None = 0, Moving = 1, Idle = 2, Busy = 4, Block = 8 };

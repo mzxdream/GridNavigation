@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-class GridNavBlockingObjectMap
+public class GridNavBlockingObjectMap
 {
     private Dictionary<int, List<GridNavAgent>> agents;
 
-    private void AddAgent(GridNavAgent agent)
+    public void AddAgent(GridNavAgent agent)
     {
         int halfUnitSize = agent.unitSize >> 1;
         GridNavMath.SquareXZ(agent.squareIndex, out var x, out var z);
@@ -27,7 +27,7 @@ class GridNavBlockingObjectMap
             }
         }
     }
-    private void RemoveSquareAgent(GridNavAgent agent)
+    public void RemoveSquareAgent(GridNavAgent agent)
     {
         int halfUnitSize = agent.unitSize >> 1;
         GridNavMath.SquareXZ(agent.squareIndex, out var x, out var z);
@@ -50,5 +50,9 @@ class GridNavBlockingObjectMap
                 }
             }
         }
+    }
+    public GridNavBlockType TestBlockTypes(GridNavAgent agent, int x, int z)
+    {
+        return GridNavBlockType.None;
     }
 }
