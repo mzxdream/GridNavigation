@@ -1,61 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public struct Line
-{
-    public Vector3 direction;
-    public Vector3 point;
-}
-
-public class Obstacle
-{
-    public Obstacle next_;
-    public Obstacle previous_;
-    public Vector3 direction_;
-    public Vector3 point_;
-    public bool convex_;
-}
-
-public struct GridNavAgentParam
-{
-    public float mass;
-    public float radius;
-    public float maxSpeed;
-    public float maxAcc;
-    public float maxTurnAngle;
-}
-
-public enum GridNavAgentState { None, Requesting, WaitForPath, Moving }
-
-public class GridNavAgent
-{
-    public int id;
-    public GridNavAgentParam param;
-    public Vector3 pos;
-    public Vector3 frontDir;
-    public int unitSize;
-    public float minExteriorRadius;
-    public float maxInteriorRadius;
-    public GridNavAgentState state;
-    public int squareIndex;
-    public Vector3 goalPos;
-    public float goalRadius;
-    public int goalSquareIndex;
-    public List<int> path;
-    public List<int> path2;
-    public Vector3 prefVelocity;
-    public Vector3 velocity;
-    public Vector3 newVelocity;
-    public IGridNavQueryFilter filter;
-    public IGridNavQueryFilter pathFilter;
-    public int tempNum;
-    public List<GridNavAgent> neighbors = new List<GridNavAgent>();
-    public List<Obstacle> obstacleNeighbors = new List<Obstacle>();
-}
-
 public class GridNavManager
 {
-    private static float maxAvoideeCosine = Mathf.Cos(120.0f * Mathf.Deg2Rad);
     private GridNavMesh navMesh;
     private GridNavQuery navQuery;
     private int lastAgentID;
@@ -379,7 +326,7 @@ public class GridNavManager
                 agent.squareIndex = newSquareIndex;
             }
         }
-        
+
     }
     private void ComputeNewVelocity(GridNavAgent agent, float deltaTime)
     {
