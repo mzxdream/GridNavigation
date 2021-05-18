@@ -43,17 +43,17 @@ class GridNavAgent
     public int tempNum;
 }
 
-class ORCALine
+class GridNavORCALine
 {
     public Vector3 point;
     public Vector3 direction;
 }
 
-class ORCAObstacle
+class GridNavORCAObstacle
 {
     public Vector3 point;
     public Vector3 direction;
     public bool isConvex;
-    public ORCAObstacle prev;
-    public ORCAObstacle next;
+    public GridNavORCAObstacle prev;
+    public GridNavORCAObstacle next;
 }

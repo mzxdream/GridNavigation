@@ -7,7 +7,6 @@ public class GridNavManager
     private GridNavQuery navQuery;
     private int lastAgentID;
     private Dictionary<int, GridNavAgent> agents;
-    private Dictionary<int, List<GridNavAgent>> squareAgents;
     private GridNavQuery pathRequestNavQuery;
     private List<int> pathRequestQueue;
     private int tempNum;
@@ -819,53 +818,7 @@ public class GridNavManager
         }
         return agent.velocity;
     }
-    private void AddSquareAgent(int index, GridNavAgent agent)
-    {
-        int halfUnitSize = agent.unitSize >> 1;
-        navMesh.GetSquareXZ(index, out var x, out var z);
-        int xmin = Mathf.Max(0, x - halfUnitSize);
-        int zmin = Mathf.Max(0, z - halfUnitSize);
-        int xmax = Mathf.Min(navMesh.XSize - 1, x + halfUnitSize);
-        int zmax = Mathf.Min(navMesh.ZSize - 1, z + halfUnitSize);
-        for (int tz = zmin; tz <= zmax; tz++)
-        {
-            for (int tx = xmin; tx <= xmax; tx++)
-            {
-                index = navMesh.GetSquareIndex(tx, tz);
-                if (!squareAgents.TryGetValue(index, out var agentList))
-                {
-                    agentList = new List<GridNavAgent>();
-                    squareAgents.Add(index, agentList);
-                }
-                agentList.Add(agent);
-            }
-        }
-    }
-    private void RemoveSquareAgent(int index, GridNavAgent agent)
-    {
-        int halfUnitSize = agent.unitSize >> 1;
-        navMesh.GetSquareXZ(index, out var x, out var z);
-        int xmin = Mathf.Max(0, x - halfUnitSize);
-        int zmin = Mathf.Max(0, z - halfUnitSize);
-        int xmax = Mathf.Min(navMesh.XSize - 1, x + halfUnitSize);
-        int zmax = Mathf.Min(navMesh.ZSize - 1, z + halfUnitSize);
-        for (int tz = zmin; tz <= zmax; tz++)
-        {
-            for (int tx = xmin; tx <= xmax; tx++)
-            {
-                index = navMesh.GetSquareIndex(tx, tz);
-                if (squareAgents.TryGetValue(index, out var agentList))
-                {
-                    agentList.Remove(agent);
-                    if (agentList.Count == 0)
-                    {
-                        squareAgents.Remove(index);
-                    }
-                }
-            }
-        }
-    }
-
+    
     private static bool linearProgram1(IList<Line> lines, int lineNo, float radius, Vector3 optVelocity, bool directionOpt, ref Vector3 result)
     {
         float dotProduct = GridNavMath.Dot2D(lines[lineNo].point, lines[lineNo].direction);
