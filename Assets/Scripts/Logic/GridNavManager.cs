@@ -5,8 +5,8 @@ public class GridNavManager
 {
     private GridNavMesh navMesh;
     private GridNavQuery navQuery;
-    private int lastAgentID;
     private Dictionary<int, GridNavAgent> agents;
+    private int lastAgentID;
     private GridNavQuery pathRequestNavQuery;
     private List<int> pathRequestQueue;
     private int tempNum;
@@ -16,15 +16,14 @@ public class GridNavManager
         Debug.Assert(navMesh != null && maxAgents > 0);
         this.navMesh = navMesh;
         this.navQuery = new GridNavQuery();
-        if (!navQuery.Init(navMesh))
+        if (!navQuery.Init(this))
         {
             return false;
         }
         this.lastAgentID = 0;
         this.agents = new Dictionary<int, GridNavAgent>();
-        this.squareAgents = new Dictionary<int, List<GridNavAgent>>();
         this.pathRequestNavQuery = new GridNavQuery();
-        if (!this.pathRequestNavQuery.Init(navMesh))
+        if (!this.pathRequestNavQuery.Init(this))
         {
             return false;
         }
@@ -36,6 +35,27 @@ public class GridNavManager
         this.navQuery.Clear();
         this.pathRequestNavQuery.Clear();
     }
+    private float GetSquareSpeedMod(GridNavAgent agent, int x, int z)
+    {
+        var halfUnitSize = agent.unitSize >> 1;
+        var xmin = x - halfUnitSize;
+        var xmax = x + halfUnitSize;
+        var zmin = z - halfUnitSize;
+        var zmax = z + halfUnitSize;
+        if (xmin < 0 || xmax >= navMesh.XSize || zmin < 0 || zmax >= navMesh.ZSize)
+        {
+            return 0.0f;
+        }
+        for (int )
+        {
+        }
+    }
+    private float GetSquareSpeedMod(int moveType, int unitSize, int x, int z, Vector3 moveDir)
+    {
+    }
+
+
+
     public int AddAgent(Vector3 pos, Vector3 forward, GridNavAgentParam param)
     {
         int unitSize = (int)(param.radius * 2 / navMesh.SquareSize - 1e-4f) + 1;

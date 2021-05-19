@@ -1,47 +1,58 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GridNavBlockingObjectMap
+namespace GridNav
 {
-    private Dictionary<int, List<GridNavAgent>> agents;
-
-    public void AddAgent(GridNavAgent agent)
+    public class BlockingObjectMap
     {
-        int halfUnitSize = agent.unitSize >> 1;
-        GridNavMath.SquareXZ(agent.squareIndex, out var x, out var z);
-        int xmin = Mathf.Max(0, x - halfUnitSize);
-        int zmin = Mathf.Max(0, z - halfUnitSize);
-        int xmax = Mathf.Min(0xFFFF, x + halfUnitSize);
-        int zmax = Mathf.Min(0xFFFF, z + halfUnitSize);
-        for (int tz = zmin; tz <= zmax; tz++)
+        private int xsize;
+        private int zsize;
+        private Dictionary<int, List<NavAgent>> agents;
+
+        public BlockingObjectMap(int xsize, int zsize)
         {
-            for (int tx = xmin; tx <= xmax; tx++)
+            this.xsize = xsize;
+            this.zsize = zsize;
+            this.agents = new Dictionary<int, List<NavAgent>>();
+        }
+
+        public void AddAgent(NavAgent agent)
+        {
+            MathUtils.SquareXZ(agent.squareIndex, out var x, out var z);
+            int xmin = Mathf.Max(0, x - agent.halfUnitSize);
+            int xmax = Mathf.Min(xsize - 1, x + agent.halfUnitSize);
+            int zmin = Mathf.Max(0, z - agent.halfUnitSize);
+            int zmax = Mathf.Min(zsize - 1, z + agent.halfUnitSize);
+            for (int tz = zmin; tz <= zmax; tz++)
             {
-                var index = GridNavMath.SquareIndex(tx, tz);
-                if (!agents.TryGetValue(index, out var agentList))
+                for (int tx = xmin; tx <= xmax; tx++)
                 {
-                    agentList = new List<GridNavAgent>();
-                    agents.Add(index, agentList);
+                    var index = MathUtils.SquareIndex(tx, tz);
+                    if (!agents.TryGetValue(index, out var agentList))
+                    {
+                        agentList = new List<NavAgent>();
+                        agents.Add(index, agentList);
+                    }
+                    agentList.Add(agent);
                 }
-                agentList.Add(agent);
             }
         }
-    }
-    public void RemoveSquareAgent(GridNavAgent agent)
-    {
-        int halfUnitSize = agent.unitSize >> 1;
-        GridNavMath.SquareXZ(agent.squareIndex, out var x, out var z);
-        int xmin = Mathf.Max(0, x - halfUnitSize);
-        int zmin = Mathf.Max(0, z - halfUnitSize);
-        int xmax = Mathf.Min(0xFFFF, x + halfUnitSize);
-        int zmax = Mathf.Min(0xFFFF, z + halfUnitSize);
-        for (int tz = zmin; tz <= zmax; tz++)
+        public void RemoveAgent(NavAgent agent)
         {
-            for (int tx = xmin; tx <= xmax; tx++)
+            MathUtils.SquareXZ(agent.squareIndex, out var x, out var z);
+            int xmin = Mathf.Max(0, x - agent.halfUnitSize);
+            int xmax = Mathf.Min(xsize - 1, x + agent.halfUnitSize);
+            int zmin = Mathf.Max(0, z - agent.halfUnitSize);
+            int zmax = Mathf.Min(zsize - 1, z + agent.halfUnitSize);
+            for (int tz = zmin; tz <= zmax; tz++)
             {
-                var index = GridNavMath.SquareIndex(tx, tz);
-                if (agents.TryGetValue(index, out var agentList))
+                for (int tx = xmin; tx <= xmax; tx++)
                 {
+                    var index = MathUtils.SquareIndex(tx, tz);
+                    if (!agents.TryGetValue(index, out var agentList))
+                    {
+                        continue;
+                    }
                     agentList.Remove(agent);
                     if (agentList.Count == 0)
                     {
@@ -50,9 +61,53 @@ public class GridNavBlockingObjectMap
                 }
             }
         }
-    }
-    public GridNavBlockType TestBlockTypes(GridNavAgent agent, int x, int z)
-    {
-        return GridNavBlockType.None;
+        public BlockType ObjectBlockType(NavAgent collider, NavAgent collidee)
+        {
+            if (collider == collidee)
+            {
+                return BlockType.None;
+            }
+            if (collidee.isMoving)
+            {
+                return BlockType.Moving;
+            }
+            if (collidee.param.isPushResistant)
+            {
+                return BlockType.Block;
+            }
+            if (collidee.moveState != MoveState.Idle)
+            {
+                return BlockType.Busy;
+            }
+            return BlockType.Idle;
+        }
+        public BlockType TestObjectBlockTypes(NavAgent agent, int x, int z)
+        {
+            var blockTypes = BlockType.None;
+            int xmin = Mathf.Max(0, x - agent.halfUnitSize);
+            int xmax = Mathf.Min(xsize - 1, x + agent.halfUnitSize);
+            int zmin = Mathf.Max(0, z - agent.halfUnitSize);
+            int zmax = Mathf.Min(zsize - 1, z + agent.halfUnitSize);
+            for (int tz = zmin; tz <= zmax; tz++)
+            {
+                for (int tx = xmin; tx <= xmax; tx++)
+                {
+                    var index = MathUtils.SquareIndex(tx, tz);
+                    if (!agents.TryGetValue(index, out var agentList))
+                    {
+                        continue;
+                    }
+                    foreach (var collidee in agentList)
+                    {
+                        blockTypes |= ObjectBlockType(agent, collidee);
+                        if ((blockTypes & BlockType.Block) != 0)
+                        {
+                            return blockTypes;
+                        }
+                    }
+                }
+            }
+            return blockTypes;
+        }
     }
 }

@@ -39,22 +39,20 @@ public class GridNavQuery
     {
         public GridNavQueryStatus status;
         public GridNavQueryFilter filter;
-        public GridNavQueryNode startNode;
+        public int startIndex;
         public GridNavQueryNode lastBestNode;
         public float lastBestNodeCost;
     }
 
-    private GridNavMesh navMesh;
-    private GridNavBlockingObjectMap blockingObjectMap;
+    private GridNavManager navManager;
     private GridNavQueryNodePool nodePool;
     private GridNavQueryPriorityQueue openQueue;
     private QueryData queryData;
 
-    public bool Init(GridNavMesh navMesh, GridNavBlockingObjectMap blockingObjectMap, int maxNodes = 8192)
+    public bool Init(GridNavManager navManager, int maxNodes = 8192)
     {
-        Debug.Assert(navMesh != null && blockingObjectMap != null && maxNodes > 0);
-        this.navMesh = navMesh;
-        this.blockingObjectMap = blockingObjectMap;
+        Debug.Assert(navManager != null && maxNodes > 0);
+        this.navManager = navManager;
         this.nodePool = new GridNavQueryNodePool(maxNodes);
         this.openQueue = new GridNavQueryPriorityQueue(maxNodes);
         this.queryData = new QueryData();
@@ -75,14 +73,19 @@ public class GridNavQuery
     {
         Debug.Assert(filter != null);
 
-        navMesh.GetSquareXZ(pos, x, z);
+        navMesh.GetSquareXZ(filter.startPos, out var sx, out var sz);
+        var startIndex = GridNavMath.SquareIndex(sx, sz);
 
         queryData.status = GridNavQueryStatus.Failed;
         queryData.filter = filter;
         queryData.startIndex = startIndex;
-        queryData.constraint = constraint;
         queryData.lastBestNode = null;
         queryData.lastBestNodeCost = 0.0f;
+
+        if (filter.agent.param.moveType)
+        {
+        }
+
         if (filter.IsBlocked(navMesh, startIndex))
         {
             return queryData.status;
