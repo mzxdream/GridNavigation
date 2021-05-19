@@ -137,7 +137,7 @@ namespace GridNav
                     faceNormals[(x + z * xsize) * 2] = fnTL;
                     faceNormals[(x + z * xsize) * 2 + 1] = fnBR;
                     centerNormals[x + z * xsize] = (fnTL + fnBR).normalized;
-                    centerNormals2D[x + z * xsize] = MathUtils.Normalized2D(fnTL + fnBR);
+                    centerNormals2D[x + z * xsize] = NavMathUtils.Normalized2D(fnTL + fnBR);
                 }
             }
         }

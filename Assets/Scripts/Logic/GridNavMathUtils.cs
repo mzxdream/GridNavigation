@@ -2,34 +2,26 @@ using UnityEngine;
 
 namespace GridNav
 {
-    public static class MathUtils
+    public static class NavMathUtils
     {
-        private enum DirectionOpt { None = 0, Left = 1, Right = 2, Up = 4, Down = 8 }
-        private static readonly Direction[] optToDirs = {
-            Direction.None, Direction.Left,     Direction.Right,     Direction.None,
-            Direction.Up,   Direction.LeftUp,   Direction.RightUp,   Direction.None,
-            Direction.Down, Direction.LeftDown, Direction.RightDown, Direction.None,
-            Direction.None, Direction.None,     Direction.None,      Direction.None
+        private enum NavDirectionOpt { None = 0, Left = 1, Right = 2, Up = 4, Down = 8 }
+        private static readonly NavDirection[] optToDirs = {
+            NavDirection.None, NavDirection.Left,     NavDirection.Right,     NavDirection.None,
+            NavDirection.Up,   NavDirection.LeftUp,   NavDirection.RightUp,   NavDirection.None,
+            NavDirection.Down, NavDirection.LeftDown, NavDirection.RightDown, NavDirection.None,
+            NavDirection.None, NavDirection.None,     NavDirection.None,      NavDirection.None
         };
-        private static readonly DirectionOpt[] dirToOpts = {
-            DirectionOpt.None, DirectionOpt.Left, DirectionOpt.Right, DirectionOpt.Up, DirectionOpt.Down,
-            DirectionOpt.Left | DirectionOpt.Up, DirectionOpt.Right | DirectionOpt.Up,
-            DirectionOpt.Left | DirectionOpt.Down, DirectionOpt.Right | DirectionOpt.Down
+        private static readonly NavDirectionOpt[] dirToOpts = {
+            NavDirectionOpt.None, NavDirectionOpt.Left, NavDirectionOpt.Right, NavDirectionOpt.Up, NavDirectionOpt.Down,
+            NavDirectionOpt.Left | NavDirectionOpt.Up, NavDirectionOpt.Right | NavDirectionOpt.Up,
+            NavDirectionOpt.Left | NavDirectionOpt.Down, NavDirectionOpt.Right | NavDirectionOpt.Down
         };
         private static readonly int[] dirX = { 0, -1, 1, 0, 0, -1, 1, -1, 1 };
         private static readonly int[] dirZ = { 0, 0, 0, 1, -1, 1, 1, -1, -1 };
         private static readonly float[] dirCost = { 0, 1.0f, 1.0f, 1.0f, 1.0f, 1.4142f, 1.4142f, 1.4142f, 1.4142f };
 
-        public static void SquareXZ(int index, out int x, out int z)
-        {
-            x = index & 0xFFFF;
-            z = index >> 16;
-        }
-        public static int SquareIndex(int x, int z)
-        {
-            return x + (z << 16);
-        }
-        public static Direction CombineDirection(Direction dir1, Direction dir2)
+
+        public static NavDirection CombineDirection(NavDirection dir1, NavDirection dir2)
         {
             return optToDirs[(int)(dirToOpts[(int)dir1] | dirToOpts[(int)dir2])];
         }

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace GridNav
 {
-    enum NodeFlags { Open = 0x01, Closed = 0x02, Blocked = 0x04 };
+    enum NavNodeFlags { Open = 0x01, Closed = 0x02, Blocked = 0x04 };
 
     class NavQueryNode
     {
@@ -37,7 +37,7 @@ namespace GridNav
         }
         public NavQueryNode GetNode(int x, int z)
         {
-            var index = MathUtils.SquareIndex(x, z);
+            var index = NavDef.SquareIndex(x, z);
             if (!nodeIndexes.TryGetValue(index, out var node))
             {
                 if (count >= nodes.Length)

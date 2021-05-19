@@ -3,13 +3,13 @@ using UnityEngine;
 
 namespace GridNav
 {
-    public class BlockingObjectMap
+    public class NavBlockingObjectMap
     {
         private int xsize;
         private int zsize;
         private Dictionary<int, List<NavAgent>> agents;
 
-        public BlockingObjectMap(int xsize, int zsize)
+        public NavBlockingObjectMap(int xsize, int zsize)
         {
             this.xsize = xsize;
             this.zsize = zsize;
@@ -18,7 +18,7 @@ namespace GridNav
 
         public void AddAgent(NavAgent agent)
         {
-            MathUtils.SquareXZ(agent.squareIndex, out var x, out var z);
+            NavDef.SquareXZ(agent.squareIndex, out var x, out var z);
             int xmin = Mathf.Max(0, x - agent.halfUnitSize);
             int xmax = Mathf.Min(xsize - 1, x + agent.halfUnitSize);
             int zmin = Mathf.Max(0, z - agent.halfUnitSize);
@@ -27,7 +27,7 @@ namespace GridNav
             {
                 for (int tx = xmin; tx <= xmax; tx++)
                 {
-                    var index = MathUtils.SquareIndex(tx, tz);
+                    var index = NavDef.SquareIndex(tx, tz);
                     if (!agents.TryGetValue(index, out var agentList))
                     {
                         agentList = new List<NavAgent>();
@@ -39,7 +39,7 @@ namespace GridNav
         }
         public void RemoveAgent(NavAgent agent)
         {
-            MathUtils.SquareXZ(agent.squareIndex, out var x, out var z);
+            NavDef.SquareXZ(agent.squareIndex, out var x, out var z);
             int xmin = Mathf.Max(0, x - agent.halfUnitSize);
             int xmax = Mathf.Min(xsize - 1, x + agent.halfUnitSize);
             int zmin = Mathf.Max(0, z - agent.halfUnitSize);
@@ -48,7 +48,7 @@ namespace GridNav
             {
                 for (int tx = xmin; tx <= xmax; tx++)
                 {
-                    var index = MathUtils.SquareIndex(tx, tz);
+                    var index = NavDef.SquareIndex(tx, tz);
                     if (!agents.TryGetValue(index, out var agentList))
                     {
                         continue;
@@ -61,29 +61,29 @@ namespace GridNav
                 }
             }
         }
-        public BlockType ObjectBlockType(NavAgent collider, NavAgent collidee)
+        public NavBlockType ObjectBlockType(NavAgent collider, NavAgent collidee)
         {
             if (collider == collidee)
             {
-                return BlockType.None;
+                return NavBlockType.None;
             }
             if (collidee.isMoving)
             {
-                return BlockType.Moving;
+                return NavBlockType.Moving;
             }
             if (collidee.param.isPushResistant)
             {
-                return BlockType.Block;
+                return NavBlockType.Block;
             }
-            if (collidee.moveState != MoveState.Idle)
+            if (collidee.moveState != NavMoveState.Idle)
             {
-                return BlockType.Busy;
+                return NavBlockType.Busy;
             }
-            return BlockType.Idle;
+            return NavBlockType.Idle;
         }
-        public BlockType TestObjectBlockTypes(NavAgent agent, int x, int z)
+        public NavBlockType TestObjectBlockTypes(NavAgent agent, int x, int z)
         {
-            var blockTypes = BlockType.None;
+            var blockTypes = NavBlockType.None;
             int xmin = Mathf.Max(0, x - agent.halfUnitSize);
             int xmax = Mathf.Min(xsize - 1, x + agent.halfUnitSize);
             int zmin = Mathf.Max(0, z - agent.halfUnitSize);
@@ -92,7 +92,7 @@ namespace GridNav
             {
                 for (int tx = xmin; tx <= xmax; tx++)
                 {
-                    var index = MathUtils.SquareIndex(tx, tz);
+                    var index = NavDef.SquareIndex(tx, tz);
                     if (!agents.TryGetValue(index, out var agentList))
                     {
                         continue;
@@ -100,7 +100,7 @@ namespace GridNav
                     foreach (var collidee in agentList)
                     {
                         blockTypes |= ObjectBlockType(agent, collidee);
-                        if ((blockTypes & BlockType.Block) != 0)
+                        if ((blockTypes & NavBlockType.Block) != 0)
                         {
                             return blockTypes;
                         }
