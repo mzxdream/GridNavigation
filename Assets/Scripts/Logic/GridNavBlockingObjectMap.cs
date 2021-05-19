@@ -18,7 +18,8 @@ namespace GridNav
 
         public void AddAgent(NavAgent agent)
         {
-            NavDef.SquareXZ(agent.squareIndex, out var x, out var z);
+            var x = agent.squareX;
+            var z = agent.squareZ;
             int xmin = Mathf.Max(0, x - agent.halfUnitSize);
             int xmax = Mathf.Min(xsize - 1, x + agent.halfUnitSize);
             int zmin = Mathf.Max(0, z - agent.halfUnitSize);
@@ -27,7 +28,7 @@ namespace GridNav
             {
                 for (int tx = xmin; tx <= xmax; tx++)
                 {
-                    var index = NavDef.SquareIndex(tx, tz);
+                    var index = tx + tz * xsize;
                     if (!agents.TryGetValue(index, out var agentList))
                     {
                         agentList = new List<NavAgent>();
@@ -39,7 +40,8 @@ namespace GridNav
         }
         public void RemoveAgent(NavAgent agent)
         {
-            NavDef.SquareXZ(agent.squareIndex, out var x, out var z);
+            var x = agent.squareX;
+            var z = agent.squareZ;
             int xmin = Mathf.Max(0, x - agent.halfUnitSize);
             int xmax = Mathf.Min(xsize - 1, x + agent.halfUnitSize);
             int zmin = Mathf.Max(0, z - agent.halfUnitSize);
@@ -48,7 +50,7 @@ namespace GridNav
             {
                 for (int tx = xmin; tx <= xmax; tx++)
                 {
-                    var index = NavDef.SquareIndex(tx, tz);
+                    var index = tx + tz * xsize;
                     if (!agents.TryGetValue(index, out var agentList))
                     {
                         continue;
@@ -92,7 +94,7 @@ namespace GridNav
             {
                 for (int tx = xmin; tx <= xmax; tx++)
                 {
-                    var index = NavDef.SquareIndex(tx, tz);
+                    var index = tx + tz * xsize;
                     if (!agents.TryGetValue(index, out var agentList))
                     {
                         continue;

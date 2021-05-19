@@ -87,6 +87,21 @@ namespace GridNav
             Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
             return new Vector3(bmin.x + (x + 0.5f) * squareSize, 0, bmin.z + (z + 0.5f) * squareSize);
         }
+        public int GetSquareType(int x, int z)
+        {
+            Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
+            return squareTypeMap[x + z * xsize];
+        }
+        public float GetSquareSlope(int x, int z)
+        {
+            Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
+            return slopeMap[(x >> 1) + (z >> 1) * (xsize >> 1)];
+        }
+        public Vector3 GetSquareCenterNormal2D(int x, int z)
+        {
+            Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
+            return centerNormals2D[x + z * xsize];
+        }
         private void UpdateCenterHeightMap(int xmin, int xmax, int zmin, int zmax)
         {
             for (int z = zmin; z <= zmax; z++)

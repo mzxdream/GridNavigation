@@ -6,9 +6,18 @@ namespace GridNav
     public class NavQueryConstraint
     {
         public NavAgent agent;
+        public int sx;
+        public int sz;
         public Vector3 startPos;
+        public int ex;
+        public int ez;
         public Vector3 goalPos;
         public float goalRadius;
+
+        public float GetHeuristicCost(NavQuery navQuery, int x, int z)
+        {
+            return NavMathUtils.DistanceApproximately(x, z, ex, ez);
+        }
     }
 
     public enum NavQueryStatus { Success = 1, Failed = 2, InProgress = 4, Partial = 8 }
@@ -19,68 +28,66 @@ namespace GridNav
         {
             public NavQueryStatus status;
             public NavQueryConstraint constraint;
-            public int startIndex;
             public NavQueryNode lastBestNode;
             public float lastBestNodeCost;
         }
 
-        private GridNavManager navManager;
-        private GridNavQueryNodePool nodePool;
-        private GridNavQueryPriorityQueue openQueue;
+        private NavMap navMap;
+        private NavBlockingObjectMap blockingObjectMap;
+        private NavQueryNodePool nodePool;
+        private NavQueryPriorityQueue openQueue;
         private QueryData queryData;
 
-        public bool Init(GridNavManager navManager, int maxNodes = 8192)
+        public bool Init(NavMap navMap, NavBlockingObjectMap blockingObjectMap, int maxNodes = 8192)
         {
-            Debug.Assert(navManager != null && maxNodes > 0);
-            this.navManager = navManager;
-            this.nodePool = new GridNavQueryNodePool(maxNodes);
-            this.openQueue = new GridNavQueryPriorityQueue(maxNodes);
+            Debug.Assert(navMap != null && blockingObjectMap != null && maxNodes > 0);
+            this.navMap = navMap;
+            this.blockingObjectMap = blockingObjectMap;
+            this.nodePool = new NavQueryNodePool(maxNodes);
+            this.openQueue = new NavQueryPriorityQueue(maxNodes);
             this.queryData = new QueryData();
             return true;
         }
         public void Clear()
         {
         }
-        public GridNavMesh GetNavMesh()
+        public NavManager GetNavManager()
         {
-            return navMesh;
+            return navManager;
         }
-        public GridNavBlockingObjectMap GetBlockingObjectMap()
+        public NavQueryStatus InitSlicedFindPath(NavQueryConstraint constraint)
         {
-            return blockingObjectMap;
-        }
-        public GridNavQueryStatus InitSlicedFindPath(GridNavQueryFilter filter)
-        {
-            Debug.Assert(filter != null);
+            Debug.Assert(constraint != null);
 
-            navMesh.GetSquareXZ(filter.startPos, out var sx, out var sz);
-            var startIndex = GridNavMath.SquareIndex(sx, sz);
-
-            queryData.status = GridNavQueryStatus.Failed;
-            queryData.filter = filter;
-            queryData.startIndex = startIndex;
+            navManager.GetSquareXZ(constraint.startPos, out var sx, out var sz);
+            queryData.status = NavQueryStatus.Failed;
+            queryData.constraint = constraint;
+            queryData.sx = sx;
+            queryData.sz = sz;
             queryData.lastBestNode = null;
             queryData.lastBestNodeCost = 0.0f;
 
-            if (filter.agent.param.moveType)
+            var speedMod = navManager.GetSquareSpeed(constraint.agent, sx, sz);
+            if (speedMod <= 0.0f)
             {
+                return NavQueryStatus.Failed;
             }
-
-            if (filter.IsBlocked(navMesh, startIndex))
+            var blockTypes = navManager.TestObjectBlockTypes(constraint.agent, sx, sz);
+            if ((blockTypes & NavBlockType.Block) != 0)
             {
-                return queryData.status;
+                return NavQueryStatus.Failed;
             }
 
             nodePool.Clear();
             openQueue.Clear();
 
-            var snode = nodePool.GetNode(startIndex);
+            var snode = nodePool.GetNode(sx, sz);
             if (snode == null)
             {
-                return queryData.status;
+                return NavQueryStatus.Failed;
             }
             snode.gCost = 0;
-            snode.fCost = constraint.GetHeuristicCost(navMesh, startIndex);
+            snode.fCost = constraint.GetHeuristicCost(this, sx, sz);
             snode.parent = null;
             snode.flags |= (int)GridNavNodeFlags.Open;
             openQueue.Push(snode);
