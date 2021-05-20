@@ -79,23 +79,24 @@ namespace GridNav
             blockingObjectMap.AddAgent(agent);
             return agent.id;
         }
-        //public void RemoveAgent(int agentID)
-        //{
-        //    if (agents.TryGetValue(agentID, out var agent))
-        //    {
-        //        if (agent.state == GridNavAgentState.Requesting)
-        //        {
-        //            pathRequestQueue.Remove(agent.id);
-        //        }
-        //        else if (agent.state == GridNavAgentState.WaitForPath)
-        //        {
-        //            Debug.Assert(pathRequestQueue[0] == agent.id);
-        //            pathRequestQueue.RemoveAt(0);
-        //        }
-        //        RemoveSquareAgent(agent.squareIndex, agent);
-        //        agents.Remove(agentID);
-        //    }
-        //}
+        public void RemoveAgent(int agentID)
+        {
+            if (!agents.TryGetValue(agentID, out var agent))
+            {
+                return;
+            }
+            if (agent.moveState == NavMoveState.Requesting)
+            {
+                pathRequestQueue.Remove(agent.id);
+            }
+            else if (agent.moveState == NavMoveState.WaitForPath)
+            {
+                Debug.Assert(pathRequestQueue[0] == agent.id);
+                pathRequestQueue.RemoveAt(0);
+            }
+            blockingObjectMap.RemoveAgent(agent);
+            agents.Remove(agentID);
+        }
         //public void Update(float deltaTime)
         //{
         //    foreach (var a in agents) //移到合法点
