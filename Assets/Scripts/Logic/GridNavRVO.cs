@@ -370,7 +370,7 @@ namespace GridNav
                 linearProgram3(orcaLines, numObstLines, lineFail, agent.param.maxSpeed, ref agent.newVelocity);
             }
         }
-        private static bool linearProgram1(IList<Line> lines, int lineNo, float radius, Vector3 optVelocity, bool directionOpt, ref Vector3 result)
+        private static bool linearProgram1(List<NavRVOLine> lines, int lineNo, float radius, Vector3 optVelocity, bool directionOpt, ref Vector3 result)
         {
             float dotProduct = NavMathUtils.Dot2D(lines[lineNo].point, lines[lineNo].direction);
             float discriminant = dotProduct * dotProduct + radius * radius - NavMathUtils.SqrMagnitude2D(lines[lineNo].point);
