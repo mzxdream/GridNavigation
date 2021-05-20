@@ -145,19 +145,4 @@ namespace GridNav
             return moveParam.speedMods[squareType] / (1.0f + Mathf.Max(0.0f, slope * dirSlopeMod) * moveParam.slopeMod);
         }
     }
-
-    class NavORCALine
-    {
-        public Vector3 point;
-        public Vector3 direction;
-    }
-
-    class NavORCAObstacle
-    {
-        public Vector3 point;
-        public Vector3 direction;
-        public bool isConvex;
-        public NavORCAObstacle prev;
-        public NavORCAObstacle next;
-    }
 }
