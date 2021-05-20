@@ -18,8 +18,7 @@ namespace GridNav
 
         public void AddAgent(NavAgent agent)
         {
-            var x = agent.squareX;
-            var z = agent.squareZ;
+            NavUtils.GetSquareXZ(agent.squareIndex, out var x, out var z);
             int xmin = Mathf.Max(0, x - agent.halfUnitSize);
             int xmax = Mathf.Min(xsize - 1, x + agent.halfUnitSize);
             int zmin = Mathf.Max(0, z - agent.halfUnitSize);
@@ -40,8 +39,7 @@ namespace GridNav
         }
         public void RemoveAgent(NavAgent agent)
         {
-            var x = agent.squareX;
-            var z = agent.squareZ;
+            NavUtils.GetSquareXZ(agent.squareIndex, out var x, out var z);
             int xmin = Mathf.Max(0, x - agent.halfUnitSize);
             int xmax = Mathf.Min(xsize - 1, x + agent.halfUnitSize);
             int zmin = Mathf.Max(0, z - agent.halfUnitSize);

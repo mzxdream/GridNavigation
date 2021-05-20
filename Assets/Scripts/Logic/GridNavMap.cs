@@ -82,6 +82,11 @@ namespace GridNav
             nearestZ = Mathf.Clamp(nearestZ, 0, zsize - 1);
             nearestPos = GetSquarePos(nearestX, nearestZ);
         }
+        public void ClampInBounds(Vector3 pos, out int nearestIndex, out Vector3 nearestPos)
+        {
+            ClampInBounds(pos, out var nx, out var nz, out nearestPos);
+            nearestIndex = NavUtils.GetSquareIndex(nx, nz);
+        }
         public Vector3 GetSquarePos(int x, int z)
         {
             Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);

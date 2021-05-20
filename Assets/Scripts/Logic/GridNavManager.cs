@@ -6,13 +6,38 @@ namespace GridNav
     public class NavManager
     {
         private NavMap navMap;
-        private NavQuery navQuery;
         private NavBlockingObjectMap blockingObjectMap;
+        private NavQuery navQuery;
         private Dictionary<int, NavAgent> agents;
         private int lastAgentID;
         private List<int> pathRequestQueue;
         private NavQuery pathRequestNavQuery;
 
+        public bool Init(NavMap navMap, int maxAgents = 1024)
+        {
+            Debug.Assert(navMap != null && maxAgents > 0);
+            this.navMap = navMap;
+            this.blockingObjectMap = new NavBlockingObjectMap(navMap.XSize, navMap.ZSize);
+            this.navQuery = new NavQuery();
+            if (!navQuery.Init(navMap, blockingObjectMap))
+            {
+                return false;
+            }
+            this.agents = new Dictionary<int, NavAgent>();
+            this.lastAgentID = 0;
+            this.pathRequestQueue = new List<int>();
+            this.pathRequestNavQuery = new NavQuery();
+            if (!this.pathRequestNavQuery.Init(navMap, blockingObjectMap))
+            {
+                return false;
+            }
+            return true;
+        }
+        public void Clear()
+        {
+            this.navQuery.Clear();
+            this.pathRequestNavQuery.Clear();
+        }
         public NavMap GetNavMap()
         {
             return navMap;
@@ -21,115 +46,39 @@ namespace GridNav
         {
             return blockingObjectMap;
         }
-
-
-        //public bool Init(GridNavMesh navMesh, int maxAgents = 1024)
-        //{
-        //    Debug.Assert(navMesh != null && maxAgents > 0);
-        //    this.navMesh = navMesh;
-        //    this.navQuery = new GridNavQuery();
-        //    if (!navQuery.Init(this))
-        //    {
-        //        return false;
-        //    }
-        //    this.lastAgentID = 0;
-        //    this.agents = new Dictionary<int, GridNavAgent>();
-        //    this.pathRequestNavQuery = new GridNavQuery();
-        //    if (!this.pathRequestNavQuery.Init(this))
-        //    {
-        //        return false;
-        //    }
-        //    this.pathRequestQueue = new List<int>();
-        //    return true;
-        //}
-        //public void Clear()
-        //{
-        //    this.navQuery.Clear();
-        //    this.pathRequestNavQuery.Clear();
-        //}
-        //private float GetSquareSpeedMod(GridNavAgent agent, int x, int z)
-        //{
-        //    var halfUnitSize = agent.unitSize >> 1;
-        //    var xmin = x - halfUnitSize;
-        //    var xmax = x + halfUnitSize;
-        //    var zmin = z - halfUnitSize;
-        //    var zmax = z + halfUnitSize;
-        //    if (xmin < 0 || xmax >= navMesh.XSize || zmin < 0 || zmax >= navMesh.ZSize)
-        //    {
-        //        return 0.0f;
-        //    }
-        //    for (int )
-        //    {
-        //    }
-        //}
-        //private float GetSquareSpeedMod(int moveType, int unitSize, int x, int z, Vector3 moveDir)
-        //{
-        //}
-
-
-
-        //public int AddAgent(Vector3 pos, Vector3 forward, GridNavAgentParam param)
-        //{
-        //    int unitSize = (int)(param.radius * 2 / navMesh.SquareSize - 1e-4f) + 1;
-        //    if ((unitSize & 1) == 0)
-        //    {
-        //        unitSize++;
-        //    }
-        //    var agent = new GridNavAgent
-        //    {
-        //        id = ++lastAgentID,
-        //        param = param,
-        //        pos = pos,
-        //        frontDir = new Vector3(forward.x, 0, forward.z).normalized,
-        //        unitSize = unitSize,
-        //        maxInteriorRadius = unitSize * navMesh.SquareSize / 2.0f - 1e-4f,
-        //        state = GridNavAgentState.None,
-        //        squareIndex = 0,
-        //        goalPos = Vector3.zero,
-        //        goalRadius = 0.0f,
-        //        goalSquareIndex = 0,
-        //        prefVelocity = Vector3.zero,
-        //        velocity = Vector3.zero,
-        //        newVelocity = Vector3.zero,
-        //        tempNum = 0,
-        //    };
-        //    agent.filter = new GridNavQueryFilterExtraBlockedCheck(unitSize, (int index) =>
-        //    {
-        //        if (squareAgents.TryGetValue(index, out var squareAgentList))
-        //        {
-        //            foreach (var squareAgent in squareAgentList)
-        //            {
-        //                if (squareAgent != agent)
-        //                {
-        //                    return true;
-        //                }
-        //            }
-        //        }
-        //        return false;
-        //    });
-        //    agent.pathFilter = new GridNavQueryFilterExtraBlockedCheck(unitSize, (int index) =>
-        //    {
-        //        if (squareAgents.TryGetValue(index, out var squareAgentList))
-        //        {
-        //            foreach (var squareAgent in squareAgentList)
-        //            {
-        //                if (squareAgent != agent && squareAgent.velocity.sqrMagnitude < 0.00001f)
-        //                {
-        //                    return true;
-        //                }
-        //            }
-        //        }
-        //        return false;
-        //    });
-        //    if (navQuery.FindNearestSquare(agent.filter, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearesetPos))
-        //    {
-        //        agent.squareIndex = nearestIndex;
-        //        agent.pos = nearesetPos;
-        //    }
-        //    agents.Add(agent.id, agent);
-        //    AddSquareAgent(agent.squareIndex, agent);
-        //    return agent.id;
-        //}
+        public int AddAgent(Vector3 pos, NavAgentParam param, NavMoveParam moveParam)
+        {
+            var unitSize = NavUtils.CalcUnitSize(param.radius, navMap.SquareSize);
+            var agent = new NavAgent
+            {
+                id = ++lastAgentID,
+                param = param,
+                moveParam = moveParam,
+                halfUnitSize = unitSize >> 1,
+                maxInteriorRadius = NavUtils.CalcMaxInteriorRadius(unitSize, navMap.SquareSize),
+                moveState = NavMoveState.Idle,
+                pos = pos,
+                squareIndex = -1,
+                goalPos = Vector3.zero,
+                goalSquareIndex = -1,
+                goalRadius = 0.0f,
+                path = new List<int>(),
+                prefVelocity = Vector3.zero,
+                velocity = Vector3.zero,
+                newVelocity = Vector3.zero,
+                isMoving = false,
+                tempNum = 0,
+            };
+            navMap.ClampInBounds(agent.pos, out agent.squareIndex, out agent.pos);
+            if (navQuery.FindNearestSquare(agent, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearesetPos))
+            {
+                agent.squareIndex = nearestIndex;
+                agent.pos = nearesetPos;
+            }
+            agents.Add(agent.id, agent);
+            blockingObjectMap.AddAgent(agent);
+            return agent.id;
+        }
         //public void RemoveAgent(int agentID)
         //{
         //    if (agents.TryGetValue(agentID, out var agent))

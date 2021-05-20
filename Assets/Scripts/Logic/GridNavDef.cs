@@ -52,13 +52,11 @@ namespace GridNav
         public float maxInteriorRadius;
         public NavMoveState moveState;
         public Vector3 pos;
-        public int squareX;
-        public int squareZ;
+        public int squareIndex;
         public Vector3 goalPos;
-        public int goalSquareX;
-        public int goalSquareZ;
+        public int goalSquareIndex;
         public float goalRadius;
-        public List<Vector3> path;
+        public List<int> path;
         public Vector3 prefVelocity;
         public Vector3 velocity;
         public Vector3 newVelocity;
@@ -68,6 +66,15 @@ namespace GridNav
 
     public static class NavUtils
     {
+        public static int CalcUnitSize(float radius, float squareSize)
+        {
+            int unitSize = (int)(radius * 2 / squareSize - NavMathUtils.EPSILON) + 1;
+            return (unitSize & 1) == 0 ? unitSize + 1 : unitSize;
+        }
+        public static float CalcMaxInteriorRadius(int unitSize, float squareSize)
+        {
+            return unitSize * squareSize * 0.5f - NavMathUtils.EPSILON;
+        }
         public static int GetSquareIndex(int x, int z)
         {
             return x + z << 16;

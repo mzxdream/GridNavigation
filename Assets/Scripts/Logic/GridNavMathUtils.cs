@@ -4,6 +4,7 @@ namespace GridNav
 {
     public static class NavMathUtils
     {
+        public static readonly float EPSILON = 1e-4f;
         public static readonly float SQRT2 = Mathf.Sqrt(2);
         public static readonly float HALF_SQRT2 = SQRT2 * 0.5f;
         private static readonly NavDirection[] optToDirs = {
