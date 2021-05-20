@@ -76,14 +76,7 @@ namespace GridNav
             queryData.constraint = constraint;
             queryData.lastBestNode = null;
             queryData.lastBestNodeCost = 0.0f;
-
-            var speed = NavUtils.GetAgentSquareSpeed(constraint.agent, navMap, constraint.sx, constraint.sz);
-            if (speed <= 0.0f)
-            {
-                return NavQueryStatus.Failed;
-            }
-            var blockTypes = blockingObjectMap.TestObjectBlockTypes(constraint.agent, constraint.sx, constraint.sz);
-            if ((blockTypes & NavBlockType.Block) != 0)
+            if (TestBlocked(constraint.agent, constraint.sx, constraint.sz))
             {
                 return NavQueryStatus.Failed;
             }
@@ -174,66 +167,74 @@ namespace GridNav
             path.Reverse();
             return queryData.status;
         }
-        public bool FindNearestSquare(IGridNavQueryFilter filter, Vector3 pos, float radius, out int nearestIndex, out Vector3 nearestPos)
+        public bool FindNearestSquare(NavAgent agent, Vector3 pos, float radius, out int nearestIndex, out Vector3 nearestPos)
         {
-            Debug.Assert(filter != null && radius > 0);
-            navMesh.ClampInBounds(pos, out nearestIndex, out nearestPos);
-            if (!filter.IsBlocked(navMesh, nearestIndex))
+            Debug.Assert(agent != null && radius > 0);
+
+            navMap.ClampInBounds(pos, out var x, out var z, out nearestPos);
+            nearestIndex = NavUtils.GetSquareIndex(x, z);
+            if (!TestBlocked(agent, x, z))
             {
                 return true;
             }
-            navMesh.GetSquareXZ(nearestIndex, out int x, out int z);
-            var ext = (int)(radius / navMesh.SquareSize);
+            var ext = (int)(radius / navMap.SquareSize);
             for (int k = 1; k <= ext; k++)
             {
                 int xmin = x - k;
                 int xmax = x + k;
                 int zmin = z - k;
                 int zmax = z + k;
-                if (!TestBlocked(filter, xmin, z, ref nearestIndex) //left
-                    || !TestBlocked(filter, xmax, z, ref nearestIndex) //right
-                    || !TestBlocked(filter, x, zmax, ref nearestIndex) //up
-                    || !TestBlocked(filter, x, zmin, ref nearestIndex)) //down
+                if (!TestBlocked(agent, x, zmax, ref nearestIndex, ref nearestPos) // forward
+                    || !TestBlocked(agent, x, zmin, ref nearestIndex, ref nearestPos) // back
+                    || !TestBlocked(agent, xmin, z, ref nearestIndex, ref nearestPos) // left
+                    || !TestBlocked(agent, xmax, z, ref nearestIndex, ref nearestPos)) // right
                 {
-                    nearestPos = navMesh.GetSquarePos(nearestIndex);
                     return true;
                 }
                 for (int t = 1; t < k; t++)
                 {
-                    if (!TestBlocked(filter, xmin, z + t, ref nearestIndex) //left up
-                        || !TestBlocked(filter, xmin, z - t, ref nearestIndex) //left down
-                        || !TestBlocked(filter, xmax, z + t, ref nearestIndex) //right up
-                        || !TestBlocked(filter, xmax, z - t, ref nearestIndex) //right down
-                        || !TestBlocked(filter, x - t, zmax, ref nearestIndex) //up left
-                        || !TestBlocked(filter, x + t, zmax, ref nearestIndex) //up right
-                        || !TestBlocked(filter, x - t, zmin, ref nearestIndex) //down left
-                        || !TestBlocked(filter, x + t, zmin, ref nearestIndex)) //down right
+                    if (!TestBlocked(agent, xmin, z + t, ref nearestIndex, ref nearestPos) // left [forward] 
+                        || !TestBlocked(agent, xmin, z - t, ref nearestIndex, ref nearestPos) // left [back]
+                        || !TestBlocked(agent, xmax, z + t, ref nearestIndex, ref nearestPos) // right [forward]
+                        || !TestBlocked(agent, xmax, z - t, ref nearestIndex, ref nearestPos) // right [back]
+                        || !TestBlocked(agent, x - t, zmax, ref nearestIndex, ref nearestPos) // [left] forward
+                        || !TestBlocked(agent, x + t, zmax, ref nearestIndex, ref nearestPos) // [right] forwad
+                        || !TestBlocked(agent, x - t, zmin, ref nearestIndex, ref nearestPos) // [left] back
+                        || !TestBlocked(agent, x + t, zmin, ref nearestIndex, ref nearestPos)) // [right] back
                     {
-                        nearestPos = navMesh.GetSquarePos(nearestIndex);
                         return true;
                     }
                 }
-                if (!TestBlocked(filter, xmin, zmax, ref nearestIndex) //left up
-                    || !TestBlocked(filter, xmin, zmin, ref nearestIndex) //left down
-                    || !TestBlocked(filter, xmax, zmax, ref nearestIndex) //right up
-                    || !TestBlocked(filter, xmax, zmin, ref nearestIndex)) //right down
+                if (!TestBlocked(agent, xmin, zmax, ref nearestIndex, ref nearestPos) // left forward
+                    || !TestBlocked(agent, xmax, zmax, ref nearestIndex, ref nearestPos) // right forward 
+                    || !TestBlocked(agent, xmin, zmin, ref nearestIndex, ref nearestPos) // left back
+                    || !TestBlocked(agent, xmax, zmin, ref nearestIndex, ref nearestPos)) // right back
                 {
-                    nearestPos = navMesh.GetSquarePos(nearestIndex);
                     return true;
                 }
             }
             return false;
         }
-        private bool TestBlocked(IGridNavQueryFilter filter, int x, int z, ref int index)
+        private bool TestBlocked(NavAgent agent, int x, int z)
         {
-            if (x >= 0 && x < navMesh.XSize && z >= 0 && z < navMesh.ZSize)
+            if (x < 0 || x >= navMap.XSize || z < 0 || z >= navMap.ZSize)
             {
-                var t = navMesh.GetSquareIndex(x, z);
-                if (!filter.IsBlocked(navMesh, t))
-                {
-                    index = t;
-                    return false;
-                }
+                return true;
+            }
+            var speed = NavUtils.GetAgentSquareSpeed(agent, navMap, x, z);
+            if (speed <= 0.0f)
+            {
+                return true;
+            }
+            return (blockingObjectMap.TestObjectBlockTypes(agent, x, z) & NavBlockType.Block) != 0;
+        }
+        private bool TestBlocked(NavAgent agent, int x, int z, ref int index, ref Vector3 pos)
+        {
+            if (!TestBlocked(agent, x, z))
+            {
+                index = NavUtils.GetSquareIndex(x, z);
+                pos = navMap.GetSquarePos(x, z);
+                return false;
             }
             return true;
         }
