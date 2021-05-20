@@ -4,26 +4,40 @@ namespace GridNav
 {
     public static class NavMathUtils
     {
-        private enum NavDirectionOpt { None = 0, Left = 1, Right = 2, Up = 4, Down = 8 }
+        public static readonly float SQRT2 = Mathf.Sqrt(2);
+        public static readonly float HALF_SQRT2 = SQRT2 * 0.5f;
         private static readonly NavDirection[] optToDirs = {
-            NavDirection.None, NavDirection.Left,     NavDirection.Right,     NavDirection.None,
-            NavDirection.Up,   NavDirection.LeftUp,   NavDirection.RightUp,   NavDirection.None,
-            NavDirection.Down, NavDirection.LeftDown, NavDirection.RightDown, NavDirection.None,
-            NavDirection.None, NavDirection.None,     NavDirection.None,      NavDirection.None
+            NavDirection.None, NavDirection.Forward, NavDirection.Back, NavDirection.None,
+            NavDirection.Left, NavDirection.LeftForward, NavDirection.LeftBack, NavDirection.None,
+            NavDirection.Right, NavDirection.RightForward, NavDirection.RightBack, NavDirection.None,
+            NavDirection.None, NavDirection.None, NavDirection.None, NavDirection.None
         };
         private static readonly NavDirectionOpt[] dirToOpts = {
-            NavDirectionOpt.None, NavDirectionOpt.Left, NavDirectionOpt.Right, NavDirectionOpt.Up, NavDirectionOpt.Down,
-            NavDirectionOpt.Left | NavDirectionOpt.Up, NavDirectionOpt.Right | NavDirectionOpt.Up,
-            NavDirectionOpt.Left | NavDirectionOpt.Down, NavDirectionOpt.Right | NavDirectionOpt.Down
+            NavDirectionOpt.None, NavDirectionOpt.Forward, NavDirectionOpt.Back, NavDirectionOpt.Left, NavDirectionOpt.Right,
+            NavDirectionOpt.Left | NavDirectionOpt.Forward, NavDirectionOpt.Right | NavDirectionOpt.Forward,
+            NavDirectionOpt.Left | NavDirectionOpt.Back, NavDirectionOpt.Right | NavDirectionOpt.Back
         };
-        private static readonly int[] dirX = { 0, -1, 1, 0, 0, -1, 1, -1, 1 };
-        private static readonly int[] dirZ = { 0, 0, 0, 1, -1, 1, 1, -1, -1 };
-        private static readonly float[] dirCost = { 0, 1.0f, 1.0f, 1.0f, 1.0f, 1.4142f, 1.4142f, 1.4142f, 1.4142f };
-
+        private static readonly int[] neighborDirX = { 0, 0, 0, -1, 1, -1, 1, -1, 1 };
+        private static readonly int[] neighborDirZ = { 0, 1, -1, 0, 0, 1, 1, -1, -1 };
+        private static readonly Vector3[] dirVector3 = { new Vector3(0, 0, 0), new Vector3(0, 0, 1), new Vector3(0, 0, -1), new Vector3(-1, 0, 0), new Vector3(1, 0, 0), new Vector3(-HALF_SQRT2, 0, HALF_SQRT2), new Vector3(HALF_SQRT2, 0, HALF_SQRT2), new Vector3(-HALF_SQRT2, 0, -HALF_SQRT2), new Vector3(-HALF_SQRT2, 0, -HALF_SQRT2) };
+        private static readonly float[] dirCost = { 0, 1.0f, 1.0f, 1.0f, 1.0f, SQRT2, SQRT2, SQRT2, SQRT2 };
 
         public static NavDirection CombineDirection(NavDirection dir1, NavDirection dir2)
         {
             return optToDirs[(int)(dirToOpts[(int)dir1] | dirToOpts[(int)dir2])];
+        }
+        public static Vector3 DirToVector3(NavDirection dir)
+        {
+            return dirVector3[(int)dir];
+        }
+        public static float DirCost(NavDirection dir)
+        {
+            return dirCost[(int)dir];
+        }
+        public static void GetNeighborXZ(int x, int z, NavDirection dir, out int nx, out int nz)
+        {
+            nx = x + neighborDirX[(int)dir];
+            nz = z + neighborDirZ[(int)dir];
         }
         public static float DistanceApproximately(int sx, int sz, int ex, int ez)
         {

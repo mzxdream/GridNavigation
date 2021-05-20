@@ -13,10 +13,19 @@ namespace GridNav
         public int ez;
         public Vector3 goalPos;
         public float goalRadius;
+        public bool testMobile;
 
-        public float GetHeuristicCost(NavQuery navQuery, int x, int z)
+        public virtual float GetHeuristicCost(NavQuery navQuery, int x, int z)
         {
             return NavMathUtils.DistanceApproximately(x, z, ex, ez) * navQuery.GetNavMap().SquareSize;
+        }
+        public virtual bool IsGoal(NavQuery navQuery, int x, int z)
+        {
+            return NavMathUtils.SqrDistance2D(navQuery.GetNavMap().GetSquarePos(x, z), goalPos) <= goalRadius * goalRadius;
+        }
+        public virtual bool WithinConstraints(NavQuery navQuery, int x, int z)
+        {
+            return true;
         }
     }
 
@@ -98,23 +107,23 @@ namespace GridNav
             queryData.status = NavQueryStatus.InProgress;
             return queryData.status;
         }
-        public GridNavQueryStatus UpdateSlicedFindPath(int maxNodes, out int doneNodes)
+        public NavQueryStatus UpdateSlicedFindPath(int maxNodes, out int doneNodes)
         {
             doneNodes = 0;
-            if (queryData.status != GridNavQueryStatus.InProgress)
+            if (queryData.status != NavQueryStatus.InProgress)
             {
                 return queryData.status;
             }
-            GridNavQueryNode bestNode = null;
+            NavQueryNode bestNode = null;
             while (doneNodes < maxNodes && (bestNode = openQueue.Pop()) != null)
             {
                 doneNodes++;
-                bestNode.flags &= ~(int)GridNavNodeFlags.Open;
-                bestNode.flags |= (int)GridNavNodeFlags.Closed;
-                if (queryData.constraint.IsGoal(navMesh, bestNode.index))
+                bestNode.flags &= ~(int)NavNodeFlags.Open;
+                bestNode.flags |= (int)NavNodeFlags.Closed;
+                if (queryData.constraint.IsGoal(this, bestNode.x, bestNode.z))
                 {
                     queryData.lastBestNode = bestNode;
-                    queryData.status = GridNavQueryStatus.Success;
+                    queryData.status = NavQueryStatus.Success;
                     return queryData.status;
                 }
                 var leftBlocked = TestNeighbourBlocked(queryData.filter, queryData.constraint, bestNode, GridNavDirection.Left, ref queryData.lastBestNodeCost, ref queryData.lastBestNode);
@@ -234,61 +243,82 @@ namespace GridNav
             }
             return true;
         }
-        private bool TestNeighbourBlocked(IGridNavQueryFilter filter, IGridNavQueryConstraint constraint, GridNavQueryNode node, GridNavDirection dir, ref float lastBestNodeCost, ref GridNavQueryNode lastBestNode)
+        private bool TestNeighborBlocked(NavQueryConstraint constraint, NavQueryNode node, NavDirection dir, ref float lastBestNodeCost, ref NavQueryNode lastBestNode)
         {
-            var neighbourIndex = navMesh.GetSuqareNeighbourIndex(node.index, dir);
-            if (neighbourIndex == -1)
+            NavMathUtils.GetNeighborXZ(node.x, node.z, dir, out var nx, out var nz);
+            if (nx < 0 || nx >= navMap.XSize || nz < 0 || nz >= navMap.ZSize)
             {
                 return true;
             }
-            var neighbourNode = nodePool.GetNode(neighbourIndex);
-            if (neighbourNode == null)
+            var neighborNode = nodePool.GetNode(nx, nz);
+            if (neighborNode == null)
             {
                 return true;
             }
-            if ((neighbourNode.flags & (int)(GridNavNodeFlags.Closed | GridNavNodeFlags.Blocked)) != 0)
+            if ((neighborNode.flags & (int)(NavNodeFlags.Closed | NavNodeFlags.Blocked)) != 0)
             {
-                return (neighbourNode.flags & (int)GridNavNodeFlags.Blocked) != 0;
+                return (neighborNode.flags & (int)NavNodeFlags.Blocked) != 0;
             }
-            if ((neighbourNode.flags & (int)GridNavNodeFlags.Open) != 0)
+            if (!constraint.WithinConstraints(this, neighborNode.x, neighborNode.z))
             {
-                var gCost = filter.GetCost(navMesh, neighbourIndex, dir);
-                if (gCost < 0)
+                neighborNode.flags |= (int)(NavNodeFlags.Closed | NavNodeFlags.Blocked);
+                return true;
+            }
+            var blockTypes = blockingObjectMap.TestObjectBlockTypes(constraint.agent, neighborNode.x, neighborNode.z);
+            if ((blockTypes & NavBlockType.Block) != 0)
+            {
+                neighborNode.flags |= (int)(NavNodeFlags.Closed | NavNodeFlags.Blocked);
+                return true;
+            }
+            var speed = NavUtils.GetAgentSquareSpeed(constraint.agent, navMap, neighborNode.x, neighborNode.z, NavMathUtils.DirToVector3(dir));
+            if (speed <= 0.0f)
+            {
+                //neighborNode.flags |= (int)(NavNodeFlags.Closed | NavNodeFlags.Blocked); // 从其他方向的速度可能不为0
+                return true;
+            }
+            var moveParam = constraint.agent.moveParam;
+            if (constraint.testMobile && moveParam.isAvoidMobilesOnPath)
+            {
+                if ((blockTypes & NavBlockType.Busy) != 0)
                 {
-                    return true;
+                    speed *= moveParam.speedModMults[(int)NavSpeedModMultType.Busy];
                 }
-                gCost += node.gCost;
-                if (gCost < neighbourNode.gCost)
+                else if ((blockTypes & NavBlockType.Idle) != 0)
                 {
-                    neighbourNode.gCost = gCost;
-                    neighbourNode.fCost = gCost + constraint.GetHeuristicCost(navMesh, neighbourIndex);
-                    neighbourNode.parent = node;
-                    openQueue.Modify(neighbourNode);
+                    speed *= moveParam.speedModMults[(int)NavSpeedModMultType.Idle];
+                }
+                else if ((blockTypes & NavBlockType.Moving) != 0)
+                {
+                    speed *= moveParam.speedModMults[(int)NavSpeedModMultType.Move];
+                }
+            }
+            float dirMoveCost = NavMathUtils.DirCost(dir) * navMap.SquareSize;
+            float nodeCost = dirMoveCost / Mathf.Max(1e-4f, speed);
+            float gCost = node.gCost + nodeCost;
+            float hCost = constraint.GetHeuristicCost(this, neighborNode.x, neighborNode.z);
+            float fCost = gCost + hCost;
+
+            if ((neighborNode.flags & (int)NavNodeFlags.Open) != 0)
+            {
+                if (fCost < neighborNode.fCost)
+                {
+                    neighborNode.gCost = gCost;
+                    neighborNode.fCost = fCost;
+                    neighborNode.parent = node;
+                    openQueue.Modify(neighborNode);
                 }
             }
             else
             {
-                if (!constraint.WithinConstraints(navMesh, neighbourIndex) || filter.IsBlocked(navMesh, neighbourIndex))
-                {
-                    neighbourNode.flags |= (int)(GridNavNodeFlags.Closed | GridNavNodeFlags.Blocked);
-                    return true;
-                }
-                var gCost = filter.GetCost(navMesh, neighbourIndex, dir);
-                if (gCost < 0)
-                {
-                    return true;
-                }
-                gCost += node.gCost;
-                var hCost = constraint.GetHeuristicCost(navMesh, neighbourIndex);
-                neighbourNode.gCost = gCost;
-                neighbourNode.fCost = gCost + hCost;
-                neighbourNode.parent = node;
-                neighbourNode.flags |= (int)GridNavNodeFlags.Open;
-                openQueue.Push(neighbourNode);
+                neighborNode.gCost = gCost;
+                neighborNode.fCost = fCost;
+                neighborNode.parent = node;
+                neighborNode.flags |= (int)NavNodeFlags.Open;
+                openQueue.Push(neighborNode);
                 if (hCost < lastBestNodeCost)
                 {
                     lastBestNodeCost = hCost;
-                    lastBestNode = neighbourNode;
+                    lastBestNode = neighborNode;
                 }
             }
             return false;

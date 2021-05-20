@@ -3,7 +3,9 @@ using UnityEngine;
 
 namespace GridNav
 {
-    public enum NavDirection { None = 0, Left = 1, Right = 2, Up = 3, Down = 4, LeftUp = 5, RightUp = 6, LeftDown = 7, RightDown = 8 }
+    public enum NavDirection { None = 0, Forward = 1, Back = 2, Left = 3, Right = 4, LeftForward = 5, RightForward = 6, LeftBack = 7, RightBack = 8 }
+
+    public enum NavDirectionOpt { None = 0, Forward = 1, Back = 2, Left = 4, Right = 8 }
 
     public enum NavMoveState { Idle = 0, Requesting = 1, WaitForPath = 2, InProgress = 3 }
 
