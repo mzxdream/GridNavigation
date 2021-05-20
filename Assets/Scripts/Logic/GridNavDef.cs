@@ -66,7 +66,7 @@ namespace GridNav
 
     public static class NavUtils
     {
-        public static float GetSquareSpeed(NavAgent agent, NavMap navMap, int x, int z)
+        public static float GetAgentSquareSpeed(NavAgent agent, NavMap navMap, int x, int z)
         {
             int xmin = x - agent.halfUnitSize;
             int xmax = x + agent.halfUnitSize;
@@ -95,8 +95,7 @@ namespace GridNav
             var squareType = navMap.GetSquareType(x, z);
             return moveParam.speedMods[squareType] / (1.0f + slope * moveParam.slopeMod);
         }
-
-        public static float GetSquareSpeed(NavAgent agent, NavMap navMap, int x, int z, Vector3 moveDir)
+        public static float GetAgentSquareSpeed(NavAgent agent, NavMap navMap, int x, int z, Vector3 moveDir)
         {
             int xmin = x - agent.halfUnitSize;
             int xmax = x + agent.halfUnitSize;

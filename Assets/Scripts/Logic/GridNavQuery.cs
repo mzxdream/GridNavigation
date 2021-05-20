@@ -16,7 +16,7 @@ namespace GridNav
 
         public float GetHeuristicCost(NavQuery navQuery, int x, int z)
         {
-            return NavMathUtils.DistanceApproximately(x, z, ex, ez);
+            return NavMathUtils.DistanceApproximately(x, z, ex, ez) * navQuery.GetNavMap().SquareSize;
         }
     }
 
@@ -43,7 +43,7 @@ namespace GridNav
             Debug.Assert(navMap != null && blockingObjectMap != null && maxNodes > 0);
             this.navMap = navMap;
             this.blockingObjectMap = blockingObjectMap;
-            this.nodePool = new NavQueryNodePool(maxNodes);
+            this.nodePool = new NavQueryNodePool(navMap.XSize, navMap.ZSize, maxNodes);
             this.openQueue = new NavQueryPriorityQueue(maxNodes);
             this.queryData = new QueryData();
             return true;
@@ -51,28 +51,29 @@ namespace GridNav
         public void Clear()
         {
         }
-        public NavManager GetNavManager()
+        public NavMap GetNavMap()
         {
-            return navManager;
+            return navMap;
+        }
+        public NavBlockingObjectMap GetBlockingObjectMap()
+        {
+            return blockingObjectMap;
         }
         public NavQueryStatus InitSlicedFindPath(NavQueryConstraint constraint)
         {
             Debug.Assert(constraint != null);
 
-            navManager.GetSquareXZ(constraint.startPos, out var sx, out var sz);
             queryData.status = NavQueryStatus.Failed;
             queryData.constraint = constraint;
-            queryData.sx = sx;
-            queryData.sz = sz;
             queryData.lastBestNode = null;
             queryData.lastBestNodeCost = 0.0f;
 
-            var speedMod = navManager.GetSquareSpeed(constraint.agent, sx, sz);
-            if (speedMod <= 0.0f)
+            var speed = NavUtils.GetAgentSquareSpeed(constraint.agent, navMap, constraint.sx, constraint.sz);
+            if (speed <= 0.0f)
             {
                 return NavQueryStatus.Failed;
             }
-            var blockTypes = navManager.TestObjectBlockTypes(constraint.agent, sx, sz);
+            var blockTypes = blockingObjectMap.TestObjectBlockTypes(constraint.agent, constraint.sx, constraint.sz);
             if ((blockTypes & NavBlockType.Block) != 0)
             {
                 return NavQueryStatus.Failed;
@@ -81,20 +82,20 @@ namespace GridNav
             nodePool.Clear();
             openQueue.Clear();
 
-            var snode = nodePool.GetNode(sx, sz);
+            var snode = nodePool.GetNode(constraint.sx, constraint.sz);
             if (snode == null)
             {
                 return NavQueryStatus.Failed;
             }
             snode.gCost = 0;
-            snode.fCost = constraint.GetHeuristicCost(this, sx, sz);
+            snode.fCost = constraint.GetHeuristicCost(this, constraint.sx, constraint.sz);
             snode.parent = null;
-            snode.flags |= (int)GridNavNodeFlags.Open;
+            snode.flags |= (int)NavNodeFlags.Open;
             openQueue.Push(snode);
 
             queryData.lastBestNode = snode;
             queryData.lastBestNodeCost = snode.fCost;
-            queryData.status = GridNavQueryStatus.InProgress;
+            queryData.status = NavQueryStatus.InProgress;
             return queryData.status;
         }
         public GridNavQueryStatus UpdateSlicedFindPath(int maxNodes, out int doneNodes)
