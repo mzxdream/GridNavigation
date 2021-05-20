@@ -126,55 +126,49 @@ namespace GridNav
                     queryData.status = NavQueryStatus.Success;
                     return queryData.status;
                 }
-                var leftBlocked = TestNeighbourBlocked(queryData.filter, queryData.constraint, bestNode, GridNavDirection.Left, ref queryData.lastBestNodeCost, ref queryData.lastBestNode);
-                var rightBlocked = TestNeighbourBlocked(queryData.filter, queryData.constraint, bestNode, GridNavDirection.Right, ref queryData.lastBestNodeCost, ref queryData.lastBestNode);
-                var upBlocked = TestNeighbourBlocked(queryData.filter, queryData.constraint, bestNode, GridNavDirection.Up, ref queryData.lastBestNodeCost, ref queryData.lastBestNode);
-                var downBlocked = TestNeighbourBlocked(queryData.filter, queryData.constraint, bestNode, GridNavDirection.Down, ref queryData.lastBestNodeCost, ref queryData.lastBestNode);
-                if (!leftBlocked)
+                var ForwardBlocked = TestNeighborBlocked(queryData.constraint, bestNode, NavDirection.Forward, ref queryData.lastBestNodeCost, ref queryData.lastBestNode);
+                var BackBlocked = TestNeighborBlocked(queryData.constraint, bestNode, NavDirection.Back, ref queryData.lastBestNodeCost, ref queryData.lastBestNode);
+                var LeftBlocked = TestNeighborBlocked(queryData.constraint, bestNode, NavDirection.Left, ref queryData.lastBestNodeCost, ref queryData.lastBestNode);
+                var RightBlocked = TestNeighborBlocked(queryData.constraint, bestNode, NavDirection.Right, ref queryData.lastBestNodeCost, ref queryData.lastBestNode);
+                if (!LeftBlocked && !ForwardBlocked)
                 {
-                    if (!upBlocked)
-                    {
-                        TestNeighbourBlocked(queryData.filter, queryData.constraint, bestNode, GridNavDirection.LeftUp, ref queryData.lastBestNodeCost, ref queryData.lastBestNode);
-                    }
-                    if (!downBlocked)
-                    {
-                        TestNeighbourBlocked(queryData.filter, queryData.constraint, bestNode, GridNavDirection.LeftDown, ref queryData.lastBestNodeCost, ref queryData.lastBestNode);
-                    }
+                    TestNeighborBlocked(queryData.constraint, bestNode, NavDirection.LeftForward, ref queryData.lastBestNodeCost, ref queryData.lastBestNode);
                 }
-                if (!rightBlocked)
+                if (!RightBlocked && !ForwardBlocked)
                 {
-                    if (!upBlocked)
-                    {
-                        TestNeighbourBlocked(queryData.filter, queryData.constraint, bestNode, GridNavDirection.RightUp, ref queryData.lastBestNodeCost, ref queryData.lastBestNode);
-                    }
-                    if (!downBlocked)
-                    {
-                        TestNeighbourBlocked(queryData.filter, queryData.constraint, bestNode, GridNavDirection.RightDown, ref queryData.lastBestNodeCost, ref queryData.lastBestNode);
-                    }
+                    TestNeighborBlocked(queryData.constraint, bestNode, NavDirection.RightForward, ref queryData.lastBestNodeCost, ref queryData.lastBestNode);
+                }
+                if (!LeftBlocked && !ForwardBlocked)
+                {
+                    TestNeighborBlocked(queryData.constraint, bestNode, NavDirection.LeftBack, ref queryData.lastBestNodeCost, ref queryData.lastBestNode);
+                }
+                if (!LeftBlocked && !BackBlocked)
+                {
+                    TestNeighborBlocked(queryData.constraint, bestNode, NavDirection.RightBack, ref queryData.lastBestNodeCost, ref queryData.lastBestNode);
                 }
             }
             if (openQueue.IsEmpty())
             {
-                queryData.status = GridNavQueryStatus.Success;
+                queryData.status = NavQueryStatus.Success | NavQueryStatus.Partial;
             }
             return queryData.status;
         }
-        public GridNavQueryStatus FinalizeSlicedFindPath(out List<int> path)
+        public NavQueryStatus FinalizeSlicedFindPath(out List<int> path)
         {
             path = new List<int>();
-            if (queryData.status == GridNavQueryStatus.Failed)
+            if ((queryData.status & NavQueryStatus.Failed) != 0)
             {
                 return queryData.status;
             }
             var curNode = queryData.lastBestNode;
             if (curNode == null)
             {
-                queryData.status = GridNavQueryStatus.Failed;
+                queryData.status = NavQueryStatus.Failed;
                 return queryData.status;
             }
             do
             {
-                path.Add(curNode.index);
+                path.Add(NavUtils.GetSquareIndex(curNode.x, curNode.z));
                 curNode = curNode.parent;
             } while (curNode != null);
             path.Reverse();

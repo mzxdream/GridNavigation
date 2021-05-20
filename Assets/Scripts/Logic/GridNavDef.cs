@@ -68,6 +68,15 @@ namespace GridNav
 
     public static class NavUtils
     {
+        public static int GetSquareIndex(int x, int z)
+        {
+            return x + z << 16;
+        }
+        public static void GetSquareXZ(int index, out int x, out int z)
+        {
+            x = index & 0xFFFF;
+            z = index >> 16;
+        }
         public static float GetAgentSquareSpeed(NavAgent agent, NavMap navMap, int x, int z)
         {
             int xmin = x - agent.halfUnitSize;
