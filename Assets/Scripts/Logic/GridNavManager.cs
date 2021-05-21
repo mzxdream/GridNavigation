@@ -10,8 +10,9 @@ namespace GridNav
         private NavQuery navQuery;
         private Dictionary<int, NavAgent> agents; // TODO 后续做成缓冲池
         private int lastAgentID;
-        private List<int> pathRequestQueue;
         private NavQuery[] workNavQuerys;
+        private List<int> moveRequestQueue;
+        private NavQuery moveRequestNavQuery;
 
         public bool Init(NavMap navMap, int maxAgents = 1024, int maxWorkers = 1)
         {
@@ -25,7 +26,6 @@ namespace GridNav
             }
             this.agents = new Dictionary<int, NavAgent>();
             this.lastAgentID = 0;
-            this.pathRequestQueue = new List<int>();
             this.workNavQuerys = new NavQuery[maxWorkers];
             for (int i = 0; i < maxWorkers; i++)
             {
@@ -36,11 +36,20 @@ namespace GridNav
                 }
                 this.workNavQuerys[i] = query;
             }
+            this.moveRequestQueue = new List<int>();
+            this.moveRequestNavQuery = new NavQuery();
+            if (!this.moveRequestNavQuery.Init(navMap, blockingObjectMap))
+            {
+                return false;
+            }
             return true;
         }
         public void Clear()
         {
-            this.navQuery.Clear();
+            if (navQuery != null)
+            {
+                navQuery.Clear();
+            }
             for (int i = 0; i < workNavQuerys.Length; ++i)
             {
                 var query = workNavQuerys[i];
@@ -49,11 +58,15 @@ namespace GridNav
                     query.Clear();
                 }
             }
+            if (moveRequestNavQuery != null)
+            {
+                moveRequestNavQuery.Clear();
+            }
         }
         public void Update(float deltaTime)
         {
             var agentList = new List<NavAgent>(agents.Values);
-            NavCrowdUpdate.Update(this, navMap, blockingObjectMap, agentList, pathRequestQueue, workNavQuerys, deltaTime);
+            NavCrowdUpdate.Update(this, navMap, blockingObjectMap, agentList, workNavQuerys, deltaTime);
         }
         public NavMap GetNavMap()
         {
@@ -106,15 +119,19 @@ namespace GridNav
             }
             if (agent.moveState == NavMoveState.Requesting)
             {
-                pathRequestQueue.Remove(agent.id);
+                moveRequestQueue.Remove(agent.id);
             }
             else if (agent.moveState == NavMoveState.WaitForPath)
             {
-                Debug.Assert(pathRequestQueue[0] == agent.id);
-                pathRequestQueue.RemoveAt(0);
+                Debug.Assert(moveRequestQueue[0] == agent.id);
+                moveRequestQueue.RemoveAt(0);
             }
             blockingObjectMap.RemoveAgent(agent);
             agents.Remove(agentID);
+        }
+        public NavAgent GetAgent(int agentID)
+        {
+            return agents.TryGetValue(agentID, out var agent) ? agent : null;
         }
         private bool StartMoving(int agentID, Vector3 goalPos, float goalRadius = 0.0f)
         {
@@ -135,19 +152,19 @@ namespace GridNav
             }
             if (agent.moveState == NavMoveState.WaitForPath)
             {
-                Debug.Assert(agent.id == pathRequestQueue[0]);
+                Debug.Assert(agent.id == moveRequestQueue[0]);
                 if (neareastIndex == agent.goalSquareIndex && Mathf.Abs(goalRadius - agent.goalRadius) < navMap.SquareSize)
                 {
                     return true;
                 }
-                pathRequestQueue.RemoveAt(0);
+                moveRequestQueue.RemoveAt(0);
             }
             agent.moveState = NavMoveState.Requesting;
             agent.goalPos = nearestPos;
             agent.goalRadius = goalRadius;
             agent.goalSquareIndex = neareastIndex;
             agent.prefVelocity = Vector3.zero;
-            pathRequestQueue.Add(agent.id);
+            moveRequestQueue.Add(agent.id);
             return true;
         }
         public bool GetLocation(int agentID, out Vector3 pos, out Vector3 forward)
@@ -177,6 +194,9 @@ namespace GridNav
                 return Vector3.zero;
             }
             return agent.velocity;
+        }
+        public void UpdateMoveRequest()
+        {
         }
     }
 }

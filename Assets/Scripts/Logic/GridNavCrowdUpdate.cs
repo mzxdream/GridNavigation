@@ -5,42 +5,9 @@ namespace GridNav
 {
     public static class NavCrowdUpdate
     {
-        public static void Update(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, List<int> pathRequestQueue, NavQuery[] navQuerys, float deltaTime)
+        public static void Update(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQuerys, float deltaTime)
         {
             // TODO 后续改成多线程
-            //foreach (var a in agents) //移到合法点
-            //{
-            //    var agent = a.Value;
-            //    if (agent.filter.IsBlocked(navMesh, agent.squareIndex))
-            //    {
-            //        if (navQuery.FindNearestSquare(agent.filter, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearesetPos))
-            //        {
-            //            RemoveSquareAgent(agent.squareIndex, agent);
-            //            AddSquareAgent(nearestIndex, agent);
-            //            agent.squareIndex = nearestIndex;
-            //            agent.pos = nearesetPos;
-            //            if (agent.state == GridNavAgentState.WaitForPath)
-            //            {
-            //                Debug.Assert(pathRequestQueue[0] == agent.id);
-            //                pathRequestQueue.RemoveAt(0);
-            //                pathRequestQueue.Add(agent.id);
-            //            }
-            //        }
-            //        else
-            //        {
-            //            if (agent.state == GridNavAgentState.WaitForPath)
-            //            {
-            //                Debug.Assert(pathRequestQueue[0] == agent.id);
-            //                pathRequestQueue.RemoveAt(0);
-            //            }
-            //            else if (agent.state == GridNavAgentState.Requesting)
-            //            {
-            //                pathRequestQueue.Remove(agent.id);
-            //            }
-            //            agent.state = GridNavAgentState.None;
-            //        }
-            //    }
-            //}
             //int maxNodes = 10240;
             //while (pathRequestQueue.Count > 0 && maxNodes > 0) //寻路
             //{
