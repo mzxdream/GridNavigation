@@ -175,12 +175,8 @@ namespace GridNav
 
             navMap.ClampInBounds(pos, out var x, out var z, out nearestPos);
             nearestIndex = NavUtils.GetSquareIndex(x, z);
-            if (!NavUtils.TestMoveSquareRange(navMap, agent, x, z)
-                || (NavUtils.TestBlockTypesSquareRange(blockingObjectMap, constraint.agent, constraint.sx, constraint.sz) & NavBlockType.Block) != 0)
-            {
-                return NavQueryStatus.Failed;
-            }
-            if (!TestBlocked(agent, x, z))
+            if (NavUtils.TestMoveSquareRange(navMap, agent, x, z)
+                && NavUtils.IsSquareNotUsedRange(blockingObjectMap, agent, x, z))
             {
                 return true;
             }
@@ -222,10 +218,10 @@ namespace GridNav
             }
             return false;
         }
-
         private bool TestBlocked(NavAgent agent, int x, int z, ref int index, ref Vector3 pos)
         {
-            if (!TestBlocked(agent, x, z))
+            if (NavUtils.TestMoveSquareRange(navMap, agent, x, z)
+                && NavUtils.IsSquareNotUsedRange(blockingObjectMap, agent, x, z))
             {
                 index = NavUtils.GetSquareIndex(x, z);
                 pos = navMap.GetSquarePos(x, z);
@@ -254,32 +250,32 @@ namespace GridNav
                 neighborNode.flags |= (int)(NavNodeFlags.Closed | NavNodeFlags.Blocked);
                 return true;
             }
-            var blockTypes = blockingObjectMap.TestObjectBlockTypes(constraint.agent, neighborNode.x, neighborNode.z);
+            var agent = constraint.agent;
+            if (!NavUtils.TestMoveSquareRange(navMap, agent, neighborNode.x, neighborNode.z))
+            {
+                neighborNode.flags |= (int)(NavNodeFlags.Closed | NavNodeFlags.Blocked);
+                return true;
+            }
+            var blockTypes = NavUtils.TestBlockTypesSquareRange(blockingObjectMap, agent, neighborNode.x, neighborNode.z);
             if ((blockTypes & NavBlockType.Block) != 0)
             {
                 neighborNode.flags |= (int)(NavNodeFlags.Closed | NavNodeFlags.Blocked);
                 return true;
             }
-            var speed = NavUtils.GetAgentSquareSpeed(constraint.agent, navMap, neighborNode.x, neighborNode.z, NavMathUtils.DirToVector3(dir));
-            if (speed <= 0.0f)
-            {
-                //neighborNode.flags |= (int)(NavNodeFlags.Closed | NavNodeFlags.Blocked); // 从其他方向的速度可能不为0
-                return true;
-            }
-            var moveParam = constraint.agent.moveParam;
-            if (constraint.testMobile && moveParam.isAvoidMobilesOnPath)
+            var speed = NavUtils.GetSquareSpeed(navMap, agent, neighborNode.x, neighborNode.z, NavMathUtils.DirToVector3(dir));
+            if (constraint.testMobile && agent.moveParam.isAvoidMobilesOnPath)
             {
                 if ((blockTypes & NavBlockType.Busy) != 0)
                 {
-                    speed *= moveParam.speedModMults[(int)NavSpeedModMultType.Busy];
+                    speed *= agent.moveParam.speedModMults[(int)NavSpeedModMultType.Busy];
                 }
                 else if ((blockTypes & NavBlockType.Idle) != 0)
                 {
-                    speed *= moveParam.speedModMults[(int)NavSpeedModMultType.Idle];
+                    speed *= agent.moveParam.speedModMults[(int)NavSpeedModMultType.Idle];
                 }
                 else if ((blockTypes & NavBlockType.Moving) != 0)
                 {
-                    speed *= moveParam.speedModMults[(int)NavSpeedModMultType.Move];
+                    speed *= agent.moveParam.speedModMults[(int)NavSpeedModMultType.Move];
                 }
             }
             float dirMoveCost = NavMathUtils.DirCost(dir) * navMap.SquareSize;

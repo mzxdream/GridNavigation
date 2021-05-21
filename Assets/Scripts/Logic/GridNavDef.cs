@@ -252,5 +252,31 @@ namespace GridNav
             }
             return blockTypes;
         }
+        public static bool IsSquareNotUsedRange(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
+        {
+            int xmin = x - agent.halfUnitSize;
+            int xmax = x + agent.halfUnitSize;
+            int zmin = z - agent.halfUnitSize;
+            int zmax = z + agent.halfUnitSize;
+
+            for (int tz = zmin; tz <= zmax; tz++)
+            {
+                for (int tx = xmin; tx <= xmax; tx++)
+                {
+                    if (!blockingObjectMap.GetSquareAgents(x, z, out var agentList))
+                    {
+                        continue;
+                    }
+                    foreach (var other in agentList)
+                    {
+                        if (other != agent)
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
     }
 }
