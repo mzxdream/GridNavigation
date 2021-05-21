@@ -363,14 +363,14 @@ namespace GridNav
                 orcaLines.Add(line);
             }
 
-            int lineFail = linearProgram2(orcaLines, agent.param.maxSpeed, agent.prefVelocity, false, ref agent.newVelocity);
+            int lineFail = LinearProgram2(orcaLines, agent.param.maxSpeed, agent.prefVelocity, false, ref agent.newVelocity);
 
             if (lineFail < orcaLines.Count)
             {
-                linearProgram3(orcaLines, numObstLines, lineFail, agent.param.maxSpeed, ref agent.newVelocity);
+                LinearProgram3(orcaLines, numObstLines, lineFail, agent.param.maxSpeed, ref agent.newVelocity);
             }
         }
-        private static bool linearProgram1(List<NavRVOLine> lines, int lineNo, float radius, Vector3 optVelocity, bool directionOpt, ref Vector3 result)
+        private static bool LinearProgram1(List<NavRVOLine> lines, int lineNo, float radius, Vector3 optVelocity, bool directionOpt, ref Vector3 result)
         {
             float dotProduct = NavMathUtils.Dot2D(lines[lineNo].point, lines[lineNo].direction);
             float discriminant = dotProduct * dotProduct + radius * radius - NavMathUtils.SqrMagnitude2D(lines[lineNo].point);
@@ -390,7 +390,7 @@ namespace GridNav
                 float denominator = NavMathUtils.Det2D(lines[lineNo].direction, lines[i].direction);
                 float numerator = NavMathUtils.Det2D(lines[i].direction, lines[lineNo].point - lines[i].point);
 
-                if (Mathf.Abs(denominator) <= 0.00001f)
+                if (Mathf.Abs(denominator) <= NavMathUtils.EPSILON)
                 {
                     /* Lines lineNo and i are (almost) parallel. */
                     if (numerator < 0.0f)
@@ -456,28 +456,24 @@ namespace GridNav
             return true;
         }
 
-        private int linearProgram2(IList<Line> lines, float radius, Vector3 optVelocity, bool directionOpt, ref Vector3 result)
+        private static int LinearProgram2(List<NavRVOLine> lines, float radius, Vector3 optVelocity, bool directionOpt, ref Vector3 result)
         {
-            // directionOpt 第一次为false，第二次为true，directionOpt主要用在 linearProgram1 里面
             if (directionOpt)
             {
                 /*
                  * Optimize direction. Note that the optimization velocity is of
                  * unit length in this case.
                  */
-                // 1.这个其实没什么用，只是因为velocity是归一化的所以直接乘 radius
                 result = optVelocity * radius;
             }
             else if (NavMathUtils.SqrMagnitude2D(optVelocity) > radius * radius)
             {
                 /* Optimize closest point and outside circle. */
-                // 2.当 optVelocity 太大时，先归一化optVelocity，再乘 radius
                 result = NavMathUtils.Normalized2D(optVelocity) * radius;
             }
             else
             {
                 /* Optimize closest point and inside circle. */
-                // 3.当 optVelocity 小于maxSpeed时
                 result = optVelocity;
             }
 
@@ -487,7 +483,7 @@ namespace GridNav
                 {
                     /* Result does not satisfy constraint i. Compute new optimal result. */
                     Vector3 tempResult = result;
-                    if (!linearProgram1(lines, i, radius, optVelocity, directionOpt, ref result))
+                    if (!LinearProgram1(lines, i, radius, optVelocity, directionOpt, ref result))
                     {
                         result = tempResult;
 
@@ -499,59 +495,51 @@ namespace GridNav
             return lines.Count;
         }
 
-        private void linearProgram3(IList<Line> lines, int numObstLines, int beginLine, float radius, ref Vector3 result)
+        private static void LinearProgram3(List<NavRVOLine> lines, int numObstLines, int beginLine, float radius, ref Vector3 result)
         {
 
             float distance = 0.0f;
-            // 遍历所有剩余ORCA线
+
             for (int i = beginLine; i < lines.Count; ++i)
             {
-                // 每一条 ORCA 线都需要精确的做出处理，distance 为 最大违规的速度
                 if (NavMathUtils.Det2D(lines[i].direction, lines[i].point - result) > distance)
                 {
                     /* Result does not satisfy constraint of line i. */
-                    IList<Line> projLines = new List<Line>();
-                    // 1.静态阻挡的orca线直接加到projLines中
+                    var projLines = new List<NavRVOLine>();
                     for (int ii = 0; ii < numObstLines; ++ii)
                     {
                         projLines.Add(lines[ii]);
                     }
-                    // 2.动态阻挡的orca线需要重新计算line，从第一个非静态阻挡到当前的orca线
+
                     for (int j = numObstLines; j < i; ++j)
                     {
-                        Line line;
+                        NavRVOLine line;
 
                         float determinant = NavMathUtils.Det2D(lines[i].direction, lines[j].direction);
 
-                        if (Mathf.Abs(determinant) <= 0.00001f)
+                        if (Mathf.Abs(determinant) <= NavMathUtils.EPSILON)
                         {
                             /* Line i and line j are parallel. */
                             if (NavMathUtils.Dot2D(lines[i].direction, lines[j].direction) > 0.0f)
                             {
                                 /* Line i and line j point in the same direction. */
-                                // 2-1 两条线平行且同向
                                 continue;
                             }
                             else
                             {
                                 /* Line i and line j point in opposite direction. */
-                                // 2-2 两条线平行且反向
                                 line.point = 0.5f * (lines[i].point + lines[j].point);
                             }
                         }
                         else
                         {
-                            // 2-3 两条线不平行
                             line.point = lines[i].point + (NavMathUtils.Det2D(lines[j].direction, lines[i].point - lines[j].point) / determinant) * lines[i].direction;
                         }
-                        // 计算ORCA线的方向
                         line.direction = NavMathUtils.Normalized2D(lines[j].direction - lines[i].direction);
                         projLines.Add(line);
                     }
-                    // 3.再次计算最优速度
                     Vector3 tempResult = result;
-                    // 注意这里的 new Vector3(-lines[i].direction.y(), lines[i].direction.x()) 是方向向量
-                    if (linearProgram2(projLines, radius, new Vector3(-lines[i].direction.z, 0.0f, lines[i].direction.x), true, ref result) < projLines.Count)
+                    if (LinearProgram2(projLines, radius, new Vector3(-lines[i].direction.z, 0.0f, lines[i].direction.x), true, ref result) < projLines.Count)
                     {
                         /*
                          * This should in principle not happen. The result is by
@@ -566,6 +554,5 @@ namespace GridNav
                 }
             }
         }
-
     }
 }
