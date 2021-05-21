@@ -53,7 +53,7 @@ namespace GridNav
         public void Update(float deltaTime)
         {
             var agentList = new List<NavAgent>(agents.Values);
-            NavCrowdUpdate.Update(navMap, blockingObjectMap, agentList, pathRequestQueue, workNavQuerys, deltaTime);
+            NavCrowdUpdate.Update(this, navMap, blockingObjectMap, agentList, pathRequestQueue, workNavQuerys, deltaTime);
         }
         public NavMap GetNavMap()
         {
@@ -84,6 +84,7 @@ namespace GridNav
                 velocity = Vector3.zero,
                 newVelocity = Vector3.zero,
                 isMoving = false,
+                isRepath = false,
             };
             navMap.ClampInBounds(agent.pos, out agent.squareIndex, out agent.pos);
             if (navQuery.FindNearestSquare(agent, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearesetPos))
@@ -113,69 +114,67 @@ namespace GridNav
             blockingObjectMap.RemoveAgent(agent);
             agents.Remove(agentID);
         }
-        //public bool StartMoving(int agentID, Vector3 goalPos)
-        //{
-        //    if (!agents.TryGetValue(agentID, out var agent))
-        //    {
-        //        return false;
-        //    }
-        //    StartMoving(agent, goalPos, 0.1f);
-        //    return true;
-        //}
-        //private void StartMoving(GridNavAgent agent, Vector3 goalPos, float goalRadius)
-        //{
-        //    navMesh.ClampInBounds(goalPos, out var neareastIndex, out var nearestPos);
-        //    if (agent.state == GridNavAgentState.Requesting)
-        //    {
-        //        agent.goalPos = nearestPos;
-        //        agent.goalRadius = goalRadius;
-        //        return;
-        //    }
-        //    if (agent.state == GridNavAgentState.WaitForPath)
-        //    {
-        //        Debug.Assert(agent.id == pathRequestQueue[0]);
-        //        if (neareastIndex == agent.goalSquareIndex && Mathf.Abs(goalRadius - agent.goalRadius) < navMesh.SquareSize)
-        //        {
-        //            return;
-        //        }
-        //        pathRequestQueue.RemoveAt(0);
-        //    }
-        //    agent.state = GridNavAgentState.Requesting;
-        //    agent.goalPos = nearestPos;
-        //    agent.goalRadius = goalRadius;
-        //    agent.goalSquareIndex = neareastIndex;
-        //    agent.prefVelocity = Vector3.zero;
-        //    pathRequestQueue.Add(agent.id);
-        //}
-        //public bool GetLocation(int agentID, out Vector3 pos, out Vector3 forward)
-        //{
-        //    pos = Vector3.zero;
-        //    forward = Vector3.zero;
-        //    if (!agents.TryGetValue(agentID, out var agent))
-        //    {
-        //        return false;
-        //    }
-        //    pos = agent.pos;
-        //    forward = agent.frontDir;
-        //    return true;
-        //}
-        //public Vector3 GetPrefVelocity(int agentID)
-        //{
-        //    if (!agents.TryGetValue(agentID, out var agent))
-        //    {
-        //        return Vector3.zero;
-        //    }
-        //    return agent.prefVelocity;
-        //}
-        //public Vector3 GetVelocity(int agentID)
-        //{
-        //    if (!agents.TryGetValue(agentID, out var agent))
-        //    {
-        //        return Vector3.zero;
-        //    }
-        //    return agent.velocity;
-        //}
-
-
+        private bool StartMoving(int agentID, Vector3 goalPos, float goalRadius = 0.0f)
+        {
+            if (!agents.TryGetValue(agentID, out var agent))
+            {
+                return false;
+            }
+            if (goalRadius <= 0.0f)
+            {
+                goalRadius = agent.param.radius;
+            }
+            navMap.ClampInBounds(goalPos, out var neareastIndex, out var nearestPos);
+            if (agent.moveState == NavMoveState.Requesting)
+            {
+                agent.goalPos = nearestPos;
+                agent.goalRadius = goalRadius;
+                return true;
+            }
+            if (agent.moveState == NavMoveState.WaitForPath)
+            {
+                Debug.Assert(agent.id == pathRequestQueue[0]);
+                if (neareastIndex == agent.goalSquareIndex && Mathf.Abs(goalRadius - agent.goalRadius) < navMap.SquareSize)
+                {
+                    return true;
+                }
+                pathRequestQueue.RemoveAt(0);
+            }
+            agent.moveState = NavMoveState.Requesting;
+            agent.goalPos = nearestPos;
+            agent.goalRadius = goalRadius;
+            agent.goalSquareIndex = neareastIndex;
+            agent.prefVelocity = Vector3.zero;
+            pathRequestQueue.Add(agent.id);
+            return true;
+        }
+        public bool GetLocation(int agentID, out Vector3 pos, out Vector3 forward)
+        {
+            pos = Vector3.zero;
+            forward = Vector3.zero;
+            if (!agents.TryGetValue(agentID, out var agent))
+            {
+                return false;
+            }
+            pos = agent.pos;
+            forward = agent.velocity.normalized;
+            return true;
+        }
+        public Vector3 GetPrefVelocity(int agentID)
+        {
+            if (!agents.TryGetValue(agentID, out var agent))
+            {
+                return Vector3.zero;
+            }
+            return agent.prefVelocity;
+        }
+        public Vector3 GetVelocity(int agentID)
+        {
+            if (!agents.TryGetValue(agentID, out var agent))
+            {
+                return Vector3.zero;
+            }
+            return agent.velocity;
+        }
     }
 }

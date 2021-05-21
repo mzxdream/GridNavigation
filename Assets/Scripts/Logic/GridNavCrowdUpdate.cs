@@ -5,7 +5,7 @@ namespace GridNav
 {
     public static class NavCrowdUpdate
     {
-        public static void Update(NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, List<int> pathRequestQueue, NavQuery[] navQuerys, float deltaTime)
+        public static void Update(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, List<int> pathRequestQueue, NavQuery[] navQuerys, float deltaTime)
         {
             // TODO 后续改成多线程
             //foreach (var a in agents) //移到合法点

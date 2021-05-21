@@ -61,6 +61,7 @@ namespace GridNav
         public Vector3 velocity;
         public Vector3 newVelocity;
         public bool isMoving;
+        public bool isRepath;
     }
 
     public static class NavUtils
