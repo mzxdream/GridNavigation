@@ -241,63 +241,64 @@ namespace GridNav
                             {
                                 agent.agentNeighbors.Add(other);
                             }
-                            if (other.param.isPushResistant && !other.isMoving)
+                            if ((NavUtils.TestBlockType(agent, other) & NavBlockType.Block) != 0)
                             {
                                 isBlocked = true;
                             }
                         }
                     }
-                    if (isBlocked || NavUtils.GetAgentSquareSpeed(agent, navMap, x, z) <= 0.0f)
+                    if (isBlocked || !NavUtils.TestMoveSquare(navMap, agent, x, z))
                     {
                         List<Vector3> vertices = new List<Vector3>();
 
-                        var point = navMesh.GetSquarePos(index);
-                        vertices.Add(new Vector3(point.x + navMesh.SquareSize / 2, 0, point.z + navMesh.SquareSize / 2));
-                        vertices.Add(new Vector3(point.x - navMesh.SquareSize / 2, 0, point.z + navMesh.SquareSize / 2));
-                        vertices.Add(new Vector3(point.x - navMesh.SquareSize / 2, 0, point.z - navMesh.SquareSize / 2));
-                        vertices.Add(new Vector3(point.x + navMesh.SquareSize / 2, 0, point.z - navMesh.SquareSize / 2));
+                        var point = navMap.GetSquarePos(x, z);
+                        vertices.Add(new Vector3(point.x + navMap.SquareSize * 0.5f, 0, point.z + navMap.SquareSize * 0.5f));
+                        vertices.Add(new Vector3(point.x - navMap.SquareSize * 0.5f, 0, point.z + navMap.SquareSize * 0.5f));
+                        vertices.Add(new Vector3(point.x - navMap.SquareSize * 0.5f, 0, point.z - navMap.SquareSize * 0.5f));
+                        vertices.Add(new Vector3(point.x + navMap.SquareSize * 0.5f, 0, point.z - navMap.SquareSize * 0.5f));
                         AddObstacle(vertices, ref agent.obstacleNeighbors);
                     }
                 }
             }
         }
 
-        private static void AddObstacle(List<Vector3> vertices, ref List<NavRVOObstacle> obstacles)
+        private static int AddObstacle(List<Vector3> vertices, ref List<NavRVOObstacle> obstacles)
         {
-            //if (vertices.Count < 2)
-            //{
-            //    return;
-            //}
-            //int obstacleNo = obstacles.Count;
-            //for (int i = 0; i < vertices.Count; ++i)
-            //{
-            //    Obstacle obstacle = new Obstacle();
-            //    obstacle.point_ = vertices[i];
+            if (vertices.Count < 2)
+            {
+                return -1;
+            }
+            int obstacleNo = obstacles.Count;
+            for (int i = 0; i < vertices.Count; ++i)
+            {
+                var obstacle = new NavRVOObstacle();
+                obstacle.point = vertices[i];
 
-            //    if (i != 0)
-            //    {
-            //        obstacle.previous_ = obstacles[obstacles.Count - 1];
-            //        obstacle.previous_.next_ = obstacle;
-            //    }
+                if (i != 0)
+                {
+                    obstacle.prev = obstacles[obstacles.Count - 1];
+                    obstacle.prev.next = obstacle;
+                }
+                if (i == vertices.Count - 1)
+                {
+                    obstacle.next = obstacles[obstacleNo];
+                    obstacle.next.prev = obstacle;
+                }
 
-            //    if (i == vertices.Count - 1)
-            //    {
-            //        obstacle.next_ = obstacles[obstacleNo];
-            //        obstacle.next_.previous_ = obstacle;
-            //    }
+                obstacle.direction = NavMathUtils.Normalized2D(vertices[(i == vertices.Count - 1 ? 0 : i + 1)] - vertices[i]);
 
-            //    obstacle.direction_ = GridNavMath.Normalized2D(vertices[(i == vertices.Count - 1 ? 0 : i + 1)] - vertices[i]);
-
-            //    if (vertices.Count == 2)
-            //    {
-            //        obstacle.convex_ = true;
-            //    }
-            //    else
-            //    {
-            //        obstacle.convex_ = (GridNavMath.LeftOf2D(vertices[(i == 0 ? vertices.Count - 1 : i - 1)], vertices[i], vertices[(i == vertices.Count - 1 ? 0 : i + 1)]) >= 0.0f);
-            //    }
-            //    obstacles.Add(obstacle);
-            //}
+                if (vertices.Count == 2)
+                {
+                    obstacle.isConvex = true;
+                }
+                else
+                {
+                    obstacle.isConvex = (NavMathUtils.LeftOf2D(vertices[(i == 0 ? vertices.Count - 1 : i - 1)], vertices[i], vertices[(i == vertices.Count - 1 ? 0 : i + 1)]) >= 0.0f);
+                }
+                obstacle.id = obstacles.Count;
+                obstacles.Add(obstacle);
+            }
+            return obstacleNo;
         }
     }
 }

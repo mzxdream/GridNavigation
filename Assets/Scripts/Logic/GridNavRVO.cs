@@ -11,6 +11,7 @@ namespace GridNav
 
     public class NavRVOObstacle
     {
+        public int id;
         public Vector3 point;
         public Vector3 direction;
         public bool isConvex;
