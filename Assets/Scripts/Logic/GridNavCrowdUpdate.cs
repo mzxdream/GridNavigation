@@ -217,49 +217,49 @@ namespace GridNav
             //}
         }
 
-        private static void CollectNeighbors(NavAgent agent)
+        private static void CollectNeighbors(NavMap navMap, NavBlockingObjectMap blockingObjectMap, NavAgent agent)
         {
-            //agent.neighbors.Clear();
-            //agent.obstacleNeighbors.Clear();
-            //tempNum++;
-            //float radius = 10f * navMesh.SquareSize;
-            //navMesh.GetSquareXZ(new Vector3(agent.pos.x - radius, 0, agent.pos.z - radius), out var sx, out var sz);
-            //navMesh.GetSquareXZ(new Vector3(agent.pos.x + radius, 0, agent.pos.z + radius), out var ex, out var ez);
-            //for (int z = sz; z <= ez; z++)
-            //{
-            //    for (int x = sx; x <= ex; x++)
-            //    {
-            //        var index = navMesh.GetSquareIndex(x, z);
-            //        var isBlocked = false;
-            //        if (squareAgents.TryGetValue(index, out var agentList))
-            //        {
-            //            foreach (var other in agentList)
-            //            {
-            //                if (other.tempNum == this.tempNum || other == agent)
-            //                {
-            //                    continue;
-            //                }
-            //                other.tempNum = this.tempNum;
-            //                agent.neighbors.Add(other);
-            //                if (other.velocity.sqrMagnitude <= 0.00001f)
-            //                {
-            //                    isBlocked = true;
-            //                }
-            //            }
-            //        }
-            //        if (isBlocked || navMesh.IsSquareBlocked(index))
-            //        {
-            //            List<Vector3> vertices = new List<Vector3>();
+            agent.agentNeighbors.Clear();
+            agent.obstacleNeighbors.Clear();
+            float queryRadius = agent.maxInteriorRadius + agent.param.maxSpeed * 2.0f;
+            navMap.GetSquareXZ(new Vector3(agent.pos.x - queryRadius, 0, agent.pos.z - queryRadius), out var sx, out var sz);
+            navMap.GetSquareXZ(new Vector3(agent.pos.x + queryRadius, 0, agent.pos.z + queryRadius), out var ex, out var ez);
+            for (int z = sz; z <= ez; z++)
+            {
+                for (int x = sx; x <= ex; x++)
+                {
+                    var isBlocked = false;
+                    if (blockingObjectMap.GetSquareAgents(x, z, out var agentList))
+                    {
+                        foreach (var other in agentList)
+                        {
+                            if (other == agent)
+                            {
+                                continue;
+                            }
+                            if (!agent.agentNeighbors.Contains(other))
+                            {
+                                agent.agentNeighbors.Add(other);
+                            }
+                            if (other.param.isPushResistant && !other.isMoving)
+                            {
+                                isBlocked = true;
+                            }
+                        }
+                    }
+                    if (isBlocked || NavUtils.GetAgentSquareSpeed(agent, navMap, x, z) <= 0.0f)
+                    {
+                        List<Vector3> vertices = new List<Vector3>();
 
-            //            var point = navMesh.GetSquarePos(index);
-            //            vertices.Add(new Vector3(point.x + navMesh.SquareSize / 2, 0, point.z + navMesh.SquareSize / 2));
-            //            vertices.Add(new Vector3(point.x - navMesh.SquareSize / 2, 0, point.z + navMesh.SquareSize / 2));
-            //            vertices.Add(new Vector3(point.x - navMesh.SquareSize / 2, 0, point.z - navMesh.SquareSize / 2));
-            //            vertices.Add(new Vector3(point.x + navMesh.SquareSize / 2, 0, point.z - navMesh.SquareSize / 2));
-            //            AddObstacle(vertices, ref agent.obstacleNeighbors);
-            //        }
-            //    }
-            //}
+                        var point = navMesh.GetSquarePos(index);
+                        vertices.Add(new Vector3(point.x + navMesh.SquareSize / 2, 0, point.z + navMesh.SquareSize / 2));
+                        vertices.Add(new Vector3(point.x - navMesh.SquareSize / 2, 0, point.z + navMesh.SquareSize / 2));
+                        vertices.Add(new Vector3(point.x - navMesh.SquareSize / 2, 0, point.z - navMesh.SquareSize / 2));
+                        vertices.Add(new Vector3(point.x + navMesh.SquareSize / 2, 0, point.z - navMesh.SquareSize / 2));
+                        AddObstacle(vertices, ref agent.obstacleNeighbors);
+                    }
+                }
+            }
         }
 
         private static void AddObstacle(List<Vector3> vertices, ref List<NavRVOObstacle> obstacles)

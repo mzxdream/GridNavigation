@@ -62,6 +62,8 @@ namespace GridNav
         public Vector3 newVelocity;
         public bool isMoving;
         public bool isRepath;
+        public List<NavAgent> agentNeighbors;
+        public List<NavRVOObstacle> obstacleNeighbors;
     }
 
     public static class NavUtils
@@ -84,65 +86,171 @@ namespace GridNav
             x = index & 0xFFFF;
             z = index >> 16;
         }
-        public static float GetAgentSquareSpeed(NavAgent agent, NavMap navMap, int x, int z)
+        public static bool TestMoveSquare(NavMap navMap, NavAgent agent, int x, int z)
         {
+            Debug.Assert(x >= 0 && x < navMap.XSize && z >= 0 && z < navMap.ZSize);
+            var squareType = navMap.GetSquareType(x, z);
+            Debug.Assert(squareType >= 0 && squareType < agent.moveParam.speedMods.Length);
+            if (agent.moveParam.speedMods[squareType] <= 0.0f)
+            {
+                return false;
+            }
+            if (navMap.GetSquareSlope(x, z) > agent.moveParam.maxSlope)
+            {
+                return false;
+            }
+            return true;
+        }
+        public static bool TestMoveSquareRange(NavMap navMap, NavAgent agent, int x, int z)
+        {
+            Debug.Assert(x >= 0 && x < navMap.XSize && z >= 0 && z < navMap.ZSize);
             int xmin = x - agent.halfUnitSize;
             int xmax = x + agent.halfUnitSize;
             int zmin = z - agent.halfUnitSize;
             int zmax = z + agent.halfUnitSize;
             if (xmin < 0 || xmax >= navMap.XSize || zmin < 0 || zmax >= navMap.ZSize)
             {
-                return 0.0f;
+                return false;
             }
-            var moveParam = agent.moveParam;
             for (int tz = zmin; tz <= zmax; tz++)
             {
                 for (int tx = xmin; tx <= xmax; tx++)
                 {
-                    if (moveParam.speedMods[navMap.GetSquareType(tx, tz)] <= 0.0f)
+                    if (!TestMoveSquare(navMap, agent, tx, tz))
                     {
-                        return 0.0f;
-                    }
-                    if (navMap.GetSquareSlope(x, z) > moveParam.maxSlope)
-                    {
-                        return 0.0f;
+                        return false;
                     }
                 }
             }
+            return true;
+        }
+        public static float GetSquareSpeed(NavMap navMap, NavAgent agent, int x, int z)
+        {
             var slope = navMap.GetSquareSlope(x, z);
             var squareType = navMap.GetSquareType(x, z);
-            return moveParam.speedMods[squareType] / (1.0f + slope * moveParam.slopeMod);
+            Debug.Assert(squareType >= 0 && squareType < agent.moveParam.speedMods.Length);
+            return agent.moveParam.speedMods[squareType] / (1.0f + slope * agent.moveParam.slopeMod);
         }
-        public static float GetAgentSquareSpeed(NavAgent agent, NavMap navMap, int x, int z, Vector3 moveDir)
+        public static float GetSquareSpeed(NavMap navMap, NavAgent agent, int x, int z, Vector3 moveDir)
         {
-            int xmin = x - agent.halfUnitSize;
-            int xmax = x + agent.halfUnitSize;
-            int zmin = z - agent.halfUnitSize;
-            int zmax = z + agent.halfUnitSize;
-            if (xmin < 0 || xmax >= navMap.XSize || zmin < 0 || zmax >= navMap.ZSize)
-            {
-                return 0.0f;
-            }
-            var moveParam = agent.moveParam;
-            for (int tz = zmin; tz <= zmax; tz++)
-            {
-                for (int tx = xmin; tx <= xmax; tx++)
-                {
-                    if (moveParam.speedMods[navMap.GetSquareType(tx, tz)] <= 0.0f)
-                    {
-                        return 0.0f;
-                    }
-                    if (navMap.GetSquareSlope(x, z) > moveParam.maxSlope)
-                    {
-                        return 0.0f;
-                    }
-                }
-            }
             var slope = navMap.GetSquareSlope(x, z);
             var squareType = navMap.GetSquareType(x, z);
             var centerNormal2D = navMap.GetSquareCenterNormal2D(x, z);
             var dirSlopeMod = -NavMathUtils.Dot2D(NavMathUtils.Normalized2D(moveDir), centerNormal2D);
-            return moveParam.speedMods[squareType] / (1.0f + Mathf.Max(0.0f, slope * dirSlopeMod) * moveParam.slopeMod);
+            Debug.Assert(squareType >= 0 && squareType < agent.moveParam.speedMods.Length);
+            return agent.moveParam.speedMods[squareType] / (1.0f + Mathf.Max(0.0f, slope * dirSlopeMod) * agent.moveParam.slopeMod);
+        }
+        public static NavBlockType TestBlockType(NavAgent collider, NavAgent collidee)
+        {
+            if (collider == collidee)
+            {
+                return NavBlockType.None;
+            }
+            if (collidee.isMoving)
+            {
+                return NavBlockType.Moving;
+            }
+            if (collidee.param.isPushResistant)
+            {
+                return NavBlockType.Block;
+            }
+            if (collidee.moveState != NavMoveState.Idle)
+            {
+                return NavBlockType.Busy;
+            }
+            return NavBlockType.Idle;
+        }
+        public static NavBlockType TestBlockTypeIgnoreMoving(NavAgent collider, NavAgent collidee)
+        {
+            if (collider == collidee)
+            {
+                return NavBlockType.None;
+            }
+            if (collidee.param.isPushResistant)
+            {
+                return NavBlockType.Block;
+            }
+            if (collidee.moveState != NavMoveState.Idle)
+            {
+                return NavBlockType.Busy;
+            }
+            return NavBlockType.Idle;
+        }
+        public static NavBlockType TestBlockTypesSquare(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
+        {
+            if (!blockingObjectMap.GetSquareAgents(x, z, out var agentList))
+            {
+                return NavBlockType.None;
+            }
+            var blockTypes = NavBlockType.None;
+            foreach (var other in agentList)
+            {
+                blockTypes |= TestBlockType(agent, other);
+                if ((blockTypes & NavBlockType.Block) != 0)
+                {
+                    break;
+                }
+            }
+            return blockTypes;
+        }
+        public static NavBlockType TestBlockTypesSquareIgnoreMoving(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
+        {
+            if (!blockingObjectMap.GetSquareAgents(x, z, out var agentList))
+            {
+                return NavBlockType.None;
+            }
+            var blockTypes = NavBlockType.None;
+            foreach (var other in agentList)
+            {
+                blockTypes |= TestBlockTypeIgnoreMoving(agent, other);
+                if ((blockTypes & NavBlockType.Block) != 0)
+                {
+                    return blockTypes;
+                }
+            }
+            return blockTypes;
+        }
+        public static NavBlockType TestBlockTypesSquareRange(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
+        {
+            int xmin = x - agent.halfUnitSize;
+            int xmax = x + agent.halfUnitSize;
+            int zmin = z - agent.halfUnitSize;
+            int zmax = z + agent.halfUnitSize;
+
+            var blockTypes = NavBlockType.None;
+            for (int tz = zmin; tz <= zmax; tz++)
+            {
+                for (int tx = xmin; tx <= xmax; tx++)
+                {
+                    blockTypes |= TestBlockTypesSquare(blockingObjectMap, agent, tx, tz);
+                    if ((blockTypes & NavBlockType.Block) != 0)
+                    {
+                        return blockTypes;
+                    }
+                }
+            }
+            return blockTypes;
+        }
+        public static NavBlockType TestBlockTypesSquareRangeIgnoreMoving(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
+        {
+            int xmin = x - agent.halfUnitSize;
+            int xmax = x + agent.halfUnitSize;
+            int zmin = z - agent.halfUnitSize;
+            int zmax = z + agent.halfUnitSize;
+
+            var blockTypes = NavBlockType.None;
+            for (int tz = zmin; tz <= zmax; tz++)
+            {
+                for (int tx = xmin; tx <= xmax; tx++)
+                {
+                    blockTypes |= TestBlockTypesSquareIgnoreMoving(blockingObjectMap, agent, tx, tz);
+                    if ((blockTypes & NavBlockType.Block) != 0)
+                    {
+                        return blockTypes;
+                    }
+                }
+            }
+            return blockTypes;
         }
     }
 }

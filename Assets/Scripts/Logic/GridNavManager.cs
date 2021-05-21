@@ -85,6 +85,8 @@ namespace GridNav
                 newVelocity = Vector3.zero,
                 isMoving = false,
                 isRepath = false,
+                agentNeighbors = new List<NavAgent>(),
+                obstacleNeighbors = new List<NavRVOObstacle>(),
             };
             navMap.ClampInBounds(agent.pos, out agent.squareIndex, out agent.pos);
             if (navQuery.FindNearestSquare(agent, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearesetPos))

@@ -15,7 +15,6 @@ namespace GridNav
             this.zsize = zsize;
             this.agents = new Dictionary<int, List<NavAgent>>();
         }
-
         public void AddAgent(NavAgent agent)
         {
             NavUtils.GetSquareXZ(agent.squareIndex, out var x, out var z);
@@ -61,53 +60,11 @@ namespace GridNav
                 }
             }
         }
-        public NavBlockType ObjectBlockType(NavAgent collider, NavAgent collidee)
+        public bool GetSquareAgents(int x, int z, out List<NavAgent> agentList)
         {
-            if (collider == collidee)
-            {
-                return NavBlockType.None;
-            }
-            if (collidee.isMoving)
-            {
-                return NavBlockType.Moving;
-            }
-            if (collidee.param.isPushResistant)
-            {
-                return NavBlockType.Block;
-            }
-            if (collidee.moveState != NavMoveState.Idle)
-            {
-                return NavBlockType.Busy;
-            }
-            return NavBlockType.Idle;
-        }
-        public NavBlockType TestObjectBlockTypes(NavAgent agent, int x, int z)
-        {
-            var blockTypes = NavBlockType.None;
-            int xmin = Mathf.Max(0, x - agent.halfUnitSize);
-            int xmax = Mathf.Min(xsize - 1, x + agent.halfUnitSize);
-            int zmin = Mathf.Max(0, z - agent.halfUnitSize);
-            int zmax = Mathf.Min(zsize - 1, z + agent.halfUnitSize);
-            for (int tz = zmin; tz <= zmax; tz++)
-            {
-                for (int tx = xmin; tx <= xmax; tx++)
-                {
-                    var index = tx + tz * xsize;
-                    if (!agents.TryGetValue(index, out var agentList))
-                    {
-                        continue;
-                    }
-                    foreach (var collidee in agentList)
-                    {
-                        blockTypes |= ObjectBlockType(agent, collidee);
-                        if ((blockTypes & NavBlockType.Block) != 0)
-                        {
-                            return blockTypes;
-                        }
-                    }
-                }
-            }
-            return blockTypes;
+            Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
+            var index = x + z * xsize;
+            return agents.TryGetValue(index, out agentList);
         }
     }
 }
