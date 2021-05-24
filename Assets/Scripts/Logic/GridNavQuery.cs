@@ -13,19 +13,47 @@ namespace GridNav
         public int ez;
         public Vector3 goalPos;
         public float goalRadius;
-        public bool testMobile;
 
-        public virtual float GetHeuristicCost(NavQuery navQuery, int x, int z)
+        public NavQueryConstraint(NavAgent agent, int startIndex, Vector3 startPos, int goalIndex, Vector3 goalPos, float goalRadius)
         {
-            return NavMathUtils.DistanceApproximately(x, z, ex, ez) * navQuery.GetNavMap().SquareSize;
+            this.agent = agent;
+            NavUtils.GetSquareXZ(startIndex, out sx, out sz);
+            this.startPos = startPos;
+            NavUtils.GetSquareXZ(goalIndex, out ex, out ez);
+            this.goalPos = goalPos;
+            this.goalRadius = goalRadius;
         }
-        public virtual bool IsGoal(NavQuery navQuery, int x, int z)
+        public float GetHeuristicCost(NavMap navMap, int x, int z)
         {
-            return NavMathUtils.SqrDistance2D(navQuery.GetNavMap().GetSquarePos(x, z), goalPos) <= goalRadius * goalRadius;
+            return NavMathUtils.DistanceApproximately(x, z, ex, ez) * navMap.SquareSize;
         }
-        public virtual bool WithinConstraints(NavQuery navQuery, int x, int z)
+        public bool IsGoal(NavMap navMap, int x, int z)
+        {
+            return NavMathUtils.SqrDistance2D(navMap.GetSquarePos(x, z), goalPos) <= goalRadius * goalRadius;
+        }
+        public virtual bool WithinConstraints(NavMap navMap, int x, int z)
         {
             return true;
+        }
+    }
+    public class NavQueryConstraintCircle
+        : NavQueryConstraint
+    {
+        private int mx;
+        private int mz;
+        private int radiusSqr;
+
+        public NavQueryConstraintCircle(NavAgent agent, int startIndex, Vector3 startPos, int goalIndex, Vector3 goalPos, float goalRadius, float querySize, int extraSize)
+            : base(agent, startIndex, startPos, goalIndex, goalPos, goalRadius)
+        {
+            mx = (sx + ex) >> 1;
+            mz = (sz + ez) >> 1;
+            radiusSqr = (sx - mx) * (sx - mx) + (sz - mz) * (sz - mz);
+            radiusSqr = (int)(radiusSqr * querySize * querySize + extraSize);
+        }
+        public override bool WithinConstraints(NavMap navMap, int x, int z)
+        {
+            return (x - mx) * (x - mx) + (z - mz) * (z - mz) <= radiusSqr;
         }
     }
 
@@ -92,7 +120,7 @@ namespace GridNav
                 return NavQueryStatus.Failed;
             }
             snode.gCost = 0;
-            snode.fCost = constraint.GetHeuristicCost(this, constraint.sx, constraint.sz);
+            snode.fCost = constraint.GetHeuristicCost(navMap, constraint.sx, constraint.sz);
             snode.parent = null;
             snode.flags |= (int)NavNodeFlags.Open;
             openQueue.Push(snode);
@@ -115,7 +143,7 @@ namespace GridNav
                 doneNodes++;
                 bestNode.flags &= ~(int)NavNodeFlags.Open;
                 bestNode.flags |= (int)NavNodeFlags.Closed;
-                if (queryData.constraint.IsGoal(this, bestNode.x, bestNode.z))
+                if (queryData.constraint.IsGoal(navMap, bestNode.x, bestNode.z))
                 {
                     queryData.lastBestNode = bestNode;
                     queryData.status = NavQueryStatus.Success;
@@ -245,7 +273,7 @@ namespace GridNav
             {
                 return (neighborNode.flags & (int)NavNodeFlags.Blocked) != 0;
             }
-            if (!constraint.WithinConstraints(this, neighborNode.x, neighborNode.z))
+            if (!constraint.WithinConstraints(navMap, neighborNode.x, neighborNode.z))
             {
                 neighborNode.flags |= (int)(NavNodeFlags.Closed | NavNodeFlags.Blocked);
                 return true;
@@ -263,7 +291,7 @@ namespace GridNav
                 return true;
             }
             var speed = NavUtils.GetSquareSpeed(navMap, agent, neighborNode.x, neighborNode.z, NavMathUtils.DirToVector3(dir));
-            if (constraint.testMobile && agent.moveParam.isAvoidMobilesOnPath)
+            if (agent.moveParam.isAvoidMobilesOnPath)
             {
                 if ((blockTypes & NavBlockType.Busy) != 0)
                 {
@@ -281,7 +309,7 @@ namespace GridNav
             float dirMoveCost = NavMathUtils.DirCost(dir) * navMap.SquareSize;
             float nodeCost = dirMoveCost / Mathf.Max(1e-4f, speed);
             float gCost = node.gCost + nodeCost;
-            float hCost = constraint.GetHeuristicCost(this, neighborNode.x, neighborNode.z);
+            float hCost = constraint.GetHeuristicCost(navMap, neighborNode.x, neighborNode.z);
             float fCost = gCost + hCost;
 
             if ((neighborNode.flags & (int)NavNodeFlags.Open) != 0)

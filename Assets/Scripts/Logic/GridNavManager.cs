@@ -204,7 +204,11 @@ namespace GridNav
                 if (agent.moveState == NavMoveState.Requesting)
                 {
                     agent.moveState = NavMoveState.WaitForPath;
-                    var circleIndex = navMesh.GetSquareCenterIndex(agent.squareIndex, agent.goalSquareIndex);
+                    NavUtils.GetSquareXZ(agent.squareIndex, out var sx, out var sz);
+                    NavUtils.GetSquareXZ(agent.goalSquareIndex, out var ex, out var ez);
+                    
+
+                    var circleIndex = navMesh.GetSquareCenterIndex(, );
                     var circleRadius = navMesh.DistanceApproximately(agent.squareIndex, circleIndex) * 3.0f + 100.0f;
                     var constraint = new GridNavQueryConstraintCircle(agent.goalSquareIndex, agent.goalRadius, circleIndex, circleRadius);
                     pathRequestNavQuery.InitSlicedFindPath(agent.pathFilter, agent.squareIndex, constraint);

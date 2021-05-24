@@ -8,38 +8,7 @@ namespace GridNav
         public static void Update(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQuerys, float deltaTime)
         {
             // TODO 后续改成多线程
-            //int maxNodes = 10240;
-            //while (pathRequestQueue.Count > 0 && maxNodes > 0) //寻路
-            //{
-            //    var agent = agents[pathRequestQueue[0]];
-            //    if (agent.state == GridNavAgentState.Requesting)
-            //    {
-            //        agent.state = GridNavAgentState.WaitForPath;
-            //        var circleIndex = navMesh.GetSquareCenterIndex(agent.squareIndex, agent.goalSquareIndex);
-            //        var circleRadius = navMesh.DistanceApproximately(agent.squareIndex, circleIndex) * 3.0f + 100.0f;
-            //        var constraint = new GridNavQueryConstraintCircle(agent.goalSquareIndex, agent.goalRadius, circleIndex, circleRadius);
-            //        pathRequestNavQuery.InitSlicedFindPath(agent.pathFilter, agent.squareIndex, constraint);
-            //    }
-            //    if (agent.state == GridNavAgentState.WaitForPath)
-            //    {
-            //        Debug.Assert(pathRequestQueue[0] == agent.id);
-            //        var status = pathRequestNavQuery.UpdateSlicedFindPath(maxNodes, out var doneNodes);
-            //        maxNodes -= doneNodes;
-            //        if (status != GridNavQueryStatus.InProgress)
-            //        {
-            //            pathRequestQueue.RemoveAt(0);
-            //            if (status == GridNavQueryStatus.Failed)
-            //            {
-            //                agent.state = GridNavAgentState.None;
-            //            }
-            //            else if (status == GridNavQueryStatus.Success)
-            //            {
-            //                agent.state = GridNavAgentState.Moving;
-            //                pathRequestNavQuery.FinalizeSlicedFindPath(out agent.path);
-            //            }
-            //        }
-            //    }
-            //}
+
             //foreach (var a in agents) //更改方向和移动速度
             //{
             //    var agent = a.Value;
