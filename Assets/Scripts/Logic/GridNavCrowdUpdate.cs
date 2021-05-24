@@ -5,10 +5,10 @@ namespace GridNav
 {
     public static class NavCrowdUpdate
     {
+        // TODO 后续改成多线程
         public static void Update(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQuerys, float deltaTime)
         {
-            // TODO 后续改成多线程
-
+            navManager.UpdateMoveRequest();
             //foreach (var a in agents) //更改方向和移动速度
             //{
             //    var agent = a.Value;
