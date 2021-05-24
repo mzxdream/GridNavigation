@@ -195,9 +195,8 @@ namespace GridNav
             }
             return agent.velocity;
         }
-        public void UpdateMoveRequest()
+        public void UpdateMoveRequest(int maxNodes = 10240)
         {
-            int maxNodes = 10240;
             while (moveRequestQueue.Count > 0 && maxNodes > 0) //寻路
             {
                 var agent = agents[moveRequestQueue[0]];
@@ -206,29 +205,25 @@ namespace GridNav
                     agent.moveState = NavMoveState.WaitForPath;
                     NavUtils.GetSquareXZ(agent.squareIndex, out var sx, out var sz);
                     NavUtils.GetSquareXZ(agent.goalSquareIndex, out var ex, out var ez);
-                    
-
-                    var circleIndex = navMesh.GetSquareCenterIndex(, );
-                    var circleRadius = navMesh.DistanceApproximately(agent.squareIndex, circleIndex) * 3.0f + 100.0f;
-                    var constraint = new GridNavQueryConstraintCircle(agent.goalSquareIndex, agent.goalRadius, circleIndex, circleRadius);
-                    pathRequestNavQuery.InitSlicedFindPath(agent.pathFilter, agent.squareIndex, constraint);
+                    var constraint = new NavQueryConstraint(agent, agent.squareIndex, agent.pos, agent.goalSquareIndex, agent.goalPos, agent.goalRadius);
+                    moveRequestNavQuery.InitSlicedFindPath(constraint);
                 }
-                if (agent.state == GridNavAgentState.WaitForPath)
+                if (agent.moveState == NavMoveState.WaitForPath)
                 {
-                    Debug.Assert(pathRequestQueue[0] == agent.id);
-                    var status = pathRequestNavQuery.UpdateSlicedFindPath(maxNodes, out var doneNodes);
+                    Debug.Assert(moveRequestQueue[0] == agent.id);
+                    var status = moveRequestNavQuery.UpdateSlicedFindPath(maxNodes, out var doneNodes);
                     maxNodes -= doneNodes;
-                    if (status != GridNavQueryStatus.InProgress)
+                    if (status != NavQueryStatus.InProgress)
                     {
-                        pathRequestQueue.RemoveAt(0);
-                        if (status == GridNavQueryStatus.Failed)
+                        moveRequestQueue.RemoveAt(0);
+                        if (status == NavQueryStatus.Failed)
                         {
-                            agent.state = GridNavAgentState.None;
+                            agent.moveState = NavMoveState.Idle;
                         }
-                        else if (status == GridNavQueryStatus.Success)
+                        else if (status == NavQueryStatus.Success)
                         {
-                            agent.state = GridNavAgentState.Moving;
-                            pathRequestNavQuery.FinalizeSlicedFindPath(out agent.path);
+                            agent.moveState = NavMoveState.InProgress;
+                            moveRequestNavQuery.FinalizeSlicedFindPath(out agent.path);
                         }
                     }
                 }
