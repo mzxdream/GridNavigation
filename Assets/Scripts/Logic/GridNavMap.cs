@@ -76,6 +76,7 @@ namespace GridNav
             if (nearestX >= 0 && nearestX < xsize && nearestZ >= 0 && nearestZ < zsize)
             {
                 nearestPos = pos;
+                nearestPos.y = GetHeight(nearestPos);
                 return;
             }
             nearestX = Mathf.Clamp(nearestX, 0, xsize - 1);
@@ -90,7 +91,9 @@ namespace GridNav
         public Vector3 GetSquarePos(int x, int z)
         {
             Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
-            return new Vector3(bmin.x + (x + 0.5f) * squareSize, 0, bmin.z + (z + 0.5f) * squareSize);
+            var pos = new Vector3(bmin.x + (x + 0.5f) * squareSize, 0, bmin.z + (z + 0.5f) * squareSize);
+            pos.y = GetHeight(pos);
+            return pos;
         }
         public int GetSquareType(int x, int z)
         {
@@ -106,6 +109,39 @@ namespace GridNav
         {
             Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
             return centerNormals2D[x + z * xsize];
+        }
+        public float GetHeight(Vector3 pos)
+        {
+            return GetHeight(pos.x, pos.z);
+        }
+        public float GetHeight(float posX, float posZ)
+        {
+            float x = Mathf.Clamp((posX - bmin.x) / squareSize, 0.0f, (float)xsize);
+            float z = Mathf.Clamp((posZ - bmin.z) / squareSize, 0.0f, (float)zsize);
+            int ix = (int)x;
+            int iz = (int)z;
+            float dx = x - ix;
+            float dz = z - iz;
+            int index = ix + iz * (xsize + 1);
+
+            if (dx + dz < 1.0f)
+            {
+                float hTL = cornerHeightMap[index];
+                float hTR = cornerHeightMap[index + 1];
+                float hBL = cornerHeightMap[index + (xsize + 1)];
+                float xDiff = dx * (hTR - hTL);
+                float zDiff = dz * (hBL - hTL);
+                return hTL + xDiff + zDiff;
+            }
+            else
+            {
+                float hTR = cornerHeightMap[index + 1];
+                float hBL = cornerHeightMap[index + (xsize + 1)];
+                float hBR = cornerHeightMap[index + 1 + (xsize + 1)];
+                float xDiff = (1.0f - dx) * (hBL - hBR);
+                float zDiff = (1.0f - dz) * (hTR - hBR);
+                return hBR + xDiff + zDiff;
+            }
         }
         private void UpdateCenterHeightMap(int xmin, int xmax, int zmin, int zmax)
         {
