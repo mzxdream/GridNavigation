@@ -46,6 +46,12 @@ namespace GridNav
             int dz = Mathf.Abs(ez - sz);
             return (dx + dz) + Mathf.Min(dx, dz) * (1.4142f - 2.0f);
         }
+        public static float DistanceApproximately(int startIndex, int endIndex)
+        {
+            NavUtils.GetSquareXZ(startIndex, out var sx, out var sz);
+            NavUtils.GetSquareXZ(endIndex, out var ex, out var ez);
+            return DistanceApproximately(sx, sz, ex, ez);
+        }
         public static float SqrDistance2D(Vector3 a, Vector3 b)
         {
             return (b.x - a.x) * (b.x - a.x) + (b.z - a.z) * (b.z - a.z);

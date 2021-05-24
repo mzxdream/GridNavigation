@@ -160,22 +160,6 @@ namespace GridNav
             }
             return NavBlockType.Idle;
         }
-        public static NavBlockType TestBlockTypeIgnoreMoving(NavAgent collider, NavAgent collidee)
-        {
-            if (collider == collidee)
-            {
-                return NavBlockType.None;
-            }
-            if (collidee.param.isPushResistant)
-            {
-                return NavBlockType.Block;
-            }
-            if (collidee.moveState != NavMoveState.Idle)
-            {
-                return NavBlockType.Busy;
-            }
-            return NavBlockType.Idle;
-        }
         public static NavBlockType TestBlockTypesSquare(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
         {
             if (!blockingObjectMap.GetSquareAgents(x, z, out var agentList))
@@ -189,23 +173,6 @@ namespace GridNav
                 if ((blockTypes & NavBlockType.Block) != 0)
                 {
                     break;
-                }
-            }
-            return blockTypes;
-        }
-        public static NavBlockType TestBlockTypesSquareIgnoreMoving(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
-        {
-            if (!blockingObjectMap.GetSquareAgents(x, z, out var agentList))
-            {
-                return NavBlockType.None;
-            }
-            var blockTypes = NavBlockType.None;
-            foreach (var other in agentList)
-            {
-                blockTypes |= TestBlockTypeIgnoreMoving(agent, other);
-                if ((blockTypes & NavBlockType.Block) != 0)
-                {
-                    return blockTypes;
                 }
             }
             return blockTypes;
@@ -231,52 +198,14 @@ namespace GridNav
             }
             return blockTypes;
         }
-        public static NavBlockType TestBlockTypesSquareRangeIgnoreMoving(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
+        public static bool IsBlockedRange(NavMap navMap, NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
         {
-            int xmin = x - agent.halfUnitSize;
-            int xmax = x + agent.halfUnitSize;
-            int zmin = z - agent.halfUnitSize;
-            int zmax = z + agent.halfUnitSize;
-
-            var blockTypes = NavBlockType.None;
-            for (int tz = zmin; tz <= zmax; tz++)
-            {
-                for (int tx = xmin; tx <= xmax; tx++)
-                {
-                    blockTypes |= TestBlockTypesSquareIgnoreMoving(blockingObjectMap, agent, tx, tz);
-                    if ((blockTypes & NavBlockType.Block) != 0)
-                    {
-                        return blockTypes;
-                    }
-                }
-            }
-            return blockTypes;
+            return !TestMoveSquareRange(navMap, agent, x, z) || (TestBlockTypesSquareRange(blockingObjectMap, agent, x, z) & NavBlockType.Block) != 0;
         }
-        public static bool IsSquareNotUsedRange(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
+        public static bool IsBlockedRange(NavMap navMap, NavBlockingObjectMap blockingObjectMap, NavAgent agent, int index)
         {
-            int xmin = x - agent.halfUnitSize;
-            int xmax = x + agent.halfUnitSize;
-            int zmin = z - agent.halfUnitSize;
-            int zmax = z + agent.halfUnitSize;
-
-            for (int tz = zmin; tz <= zmax; tz++)
-            {
-                for (int tx = xmin; tx <= xmax; tx++)
-                {
-                    if (!blockingObjectMap.GetSquareAgents(x, z, out var agentList))
-                    {
-                        continue;
-                    }
-                    foreach (var other in agentList)
-                    {
-                        if (other != agent)
-                        {
-                            return false;
-                        }
-                    }
-                }
-            }
-            return true;
+            GetSquareXZ(index, out var x, out var z);
+            return IsBlockedRange(navMap, blockingObjectMap, agent, x, z);
         }
     }
 }

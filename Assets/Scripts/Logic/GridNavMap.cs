@@ -95,6 +95,11 @@ namespace GridNav
             pos.y = GetHeight(pos);
             return pos;
         }
+        public Vector3 GetSquarePos(int index)
+        {
+            NavUtils.GetSquareXZ(index, out var x, out var z);
+            return GetSquarePos(x, z);
+        }
         public int GetSquareType(int x, int z)
         {
             Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);

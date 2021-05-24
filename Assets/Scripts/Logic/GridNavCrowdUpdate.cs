@@ -9,77 +9,7 @@ namespace GridNav
         public static void Update(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQuerys, float deltaTime)
         {
             navManager.UpdateMoveRequest();
-            //foreach (var a in agents) //更改方向和移动速度
-            //{
-            //    var agent = a.Value;
-            //    agent.pos.y = 0.0f;
-            //    if (agent.state != GridNavAgentState.Moving)
-            //    {
-            //        agent.prefVelocity = Vector3.zero;
-            //        continue;
-            //    }
-            //    Debug.Assert(agent.path.Count > 0);
-            //    var pathSquareIndex = agent.path[agent.path.Count - 1];
-            //    var goalPos = pathSquareIndex == agent.goalSquareIndex ? agent.goalPos : navMesh.GetSquarePos(pathSquareIndex);
-            //    if (GridNavMath.SqrDistance2D(agent.pos, goalPos) <= agent.goalRadius * agent.goalRadius)
-            //    {
-            //        if (pathSquareIndex == agent.goalSquareIndex)
-            //        {
-            //            agent.prefVelocity = Vector3.zero;
-            //            agent.state = GridNavAgentState.None;
-            //        }
-            //        else
-            //        {
-            //            StartMoving(agent, agent.goalPos, agent.goalRadius);
-            //        }
-            //        continue;
-            //    }
-            //    while (agent.path.Count > 1 && navMesh.DistanceApproximately(agent.squareIndex, agent.path[0]) <= 10.0f * navMesh.SquareSize)
-            //    {
-            //        agent.path.RemoveAt(0);
-            //    }
-            //    bool foundNextWayPoint = false;
-            //    while (agent.path.Count > 0 && navMesh.DistanceApproximately(agent.squareIndex, agent.path[0]) <= 15.0f * navMesh.SquareSize)
-            //    {
-            //        if (!agent.pathFilter.IsBlocked(navMesh, agent.path[0]))
-            //        {
-            //            foundNextWayPoint = true;
-            //            break;
-            //        }
-            //        agent.path.RemoveAt(0);
-            //    }
-            //    if (!foundNextWayPoint)
-            //    {
-            //        agent.prefVelocity = Vector3.zero;
-            //        StartMoving(agent, agent.goalPos, agent.goalRadius);
-            //        continue;
-            //    }
-            //    agent.path2 = null;
-            //    var nextSquareIndex = agent.squareIndex;
-            //    if (agent.path[0] != agent.squareIndex)
-            //    {
-            //        if (!navQuery.Raycast(agent.pathFilter, agent.squareIndex, agent.path[0], out var path, out var totalCost))
-            //        {
-            //            var constraint = new GridNavQueryConstraintCircleStrict(agent.path[0], agent.squareIndex, 16.0f * navMesh.SquareSize);
-            //            if (!navQuery.FindPath(agent.pathFilter, agent.squareIndex, constraint, out path) || path[path.Count - 1] != agent.path[0])
-            //            {
-            //                agent.prefVelocity = Vector3.zero;
-            //                StartMoving(agent, agent.goalPos, agent.goalRadius);
-            //                continue;
-            //            }
-            //            navQuery.FindStraightPath(agent.pathFilter, path, out var straightPath);
-            //            nextSquareIndex = path[1];
-            //        }
-            //        else
-            //        {
-            //            nextSquareIndex = path[path.Count - 1];
-            //        }
-            //        agent.path2 = path;
-            //    }
-            //    var nextPos = nextSquareIndex == agent.goalSquareIndex ? agent.goalPos : navMesh.GetSquarePos(nextSquareIndex);
-            //    var disiredDir = GridNavMath.Normalized2D(nextPos - agent.pos);
-            //    agent.prefVelocity = disiredDir * agent.param.maxSpeed;
-            //}
+            
             //foreach (var a in agents)
             //{
             //    var agent = a.Value;
@@ -152,7 +82,86 @@ namespace GridNav
             //    }
             //}
         }
+        private static void UpdatePrefVelocity(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQuerys, float deltaTime)
+        {
+            var navQuery = navQuerys[0];
+            foreach (var agent in agents)
+            {
+                if (agent.moveState != NavMoveState.InProgress)
+                {
+                    agent.prefVelocity = Vector3.zero;
+                    continue;
+                }
+                if (NavMathUtils.SqrDistance2D(agent.pos, agent.goalPos) <= agent.goalRadius * agent.goalRadius)
+                {
+                    agent.prefVelocity = Vector3.zero;
+                    agent.moveState = NavMoveState.Idle;
+                    continue;
+                }
+                if (agent.squareIndex == agent.goalSquareIndex)
+                {
+                    agent.prefVelocity = agent.goalPos - agent.pos;
+                    continue;
+                }
+                while (agent.path.Count > 0 && NavMathUtils.DistanceApproximately(agent.squareIndex, agent.path[0]) * navMap.SquareSize <= 1.0f * agent.param.maxSpeed)
+                {
+                    agent.path.RemoveAt(0);
+                }
+                var nextSquareIndex = agent.goalSquareIndex;
+                var nextSquarePos = agent.goalPos;
+                while (agent.path.Count > 0 && NavMathUtils.DistanceApproximately(agent.squareIndex, agent.path[0]) * navMap.SquareSize <= 5.0f * agent.param.maxSpeed)
+                {
+                    if (!NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, agent.path[0]))
+                    {
+                        nextSquareIndex = agent.path[0];
+                        if (nextSquareIndex != agent.goalSquareIndex)
+                        {
+                            nextSquarePos = navMap.GetSquarePos(nextSquareIndex);
+                        }
+                        break;
+                    }
+                    agent.path.RemoveAt(0);
+                }
+                var npos = agent.goalPos;
 
+                var constraint = new NavQueryConstraintCircle(agent, agent.squareIndex, agent.pos, nextSquareIndex, nextSquarePos, 0.0f, 2.0f);
+                navQuery.InitSlicedFindPath(constraint);
+                navQuery.UpdateSlicedFindPath(1024, out _);
+                var status = navQuery.FinalizeSlicedFindPath(out var path);
+                if ((status & NavQueryStatus.Success) == 0 || (status & NavQueryStatus.Partial) != 0)
+                {
+                    agent.prefVelocity = Vector3.zero;
+                    agent.isRepath = true;
+                    continue;
+                }
+                var npos = path[1];
+
+
+                if (agent.path[0] != agent.squareIndex)
+                {
+                    if (!navQuery.Raycast(agent.pathFilter, agent.squareIndex, agent.path[0], out var path, out var totalCost))
+                    {
+                        var constraint = new GridNavQueryConstraintCircleStrict(agent.path[0], agent.squareIndex, 16.0f * navMesh.SquareSize);
+                        if (!navQuery.FindPath(agent.pathFilter, agent.squareIndex, constraint, out path) || path[path.Count - 1] != agent.path[0])
+                        {
+                            agent.prefVelocity = Vector3.zero;
+                            StartMoving(agent, agent.goalPos, agent.goalRadius);
+                            continue;
+                        }
+                        navQuery.FindStraightPath(agent.pathFilter, path, out var straightPath);
+                        nextSquareIndex = path[1];
+                    }
+                    else
+                    {
+                        nextSquareIndex = path[path.Count - 1];
+                    }
+                    agent.path2 = path;
+                }
+                var nextPos = nextSquareIndex == agent.goalSquareIndex ? agent.goalPos : navMesh.GetSquarePos(nextSquareIndex);
+                var disiredDir = GridNavMath.Normalized2D(nextPos - agent.pos);
+                agent.prefVelocity = disiredDir * agent.param.maxSpeed;
+            }
+        }
         private static void CollectNeighbors(NavMap navMap, NavBlockingObjectMap blockingObjectMap, NavAgent agent)
         {
             agent.agentNeighbors.Clear();
