@@ -111,7 +111,10 @@ public class Game : MonoBehaviour
                 continue;
             }
             c.asset.transform.position = pos;
-            c.asset.transform.forward = forward;
+            if (forward != Vector3.zero)
+            {
+                c.asset.transform.forward = forward;
+            }
         }
         foreach (var c in blueCharacters)
         {
@@ -120,7 +123,10 @@ public class Game : MonoBehaviour
                 continue;
             }
             c.asset.transform.position = pos;
-            c.asset.transform.forward = forward;
+            if (forward != Vector3.zero)
+            {
+                c.asset.transform.forward = forward;
+            }
         }
     }
     void OnDrawGizmos()
