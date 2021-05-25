@@ -247,6 +247,10 @@ namespace GridNav
         }
         private bool TestBlocked(NavAgent agent, int x, int z, ref int index, ref Vector3 pos)
         {
+            if (x < 0 || x >= navMap.XSize || z < 0 || z >= navMap.ZSize)
+            {
+                return true;
+            }
             if (!NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
             {
                 index = NavUtils.GetSquareIndex(x, z);

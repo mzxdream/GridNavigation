@@ -79,7 +79,7 @@ namespace GridNav
         }
         public static int GetSquareIndex(int x, int z)
         {
-            return x + z << 16;
+            return x + (z << 16);
         }
         public static void GetSquareXZ(int index, out int x, out int z)
         {
@@ -200,6 +200,7 @@ namespace GridNav
         }
         public static bool IsBlockedRange(NavMap navMap, NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
         {
+            Debug.Assert(x >= 0 && x < navMap.XSize && z >= 0 && z < navMap.ZSize);
             return !TestMoveSquareRange(navMap, agent, x, z) || (TestBlockTypesSquareRange(blockingObjectMap, agent, x, z) & NavBlockType.Block) != 0;
         }
         public static bool IsBlockedRange(NavMap navMap, NavBlockingObjectMap blockingObjectMap, NavAgent agent, int index)

@@ -126,8 +126,8 @@ namespace GridNav
         }
         public float GetHeight(float posX, float posZ)
         {
-            float x = Mathf.Clamp((posX - bmin.x) / squareSize, 0.0f, (float)xsize);
-            float z = Mathf.Clamp((posZ - bmin.z) / squareSize, 0.0f, (float)zsize);
+            float x = Mathf.Clamp((posX - bmin.x) / squareSize, 0.0f, (float)(xsize - 1));
+            float z = Mathf.Clamp((posZ - bmin.z) / squareSize, 0.0f, (float)(zsize - 1));
             int ix = (int)x;
             int iz = (int)z;
             float dx = x - ix;
