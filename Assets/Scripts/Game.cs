@@ -70,12 +70,27 @@ public class Game : MonoBehaviour
         };
         navMap = new NavMap();
         navMap.Init(transform.position - new Vector3(xsize * squareSize * 0.5f, 0, zsize * squareSize * 0.5f), xsize, zsize, squareSize);
-        //todo set corner height
-        navMap.UpdateHeightMap();
+        UpdateMap();
         navManager = new NavManager();
         navManager.Init(navMap);
         redDestination.asset.transform.position = navMap.GetSquarePos(redDestination.index);
         blueDestination.asset.transform.position = navMap.GetSquarePos(blueDestination.index);
+    }
+    void UpdateMap()
+    {
+        for (int z = 0; z < navMap.ZSize; z++)
+        {
+            for (int x = 0; x < navMap.XSize; x++)
+            {
+            }
+        }
+        for (int z = 0; z <= navMap.ZSize; z++)
+        {
+            for (int x = 0; x <= navMap.XSize; x++)
+            {
+            }
+        }
+        navMap.UpdateHeightMap();
     }
     void Update()
     {
@@ -145,6 +160,10 @@ public class Game : MonoBehaviour
                 DrawCharacterDetail(c, Color.blue);
             }
         }
+        DrawGridMesh();
+    }
+    void DrawGridMesh()
+    {
     }
     void DrawCharacterDetail(Character c, Color color)
     {
@@ -302,5 +321,8 @@ public class Game : MonoBehaviour
                 break;
             }
         }
+    }
+    void CollectMeshs()
+    {
     }
 }
