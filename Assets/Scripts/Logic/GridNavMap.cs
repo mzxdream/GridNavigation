@@ -39,10 +39,6 @@ namespace GridNav
             this.slopeMap = new float[(xsize / 2) * (zsize / 2)];
             return true;
         }
-        public void AfterInit()
-        {
-            UpdateHeightMap(0, xsize - 1, 0, zsize - 1);
-        }
         public void Clear()
         {
         }
@@ -56,6 +52,10 @@ namespace GridNav
             Debug.Assert(x >= 0 && x <= xsize && z >= 0 && z <= zsize);
             cornerHeightMap[x + z * (xsize + 1)] = height;
         }
+        public void UpdateHeightMap()
+        {
+            UpdateHeightMap(0, xsize - 1, 0, zsize - 1);
+        }
         public void UpdateHeightMap(int xmin, int xmax, int zmin, int zmax)
         {
             UpdateCenterHeightMap(xmin, xmax, zmin, zmax);
@@ -68,6 +68,11 @@ namespace GridNav
             z = (int)((pos.z - bmin.z) / squareSize);
             x = Mathf.Clamp(x, 0, xsize - 1);
             z = Mathf.Clamp(z, 0, zsize - 1);
+        }
+        public int GetSquareIndex(Vector3 pos)
+        {
+            GetSquareXZ(pos, out var x, out var z);
+            return NavUtils.GetSquareIndex(x, z);
         }
         public void ClampInBounds(Vector3 pos, out int nearestX, out int nearestZ, out Vector3 nearestPos)
         {

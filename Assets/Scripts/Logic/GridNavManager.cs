@@ -133,7 +133,7 @@ namespace GridNav
         {
             return agents.TryGetValue(agentID, out var agent) ? agent : null;
         }
-        private bool StartMoving(int agentID, Vector3 goalPos, float goalRadius = 0.0f)
+        public bool StartMoving(int agentID, Vector3 goalPos, float goalRadius = 0.0f)
         {
             if (!agents.TryGetValue(agentID, out var agent))
             {

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using GridNav;
 
 class Wall
 {
@@ -42,8 +43,8 @@ public class Game : MonoBehaviour
     List<Character> blueCharacters;
     Destination redDestination;
     Destination blueDestination;
-    GridNavMesh navMesh;
-    GridNavManager navManager;
+    NavMap navMap;
+    NavManager navManager;
 
     void Awake()
     {
@@ -67,12 +68,14 @@ public class Game : MonoBehaviour
             index = 1,
             asset = GameObject.Instantiate(blueDestinationPrefab).gameObject,
         };
-        navMesh = new GridNavMesh();
-        navMesh.Init(transform.position - new Vector3(xsize * squareSize * 0.5f, 0, zsize * squareSize * 0.5f), xsize, zsize, squareSize);
-        navManager = new GridNavManager();
-        navManager.Init(navMesh);
-        redDestination.asset.transform.position = navMesh.GetSquarePos(redDestination.index);
-        blueDestination.asset.transform.position = navMesh.GetSquarePos(blueDestination.index);
+        navMap = new NavMap();
+        navMap.Init(transform.position - new Vector3(xsize * squareSize * 0.5f, 0, zsize * squareSize * 0.5f), xsize, zsize, squareSize);
+        //todo set corner height
+        navMap.UpdateHeightMap();
+        navManager = new NavManager();
+        navManager.Init(navMap);
+        redDestination.asset.transform.position = navMap.GetSquarePos(redDestination.index);
+        blueDestination.asset.transform.position = navMap.GetSquarePos(blueDestination.index);
     }
     void Update()
     {
@@ -140,15 +143,11 @@ public class Game : MonoBehaviour
     void DrawCharacterDetail(Character c, Color color)
     {
         Gizmos.color = color;
-        navMesh.ClampInBounds(c.asset.transform.position, out var index, out var pos);
-        pos = navMesh.GetSquarePos(index);
+        navMap.ClampInBounds(c.asset.transform.position, out var index, out var pos);
+        pos = navMap.GetSquarePos(index);
 
-        int unitSize = (int)(c.radius * 2 / navMesh.SquareSize - 1e-4f) + 1;
-        if ((unitSize & 1) == 0)
-        {
-            unitSize++;
-        }
-        Gizmos.DrawCube(pos, new Vector3(unitSize * navMesh.SquareSize, 0.1f, unitSize * navMesh.SquareSize));
+        int unitSize = NavUtils.CalcUnitSize(c.radius, navMap.SquareSize);
+        Gizmos.DrawCube(pos, new Vector3(unitSize * navMap.SquareSize, 0.1f, unitSize * navMap.SquareSize));
 
         var p1 = c.asset.transform.position + Vector3.up;
         var prefVelocity = navManager.GetPrefVelocity(c.navAgentID);
@@ -175,13 +174,17 @@ public class Game : MonoBehaviour
         asset.transform.position = hit.point;
         asset.transform.forward = Vector3.forward;
         asset.transform.localScale = new Vector3(radius * 2.0f, 0.5f, radius * 2.0f);
-        var param = new GridNavAgentParam
+        var moveParam = new NavMoveParam
+        {
+        };
+        var param = new NavAgentParam
         {
             mass = mass,
             radius = radius,
             maxSpeed = maxSpeed,
+            isPushResistant = true,
         };
-        var navAgentID = navManager.AddAgent(asset.transform.position, asset.transform.forward, param);
+        var navAgentID = navManager.AddAgent(asset.transform.position, param, moveParam);
         var c = new Character { asset = asset, navAgentID = navAgentID, radius = radius };
         redCharacters.Add(c);
     }
@@ -196,13 +199,17 @@ public class Game : MonoBehaviour
         asset.transform.position = hit.point;
         asset.transform.forward = Vector3.forward;
         asset.transform.localScale = new Vector3(radius * 2.0f, 0.5f, radius * 2.0f);
-        var param = new GridNavAgentParam
+        var moveParam = new NavMoveParam
+        {
+        };
+        var param = new NavAgentParam
         {
             mass = mass,
             radius = radius,
             maxSpeed = maxSpeed,
+            isPushResistant = true,
         };
-        var navAgentID = navManager.AddAgent(asset.transform.position, asset.transform.forward, param);
+        var navAgentID = navManager.AddAgent(asset.transform.position, param, moveParam);
         var c = new Character { asset = asset, navAgentID = navAgentID, radius = radius };
         blueCharacters.Add(c);
     }
@@ -213,17 +220,17 @@ public class Game : MonoBehaviour
         {
             return;
         }
-        var index = navMesh.GetSquareIndex(hit.point);
-        if (navMesh.IsSquareBlocked(index))
+        var index = navMap.GetSquareIndex(hit.point);
+        if (walls.ContainsKey(index))
         {
             return;
         }
-        navMesh.SetSquare(index, 1.0f, true);
         var asset = GameObject.Instantiate(wallPrefab).gameObject;
-        asset.transform.position = navMesh.GetSquarePos(index);
-        asset.transform.localScale = new Vector3(navMesh.SquareSize, 0.2f, navMesh.SquareSize);
+        asset.transform.position = navMap.GetSquarePos(index);
+        asset.transform.localScale = new Vector3(navMap.SquareSize, 0.2f, navMap.SquareSize);
         var wall = new Wall { asset = asset };
         walls.Add(index, wall);
+        // todo
     }
     void SetRedDesitination()
     {
@@ -232,7 +239,7 @@ public class Game : MonoBehaviour
         {
             return;
         }
-        navMesh.ClampInBounds(hit.point, out var index, out var pos);
+        navMap.ClampInBounds(hit.point, out var index, out var pos);
         redDestination.index = index;
         redDestination.asset.transform.position = pos;
         foreach (var c in redCharacters)
@@ -247,7 +254,7 @@ public class Game : MonoBehaviour
         {
             return;
         }
-        navMesh.ClampInBounds(hit.point, out var index, out var pos);
+        navMap.ClampInBounds(hit.point, out var index, out var pos);
         blueDestination.index = index;
         blueDestination.asset.transform.position = pos;
         foreach (var c in blueCharacters)
@@ -262,12 +269,12 @@ public class Game : MonoBehaviour
         {
             return;
         }
-        var index = navMesh.GetSquareIndex(hit.point);
+        var index = navMap.GetSquareIndex(hit.point);
         if (walls.TryGetValue(index, out var wall))
         {
-            navMesh.SetSquare(index, 1.0f, false);
             Destroy(wall.asset);
             walls.Remove(index);
+            // todo
         }
         foreach (var c in redCharacters)
         {
