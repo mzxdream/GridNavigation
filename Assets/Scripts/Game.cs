@@ -22,7 +22,6 @@ class Character
 
 public class Game : MonoBehaviour
 {
-
     [SerializeField, Range(0.1f, 1.0f)]
     float squareSize = 0.2f;
     [SerializeField]
@@ -37,6 +36,7 @@ public class Game : MonoBehaviour
     float radius = 0.6f;
     [SerializeField]
     float maxSpeed = 2.0f;
+    Mesh gridMesh = null;
 
     Dictionary<int, Wall> walls;
     List<Character> redCharacters;
