@@ -21,7 +21,7 @@ namespace GridNav
 
     public static class NavRVO
     {
-        private static void ComputeNewVelocity(NavAgent agent, List<NavRVOObstacle> obstacles, List<NavAgent> neighbors, float deltaTime)
+        public static void ComputeNewVelocity(NavAgent agent, List<NavRVOObstacle> obstacles, List<NavAgent> neighbors, float deltaTime)
         {
             var orcaLines = new List<NavRVOLine>();
 
