@@ -22,7 +22,6 @@ namespace GridNav
                 if (agent.velocity.sqrMagnitude <= NavMathUtils.EPSILON)
                 {
                     agent.velocity = Vector3.zero;
-                    continue;
                 }
                 navMap.ClampInBounds(agent.pos + agent.velocity * deltaTime, out var nextSquareIndex, out var nextPos);
                 if (!navQuery.FindNearestSquare(agent, nextPos, agent.maxInteriorRadius * 20.0f, out nextSquareIndex, out nextPos))
@@ -32,19 +31,22 @@ namespace GridNav
                 if (NavMathUtils.SqrDistance2D(agent.pos, nextPos) <= NavMathUtils.EPSILON)
                 {
                     agent.velocity = Vector3.zero;
-                    continue;
-                }
-                if (nextSquareIndex != agent.squareIndex)
-                {
-                    blockingObjectMap.RemoveAgent(agent);
-                    agent.pos = nextPos;
-                    agent.squareIndex = nextSquareIndex;
-                    blockingObjectMap.AddAgent(agent);
                 }
                 else
                 {
-                    agent.pos = nextPos;
-                    agent.squareIndex = nextSquareIndex;
+                    agent.isMoving = true;
+                    if (nextSquareIndex != agent.squareIndex)
+                    {
+                        blockingObjectMap.RemoveAgent(agent);
+                        agent.pos = nextPos;
+                        agent.squareIndex = nextSquareIndex;
+                        blockingObjectMap.AddAgent(agent);
+                    }
+                    else
+                    {
+                        agent.pos = nextPos;
+                        agent.squareIndex = nextSquareIndex;
+                    }
                 }
             }
         }
