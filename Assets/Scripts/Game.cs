@@ -45,7 +45,7 @@ public class Game : MonoBehaviour
     [SerializeField]
     float maxSpeed = 2.0f;
     List<MeshObj> meshObjs;
-    Mesh gridMesh = null;
+    List<Mesh> gridMeshs = null;
 
     Dictionary<int, Wall> walls;
     List<Character> redCharacters;
@@ -75,10 +75,10 @@ public class Game : MonoBehaviour
         var zsize = (int)(transform.localScale.z / squareSize);
         navMap.Init(transform.position - new Vector3(xsize * squareSize * 0.5f, 0, zsize * squareSize * 0.5f), xsize, zsize, squareSize);
 
-        transform.localScale = new Vector3(navMap.XSize * squareSize, 0.01f, navMap.ZSize * squareSize);
-        var material = this.GetComponent<MeshRenderer>().material;
-        material.mainTexture = squareTexture;
-        material.SetTextureScale("_MainTex", new Vector2(navMap.XSize, navMap.ZSize));
+        //transform.localScale = new Vector3(navMap.XSize * squareSize, 0.01f, navMap.ZSize * squareSize);
+        //var material = this.GetComponent<MeshRenderer>().material;
+        //material.mainTexture = squareTexture;
+        //material.SetTextureScale("_MainTex", new Vector2(navMap.XSize, navMap.ZSize));
 
         UpdateMap();
         navManager = new NavManager();
@@ -110,8 +110,10 @@ public class Game : MonoBehaviour
             }
         }
         navMap.UpdateHeightMap();
+        gridMeshs = new List<Mesh>();
         var verts = new List<Vector3>();
         var tris = new List<int>();
+        var maxSlope = 0.0f;
         for (int z = 0; z < navMap.ZSize; z++)
         {
             for (int x = 0; x < navMap.XSize; x++)
@@ -125,6 +127,18 @@ public class Game : MonoBehaviour
                 if (slope >= 0.5f)
                 {
                     continue;
+                }
+                if (maxSlope < slope)
+                {
+                    maxSlope = slope;
+                }
+                if (verts.Count > 50000)
+                {
+                    var gridMesh = new Mesh { vertices = verts.ToArray(), triangles = tris.ToArray() };
+                    gridMesh.RecalculateNormals();
+                    gridMeshs.Add(gridMesh);
+                    verts.Clear();
+                    tris.Clear();
                 }
                 var pTL = navMap.GetSquareCornerPos(x, z) + new Vector3(0, 0.001f, 0);
                 var PTR = navMap.GetSquareCornerPos(x + 1, z) + new Vector3(0, 0.001f, 0);
@@ -144,8 +158,13 @@ public class Game : MonoBehaviour
                 tris.Add(index);
             }
         }
-        gridMesh = new Mesh { vertices = verts.ToArray(), triangles = tris.ToArray() };
-        gridMesh.RecalculateNormals();
+        if (tris.Count > 0)
+        {
+            var gridMesh = new Mesh { vertices = verts.ToArray(), triangles = tris.ToArray() };
+            gridMesh.RecalculateNormals();
+            gridMeshs.Add(gridMesh);
+        }
+        Debug.Log("max slope is " + maxSlope);
     }
     void Update()
     {
@@ -215,12 +234,18 @@ public class Game : MonoBehaviour
                 DrawCharacterDetail(c, Color.blue);
             }
         }
-        if (gridMesh != null && gridMesh.triangles.Length != 0)
+        if (gridMeshs != null)
         {
             Gizmos.color = new Color(0x0, 0xFF, 0xFF);
-            Gizmos.DrawMesh(gridMesh);
+            foreach (var mesh in gridMeshs)
+            {
+                Gizmos.DrawMesh(mesh);
+            }
             Gizmos.color = Color.green;
-            Gizmos.DrawWireMesh(gridMesh);
+            foreach (var mesh in gridMeshs)
+            {
+                Gizmos.DrawWireMesh(mesh);
+            }
         }
     }
     void DrawCharacterDetail(Character c, Color color)
