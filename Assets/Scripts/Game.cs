@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEditor;
 using GridNav;
 
 class Wall
@@ -20,6 +21,13 @@ class Character
     public float radius;
 }
 
+class MeshObj
+{
+    public List<Vector3> verts;
+    public List<int> tris;
+    public int areaType;
+}
+
 public class Game : MonoBehaviour
 {
     [SerializeField, Range(0.1f, 1.0f)]
@@ -36,6 +44,7 @@ public class Game : MonoBehaviour
     float radius = 0.6f;
     [SerializeField]
     float maxSpeed = 2.0f;
+    List<MeshObj> meshObjs;
     Mesh gridMesh = null;
 
     Dictionary<int, Wall> walls;
@@ -324,5 +333,98 @@ public class Game : MonoBehaviour
     }
     void CollectMeshs()
     {
+        MeshFilter[] mfs = FindObjectsOfType<MeshFilter>();
+        for (int i = 0; i < mfs.Length; ++i)
+        {
+            var mf = mfs[i];
+            var o = mf.gameObject;
+            if ((GameObjectUtility.GetStaticEditorFlags(o) & StaticEditorFlags.NavigationStatic) == 0)
+            {
+                continue;
+            }
+            var meshObj = new MeshObj
+            {
+                verts = new List<Vector3>(),
+                tris = new List<int>(),
+                areaType = GameObjectUtility.GetNavMeshArea(o),
+            };
+            Mesh m = mf.sharedMesh;
+            for (int j = 0; j < m.vertices.Length; j++)
+            {
+                meshObj.verts.Add(mf.transform.TransformPoint(m.vertices[j]));
+            }
+            for (int material = 0; material < m.subMeshCount; material++)
+            {
+                int[] triangles = m.GetTriangles(material);
+                for (int j = 0; j < triangles.Length; j++)
+                {
+                    meshObj.tris.Add(triangles[j]);
+                }
+            }
+            meshObjs.Add(meshObj);
+        }
+        //terrain
+        Terrain terrainObj = FindObjectOfType<Terrain>();
+        if (terrainObj)
+        {
+            var o = terrainObj.gameObject;
+            if ((GameObjectUtility.GetStaticEditorFlags(o) & StaticEditorFlags.NavigationStatic) == 0)
+            {
+                return;
+            }
+            var meshObj = new MeshObj
+            {
+                verts = new List<Vector3>(),
+                tris = new List<int>(),
+                areaType = GameObjectUtility.GetNavMeshArea(o),
+            };
+            var terrain = terrainObj.terrainData;
+            var terrainPos = terrainObj.GetPosition();
+            int w = terrain.heightmapResolution;
+            int h = terrain.heightmapResolution;
+            Vector3 meshScale = terrain.size;
+            int tRes = 1;
+            meshScale = new Vector3(meshScale.x / (w - 1) * tRes, meshScale.y, meshScale.z / (h - 1) * tRes);
+            float[,] tData = terrain.GetHeights(0, 0, w, h);
+
+            w = (w - 1) / tRes + 1;
+            h = (h - 1) / tRes + 1;
+            Vector3[] tVertices = new Vector3[w * h];
+            int[] tPolys = new int[(w - 1) * (h - 1) * 6];
+            // Build vertices and UVs
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    tVertices[y * w + x] = Vector3.Scale(meshScale, new Vector3(y, tData[x * tRes, y * tRes], x)) + terrainPos;
+                }
+            }
+            int index = 0;
+            // Build triangle indices: 3 indices into vertex array for each triangle
+            for (int y = 0; y < h - 1; y++)
+            {
+                for (int x = 0; x < w - 1; x++)
+                {
+                    // For each grid cell output two triangles
+                    tPolys[index++] = (y * w) + x + 1;
+                    tPolys[index++] = ((y + 1) * w) + x;
+                    tPolys[index++] = (y * w) + x;
+
+                    tPolys[index++] = (y * w) + x + 1;
+                    tPolys[index++] = ((y + 1) * w) + x + 1;
+                    tPolys[index++] = ((y + 1) * w) + x;
+                }
+            }
+            for (int i = 0; i < tVertices.Length; i++)
+            {
+                meshObj.verts.Add(tVertices[i]);
+            }
+            // Write triangles
+            for (int i = 0; i < tPolys.Length; i++)
+            {
+                meshObj.tris.Add(tPolys[i]);
+            }
+            meshObjs.Add(meshObj);
+        }
     }
 }
