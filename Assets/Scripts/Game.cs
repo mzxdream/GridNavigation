@@ -109,6 +109,37 @@ public class Game : MonoBehaviour
             }
         }
         navMap.UpdateHeightMap();
+        var verts = new List<Vector3>();
+        var tris = new List<int>();
+        for (int z = 0; z < navMap.ZSize; z++)
+        {
+            for (int x = 0; x < navMap.XSize; x++)
+            {
+                var squareType = navMap.GetSquareType(x, z);
+                if (squareType == 1)
+                {
+                    continue;
+                }
+                var pBL = navMap.GetSquareCornerPos(x, z + 1) + new Vector3(0, 0.001f, 0);
+                var pTL = navMap.GetSquareCornerPos(x, z) + new Vector3(0, 0.001f, 0);
+                var PTR = navMap.GetSquareCornerPos(x + 1, z) + new Vector3(0, 0.001f, 0);
+                var pBR = navMap.GetSquareCornerPos(x + 1, z + 1) + new Vector3(0, 0.001f, 0);
+
+                var index = verts.Count;
+                verts.Add(pBL);
+                verts.Add(pTL);
+                verts.Add(PTR);
+                verts.Add(pBR);
+                tris.Add(index);
+                tris.Add(index + 1);
+                tris.Add(index + 2);
+                tris.Add(index + 2);
+                tris.Add(index + 3);
+                tris.Add(index);
+            }
+        }
+        gridMesh = new Mesh { vertices = verts.ToArray(), triangles = tris.ToArray() };
+        gridMesh.RecalculateNormals();
     }
     void Update()
     {
@@ -178,10 +209,13 @@ public class Game : MonoBehaviour
                 DrawCharacterDetail(c, Color.blue);
             }
         }
-        DrawGridMesh();
-    }
-    void DrawGridMesh()
-    {
+        if (gridMesh != null && gridMesh.triangles.Length != 0)
+        {
+            Gizmos.color = new Color(0x0, 0xFF, 0xFF);
+            Gizmos.DrawMesh(gridMesh);
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireMesh(gridMesh);
+        }
     }
     void DrawCharacterDetail(Character c, Color color)
     {
