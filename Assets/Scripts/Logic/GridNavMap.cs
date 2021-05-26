@@ -110,7 +110,7 @@ namespace GridNav
         {
             Debug.Assert(x >= 0 && x <= xsize && z >= 0 && z <= zsize);
             var pos = new Vector3(bmin.x + x * squareSize, 0, bmin.z + z * squareSize);
-            pos.y = GetHeight(pos);
+            pos.y = cornerHeightMap[x + z * (xsize + 1)];
             return pos;
         }
         public int GetSquareType(int x, int z)
