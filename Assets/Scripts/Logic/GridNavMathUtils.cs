@@ -140,5 +140,36 @@ namespace GridNav
         {
             return a.x * b.z - a.z * b.x;
         }
+        public static bool ClosestHeightPointTriangle(Vector3 p, Vector3 a, Vector3 b, Vector3 c, out float h)
+        {
+            h = 0.0f;
+
+            var v0 = c - a;
+            var v1 = b - a;
+            var v2 = p - a;
+
+            var denom = v0[0] * v1[2] - v0[2] * v1[0];
+            if (Mathf.Abs(denom) < EPSILON)
+            {
+                return false;
+            }
+
+            var u = v1[2] * v2[0] - v1[0] * v2[2];
+            var v = v0[0] * v2[2] - v0[2] * v2[0];
+
+            if (denom < 0)
+            {
+                denom = -denom;
+                u = -u;
+                v = -v;
+            }
+
+            if (u >= 0.0f && v >= 0.0f && (u + v) <= denom)
+            {
+                h = a[1] + (v0[1] * u + v1[1] * v) / denom;
+                return true;
+            }
+            return false;
+        }
     }
 }
