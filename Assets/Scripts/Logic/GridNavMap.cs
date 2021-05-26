@@ -234,14 +234,14 @@ namespace GridNav
                     int idx1 = x * 2 + (z * 2 + 1) * xsize;
 
                     float avgSlope = 0.0f;
-                    avgSlope += faceNormals[(idx0) * 2].y;
-                    avgSlope += faceNormals[(idx0) * 2 + 1].y;
-                    avgSlope += faceNormals[(idx0 + 1) * 2].y;
-                    avgSlope += faceNormals[(idx0 + 1) * 2 + 1].y;
-                    avgSlope += faceNormals[(idx1) * 2].y;
-                    avgSlope += faceNormals[(idx1) * 2 + 1].y;
-                    avgSlope += faceNormals[(idx1 + 1) * 2].y;
-                    avgSlope += faceNormals[(idx1 + 1) * 2 + 1].y;
+                    avgSlope += faceNormals[(idx0) * 2].y; // TL fTL
+                    avgSlope += faceNormals[(idx0) * 2 + 1].y; // TL fBR
+                    avgSlope += faceNormals[(idx0 + 1) * 2].y; // TR fTL
+                    avgSlope += faceNormals[(idx0 + 1) * 2 + 1].y; // TR fBR
+                    avgSlope += faceNormals[(idx1) * 2].y; // BL fTL
+                    avgSlope += faceNormals[(idx1) * 2 + 1].y; // BL fBR
+                    avgSlope += faceNormals[(idx1 + 1) * 2].y; // BR fTL
+                    avgSlope += faceNormals[(idx1 + 1) * 2 + 1].y; // BR fBR
                     avgSlope *= 0.125f;
 
                     float maxSlope = faceNormals[(idx0) * 2].y;

@@ -126,9 +126,9 @@ public class Game : MonoBehaviour
                 {
                     continue;
                 }
-                var pBL = navMap.GetSquareCornerPos(x, z + 1) + new Vector3(0, 0.001f, 0);
                 var pTL = navMap.GetSquareCornerPos(x, z) + new Vector3(0, 0.001f, 0);
                 var PTR = navMap.GetSquareCornerPos(x + 1, z) + new Vector3(0, 0.001f, 0);
+                var pBL = navMap.GetSquareCornerPos(x, z + 1) + new Vector3(0, 0.001f, 0);
                 var pBR = navMap.GetSquareCornerPos(x + 1, z + 1) + new Vector3(0, 0.001f, 0);
 
                 var index = verts.Count;
