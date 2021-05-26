@@ -57,13 +57,6 @@ public class Game : MonoBehaviour
 
     void Awake()
     {
-        var xsize = (int)(transform.localScale.x / squareSize);
-        var zsize = (int)(transform.localScale.z / squareSize);
-        //transform.localScale = new Vector3(xsize * squareSize, 0.1f, zsize * squareSize);
-        var material = this.GetComponent<MeshRenderer>().material;
-        material.mainTexture = squareTexture;
-        material.SetTextureScale("_MainTex", new Vector2(xsize, zsize));
-
         walls = new Dictionary<int, Wall>();
         redCharacters = new List<Character>();
         blueCharacters = new List<Character>();
@@ -78,7 +71,15 @@ public class Game : MonoBehaviour
             asset = GameObject.Instantiate(blueDestinationPrefab).gameObject,
         };
         navMap = new NavMap();
+        var xsize = (int)(transform.localScale.x / squareSize);
+        var zsize = (int)(transform.localScale.z / squareSize);
         navMap.Init(transform.position - new Vector3(xsize * squareSize * 0.5f, 0, zsize * squareSize * 0.5f), xsize, zsize, squareSize);
+
+        transform.localScale = new Vector3(navMap.XSize * squareSize, 0.01f, navMap.ZSize * squareSize);
+        var material = this.GetComponent<MeshRenderer>().material;
+        material.mainTexture = squareTexture;
+        material.SetTextureScale("_MainTex", new Vector2(navMap.XSize, navMap.ZSize));
+
         UpdateMap();
         navManager = new NavManager();
         navManager.Init(navMap);
@@ -117,6 +118,11 @@ public class Game : MonoBehaviour
             {
                 var squareType = navMap.GetSquareType(x, z);
                 if (squareType == 1)
+                {
+                    continue;
+                }
+                var slope = navMap.GetSquareSlope(x, z);
+                if (slope >= 0.5f)
                 {
                     continue;
                 }

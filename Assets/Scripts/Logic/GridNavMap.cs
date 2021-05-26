@@ -23,6 +23,8 @@ namespace GridNav
 
         public bool Init(Vector3 bmin, int xsize, int zsize, float squareSize)
         {
+            xsize &= ~1;
+            zsize &= ~1;
             if (xsize < 1 || zsize < 1 || squareSize <= 0.0f)
             {
                 return false;
@@ -121,6 +123,8 @@ namespace GridNav
         public float GetSquareSlope(int x, int z)
         {
             Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
+            var halfX = xsize >> 1;
+            var halfZ = zsize >> 1;
             return slopeMap[(x >> 1) + (z >> 1) * (xsize >> 1)];
         }
         public Vector3 GetSquareCenterNormal2D(int x, int z)
