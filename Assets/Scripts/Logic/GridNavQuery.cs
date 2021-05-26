@@ -133,7 +133,7 @@ namespace GridNav
         public NavQueryStatus UpdateSlicedFindPath(int maxNodes, out int doneNodes)
         {
             doneNodes = 0;
-            if (queryData.status != NavQueryStatus.InProgress)
+            if ((queryData.status & NavQueryStatus.InProgress) == 0)
             {
                 return queryData.status;
             }

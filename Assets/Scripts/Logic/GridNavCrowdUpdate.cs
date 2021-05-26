@@ -7,10 +7,22 @@ namespace GridNav
     {
         public static void Update(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQuerys, float deltaTime)
         {
-            navManager.UpdateMoveRequest(); // 单线程
+            UpdateMoveRequest(navManager, agents); // 单线程
             UpdatePrefVelocity(navManager, navMap, blockingObjectMap, agents, navQuerys, deltaTime); // 多线程
             UpdateNewVelocity(navManager, navMap, blockingObjectMap, agents, navQuerys, deltaTime); // 多线程
             UpdatePos(navManager, navMap, blockingObjectMap, agents, navQuerys, deltaTime); // 单线程
+        }
+        private static void UpdateMoveRequest(NavManager navManager, List<NavAgent> agents)
+        {
+            foreach (var agent in agents)
+            {
+                if (agent.isRepath)
+                {
+                    navManager.StartMoving(agent.id, agent.goalPos, agent.goalRadius);
+                    agent.isRepath = false;
+                }
+            }
+            navManager.UpdateMoveRequest();
         }
         private static void UpdatePos(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQuerys, float deltaTime)
         {
@@ -79,13 +91,13 @@ namespace GridNav
                     agent.prefVelocity = agent.goalPos - agent.pos;
                     continue;
                 }
-                while (agent.path.Count > 0 && NavMathUtils.DistanceApproximately(agent.squareIndex, agent.path[0]) * navMap.SquareSize <= 5.0f * agent.param.maxSpeed)
+                while (agent.path.Count > 0 && NavMathUtils.DistanceApproximately(agent.squareIndex, agent.path[0]) <= 5.0f)
                 {
                     agent.path.RemoveAt(0);
                 }
                 var nextSquareIndex = agent.goalSquareIndex;
                 var nextSquarePos = agent.goalPos;
-                while (agent.path.Count > 0 && NavMathUtils.DistanceApproximately(agent.squareIndex, agent.path[0]) * navMap.SquareSize <= 10.0f * agent.param.maxSpeed)
+                while (agent.path.Count > 0 && NavMathUtils.DistanceApproximately(agent.squareIndex, agent.path[0]) <= 10.0f)
                 {
                     if (!NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, agent.path[0]))
                     {
@@ -98,7 +110,7 @@ namespace GridNav
                     }
                     agent.path.RemoveAt(0);
                 }
-                var constraint = new NavQueryConstraintCircle(agent, agent.squareIndex, agent.pos, nextSquareIndex, nextSquarePos, 0.0f, 2.0f);
+                var constraint = new NavQueryConstraint(agent, agent.squareIndex, agent.pos, nextSquareIndex, nextSquarePos, 0.0f);
                 navQuery.InitSlicedFindPath(constraint);
                 navQuery.UpdateSlicedFindPath(128, out _);
                 var status = navQuery.FinalizeSlicedFindPath(out var path);

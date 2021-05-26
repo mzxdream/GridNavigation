@@ -126,6 +126,7 @@ namespace GridNav
                 Debug.Assert(moveRequestQueue[0] == agent.id);
                 moveRequestQueue.RemoveAt(0);
             }
+            agent.moveState = NavMoveState.Idle;
             blockingObjectMap.RemoveAgent(agent);
             agents.Remove(agentID);
         }
@@ -213,17 +214,21 @@ namespace GridNav
                     Debug.Assert(moveRequestQueue[0] == agent.id);
                     var status = moveRequestNavQuery.UpdateSlicedFindPath(maxNodes, out var doneNodes);
                     maxNodes -= doneNodes;
-                    if (status != NavQueryStatus.InProgress)
+                    if ((status & NavQueryStatus.InProgress) == 0)
                     {
                         moveRequestQueue.RemoveAt(0);
-                        if (status == NavQueryStatus.Failed)
+                        if ((status & NavQueryStatus.Failed) != 0)
                         {
                             agent.moveState = NavMoveState.Idle;
                         }
-                        else if (status == NavQueryStatus.Success)
+                        else if ((status & NavQueryStatus.Success) != 0)
                         {
                             agent.moveState = NavMoveState.InProgress;
                             moveRequestNavQuery.FinalizeSlicedFindPath(out agent.path);
+                        }
+                        else
+                        {
+                            Debug.Assert(false, "path query status is wrong");
                         }
                     }
                 }

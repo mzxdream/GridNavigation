@@ -166,7 +166,7 @@ MonoBehaviour:
   blueCharacterPrefab: {fileID: 4430799067832463752, guid: 27afe6d2f6d618942b6d5f6b3b84bf2a,
     type: 3}
   mass: 1
-  radius: 1.2
+  radius: 0.3
   maxSpeed: 4
 --- !u!65 &705349665
 BoxCollider:
