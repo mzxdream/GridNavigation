@@ -16,6 +16,7 @@ namespace GridNav
         private Vector3[] centerNormals2D; // xsize * zsize
         private float[] slopeMap; // (xsize / 2) * (zsize / 2)
 
+        public Vector3 BMin { get => bmin; }
         public int XSize { get => xsize; }
         public int ZSize { get => zsize; }
         public float SquareSize { get => squareSize; }
@@ -104,6 +105,13 @@ namespace GridNav
         {
             NavUtils.GetSquareXZ(index, out var x, out var z);
             return GetSquarePos(x, z);
+        }
+        public Vector3 GetSquareCornerPos(int x, int z)
+        {
+            Debug.Assert(x >= 0 && x <= xsize && z >= 0 && z <= zsize);
+            var pos = new Vector3(bmin.x + x * squareSize, 0, bmin.z + z * squareSize);
+            pos.y = GetHeight(pos);
+            return pos;
         }
         public int GetSquareType(int x, int z)
         {

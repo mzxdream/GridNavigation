@@ -87,16 +87,25 @@ public class Game : MonoBehaviour
     }
     void UpdateMap()
     {
-        for (int z = 0; z < navMap.ZSize; z++)
-        {
-            for (int x = 0; x < navMap.XSize; x++)
-            {
-            }
-        }
+        meshObjs = new List<MeshObj>();
+        CollectMeshs();
+        var bmin = navMap.BMin;
         for (int z = 0; z <= navMap.ZSize; z++)
         {
             for (int x = 0; x <= navMap.XSize; x++)
             {
+                var p = bmin + new Vector3(x * squareSize, 0, z * squareSize);
+                GetPositionHeightAndType(p, out var h, out var areaType);
+                navMap.SetCornerHeight(x, z, h);
+            }
+        }
+        for (int z = 0; z < navMap.ZSize; z++)
+        {
+            for (int x = 0; x < navMap.XSize; x++)
+            {
+                var p = bmin + new Vector3((x + 0.5f) * squareSize, 0, (z + 0.5f) * squareSize);
+                GetPositionHeightAndType(p, out var h, out var areaType);
+                navMap.SetSquareType(x, z, areaType);
             }
         }
         navMap.UpdateHeightMap();
@@ -330,6 +339,32 @@ public class Game : MonoBehaviour
                 break;
             }
         }
+    }
+    bool GetPositionHeightAndType(Vector3 p, out float height, out int areaType)
+    {
+        height = float.NegativeInfinity;
+        areaType = 1;
+        bool isFound = false;
+        foreach (var m in meshObjs)
+        {
+            for (int i = 0; i < m.tris.Count; i += 3)
+            {
+                var a = m.verts[m.tris[i]];
+                var b = m.verts[m.tris[i + 1]];
+                var c = m.verts[m.tris[i + 2]];
+                if (NavMathUtils.ClosestHeightPointTriangle(p, a, b, c, out var h) && h > height)
+                {
+                    isFound = true;
+                    height = h;
+                    areaType = m.areaType;
+                }
+            }
+        }
+        if (!isFound)
+        {
+            height = p.y;
+        }
+        return isFound;
     }
     void CollectMeshs()
     {
