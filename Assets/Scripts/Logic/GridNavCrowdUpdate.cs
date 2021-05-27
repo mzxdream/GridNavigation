@@ -24,48 +24,6 @@ namespace GridNav
             }
             navManager.UpdateMoveRequest();
         }
-        private static void UpdatePos(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQuerys, float deltaTime)
-        {
-            var navQuery = navQuerys[0];
-            foreach (var agent in agents)
-            {
-                agent.velocity = agent.newVelocity;
-                agent.isMoving = false;
-                if (agent.velocity.sqrMagnitude <= NavMathUtils.EPSILON)
-                {
-                    agent.velocity = Vector3.zero;
-                    continue;
-                }
-                var newPos = agent.pos + agent.velocity * deltaTime;
-                navMap.ClampInBounds(newPos, out var newSquareIndex, out newPos);
-                if (NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, newSquareIndex))
-                {
-                    continue;
-                }
-                if (NavMathUtils.SqrDistance2D(agent.pos, newPos) <= NavMathUtils.EPSILON)
-                {
-                    continue;
-                }
-                agent.isMoving = true;
-                agent.pos = newPos;
-                // 更新索引
-                if (newSquareIndex != agent.squareIndex)
-                {
-                    blockingObjectMap.RemoveAgent(agent);
-                    agent.squareIndex = newSquareIndex;
-                    blockingObjectMap.AddAgent(agent);
-                }
-            }
-        }
-        private static void UpdateNewVelocity(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQuerys, float deltaTime)
-        {
-            foreach (var agent in agents)
-            {
-                //agent.newVelocity = agent.prefVelocity.normalized * agent.param.maxSpeed;
-                CollectNeighbors(navMap, blockingObjectMap, agent);
-                NavRVO.ComputeNewVelocity(agent, agent.obstacleNeighbors, agent.agentNeighbors, deltaTime);
-            }
-        }
         private static void UpdatePrefVelocity(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQuerys, float deltaTime)
         {
             var navQuery = navQuerys[0];
@@ -97,6 +55,48 @@ namespace GridNav
                     }
                 }
                 agent.prefVelocity = new Vector3(nextPos.x - agent.pos.x, 0.0f, nextPos.z - agent.pos.z);
+            }
+        }
+        private static void UpdateNewVelocity(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQuerys, float deltaTime)
+        {
+            foreach (var agent in agents)
+            {
+                //agent.newVelocity = agent.prefVelocity.normalized * agent.param.maxSpeed;
+                CollectNeighbors(navMap, blockingObjectMap, agent);
+                NavRVO.ComputeNewVelocity(agent, agent.obstacleNeighbors, agent.agentNeighbors, deltaTime);
+            }
+        }
+        private static void UpdatePos(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQuerys, float deltaTime)
+        {
+            var navQuery = navQuerys[0];
+            foreach (var agent in agents)
+            {
+                agent.velocity = agent.newVelocity;
+                agent.isMoving = false;
+                if (agent.velocity.sqrMagnitude <= NavMathUtils.EPSILON)
+                {
+                    agent.velocity = Vector3.zero;
+                    continue;
+                }
+                var newPos = agent.pos + agent.velocity * deltaTime;
+                navMap.ClampInBounds(newPos, out var newSquareIndex, out newPos);
+                if (NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, newSquareIndex))
+                {
+                    continue;
+                }
+                if (NavMathUtils.SqrDistance2D(agent.pos, newPos) <= NavMathUtils.EPSILON)
+                {
+                    continue;
+                }
+                agent.isMoving = true;
+                agent.pos = newPos;
+                // 更新索引
+                if (newSquareIndex != agent.squareIndex)
+                {
+                    blockingObjectMap.RemoveAgent(agent);
+                    agent.squareIndex = newSquareIndex;
+                    blockingObjectMap.AddAgent(agent);
+                }
             }
         }
         private static void CollectNeighbors(NavMap navMap, NavBlockingObjectMap blockingObjectMap, NavAgent agent)
@@ -143,7 +143,6 @@ namespace GridNav
                 }
             }
         }
-
         private static int AddObstacle(List<Vector3> vertices, ref List<NavRVOObstacle> obstacles)
         {
             if (vertices.Count < 2)
