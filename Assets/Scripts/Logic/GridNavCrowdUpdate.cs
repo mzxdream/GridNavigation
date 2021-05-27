@@ -40,21 +40,37 @@ namespace GridNav
                     agent.moveState = NavMoveState.Idle;
                     continue;
                 }
-                var nextPos = agent.goalPos;
-                if (agent.squareIndex != agent.goalSquareIndex)
+                float distanceMinSqr = 100.0f * navMap.SquareSize * navMap.SquareSize;
+                float distanceMaxSqr = 225.0f * navMap.SquareSize * navMap.SquareSize;
+                while (agent.path.Count > 1 && NavMathUtils.SqrDistance2D(agent.pos, navMap.GetSquarePos(agent.path[0])) < distanceMinSqr)
                 {
-                    float distanceSqr = agent.param.maxSpeed * 2.0f;
-                    distanceSqr *= distanceSqr;
-                    while (agent.path.Count > 0 && NavMathUtils.SqrDistance2D(agent.pos, navMap.GetSquarePos(agent.path[0])) < distanceSqr)
-                    {
-                        agent.path.RemoveAt(0);
-                    }
-                    if (agent.path.Count > 0)
-                    {
-                        nextPos = navMap.GetSquarePos(agent.path[0]);
-                    }
+                    agent.path.RemoveAt(0);
                 }
-                agent.prefVelocity = new Vector3(nextPos.x - agent.pos.x, 0.0f, nextPos.z - agent.pos.z);
+                bool isNextSquareFound = false;
+                while (agent.path.Count > 0 && NavMathUtils.SqrDistance2D(agent.pos, navMap.GetSquarePos(agent.path[0])) < distanceMaxSqr)
+                {
+                    if (!NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, agent.path[0]))
+                    {
+                        isNextSquareFound = true;
+                        break;
+                    }
+                    agent.path.RemoveAt(0);
+                }
+                if (!isNextSquareFound)
+                {
+                    agent.prefVelocity = Vector3.zero;
+                    agent.isRepath = true;
+                    continue;
+                }
+                var nextSquareIndex = agent.path[0];
+                var nextPos = (nextSquareIndex == agent.goalSquareIndex) ? agent.goalPos : navMap.GetSquarePos(nextSquareIndex);
+                if (!navQuery.FindCorners(agent, agent.squareIndex, agent.pos, nextSquareIndex, nextPos, 128, out var cornerVerts))
+                {
+                    agent.prefVelocity = Vector3.zero;
+                    agent.isRepath = true;
+                    continue;
+                }
+                agent.prefVelocity = new Vector3(cornerVerts[0].x - agent.pos.x, 0, cornerVerts[0].z - agent.pos.z);
             }
         }
         private static void UpdateNewVelocity(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQuerys, float deltaTime)

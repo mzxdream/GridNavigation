@@ -177,6 +177,14 @@ namespace GridNav
             path.Reverse();
             return queryData.status;
         }
+        public bool FindCorners(NavAgent agent, int startIndex, Vector3 startPos, int endIndex, Vector3 endPos, int maxNodes, out List<Vector3> cornerVerts)
+        {
+            Debug.Assert(agent != null);
+            cornerVerts = new List<Vector3>();
+
+
+            return true;
+        }
         public bool FindNearestSquare(NavAgent agent, Vector3 pos, float radius, out int nearestIndex, out Vector3 nearestPos)
         {
             Debug.Assert(agent != null && radius > 0);
