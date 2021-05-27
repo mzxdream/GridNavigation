@@ -67,7 +67,7 @@ namespace GridNav
         public static Vector3 Normalized2D(Vector3 a)
         {
             var mag = (a.x * a.x + a.z * a.z);
-            if (mag < 0.000001f)
+            if (mag < 1e-6f)
             {
                 return Vector3.zero;
             }

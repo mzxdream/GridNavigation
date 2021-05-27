@@ -177,7 +177,7 @@ namespace GridNav
                 return false;
             }
             pos = agent.pos;
-            forward = agent.velocity.normalized;
+            forward = NavMathUtils.Normalized2D(agent.velocity);
             return true;
         }
         public Vector3 GetPrefVelocity(int agentID)
