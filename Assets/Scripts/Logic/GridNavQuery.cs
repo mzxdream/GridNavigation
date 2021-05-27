@@ -36,26 +36,6 @@ namespace GridNav
             return true;
         }
     }
-    public class NavQueryConstraintCircle
-        : NavQueryConstraint
-    {
-        private int mx;
-        private int mz;
-        private float queryRangeSqr;
-
-        public NavQueryConstraintCircle(NavAgent agent, int startIndex, Vector3 startPos, int goalIndex, Vector3 goalPos, float goalRadius, float queryScaleSize)
-            : base(agent, startIndex, startPos, goalIndex, goalPos, goalRadius)
-        {
-            mx = (sx + ex) >> 1;
-            mz = (sz + ez) >> 1;
-            queryRangeSqr = (sx - mx) * (sx - mx) + (sz - mz) * (sz - mz);
-            queryRangeSqr *= queryScaleSize * queryScaleSize;
-        }
-        public override bool WithinConstraints(NavMap navMap, int x, int z)
-        {
-            return (x - mx) * (x - mx) + (z - mz) * (z - mz) <= queryRangeSqr;
-        }
-    }
 
     public enum NavQueryStatus { Success = 1, Failed = 2, InProgress = 4, Partial = 8 }
 

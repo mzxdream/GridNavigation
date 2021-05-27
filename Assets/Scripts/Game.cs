@@ -44,6 +44,8 @@ public class Game : MonoBehaviour
     float radius = 0.6f;
     [SerializeField]
     float maxSpeed = 2.0f;
+    [SerializeField]
+    bool showPath = true;
     List<MeshObj> meshObjs;
     List<Mesh> gridMeshs = null;
 
@@ -257,18 +259,38 @@ public class Game : MonoBehaviour
         int unitSize = NavUtils.CalcUnitSize(c.radius, navMap.SquareSize);
         Gizmos.DrawCube(pos, new Vector3(unitSize * navMap.SquareSize, 0.1f, unitSize * navMap.SquareSize));
 
-        var p1 = c.asset.transform.position + Vector3.up;
-        var prefVelocity = navManager.GetPrefVelocity(c.navAgentID);
-        if (prefVelocity.sqrMagnitude >= 1e-4f)
+        var agent = navManager.GetAgent(c.navAgentID);
+        if (agent == null)
         {
-            var p2 = p1 + prefVelocity;
-            UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.black, null, 5);
+            return;
         }
-        var velocity = navManager.GetVelocity(c.navAgentID);
-        if (velocity.sqrMagnitude >= 1e-5f)
         {
-            var p2 = p1 + velocity;
-            UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.white, null, 5);
+            var p1 = c.asset.transform.position + Vector3.up;
+            var prefVelocity = agent.prefVelocity;
+            if (prefVelocity.sqrMagnitude >= 1e-4f)
+            {
+                var p2 = p1 + prefVelocity;
+                UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.black, null, 5);
+            }
+            var velocity = agent.velocity;
+            if (velocity.sqrMagnitude >= 1e-5f)
+            {
+                var p2 = p1 + velocity;
+                UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.white, null, 5);
+            }
+        }
+        if (showPath)
+        {
+            if (agent.path != null && agent.path.Count > 0)
+            {
+                var p1 = navMap.GetSquarePos(agent.path[0]) + Vector3.up;
+                for (int i = 1; i < agent.path.Count; i++)
+                {
+                    var p2 = navMap.GetSquarePos(agent.path[i]) + Vector3.up;
+                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.yellow, null, 5);
+                    p1 = p2;
+                }
+            }
         }
     }
     void AddRedCharacter()
