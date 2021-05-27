@@ -167,7 +167,7 @@ MonoBehaviour:
     type: 3}
   mass: 1
   radius: 0.2
-  maxSpeed: 4
+  maxSpeed: 1
   showPath: 1
 --- !u!65 &705349665
 BoxCollider:

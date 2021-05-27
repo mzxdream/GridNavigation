@@ -91,11 +91,14 @@ namespace GridNav
             Debug.Assert(x >= 0 && x < navMap.XSize && z >= 0 && z < navMap.ZSize);
             var squareType = navMap.GetSquareType(x, z);
             Debug.Assert(squareType >= 0 && squareType < agent.moveParam.speedMods.Length);
-            if (agent.moveParam.speedMods[squareType] <= 0.0f)
+
+            var speedMod = agent.moveParam.speedMods[squareType];
+            if (speedMod <= 0.0f)
             {
                 return false;
             }
-            if (navMap.GetSquareSlope(x, z) > agent.moveParam.maxSlope)
+            var slope = navMap.GetSquareSlope(x, z);
+            if (slope > agent.moveParam.maxSlope)
             {
                 return false;
             }
