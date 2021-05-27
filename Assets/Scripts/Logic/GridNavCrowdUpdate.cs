@@ -34,7 +34,12 @@ namespace GridNav
                     agent.prefVelocity = Vector3.zero;
                     continue;
                 }
-                if (NavMathUtils.SqrDistance2D(agent.pos, agent.goalPos) <= agent.goalRadius * agent.goalRadius)
+                var goalPos = agent.goalPos;
+                if (agent.goalSquareIndex != agent.path[agent.path.Count - 1])
+                {
+                    goalPos = navMap.GetSquarePos(agent.path[agent.path.Count - 1]);
+                }
+                if (NavMathUtils.SqrDistance2D(agent.pos, goalPos) <= agent.goalRadius * agent.goalRadius)
                 {
                     agent.prefVelocity = Vector3.zero;
                     agent.moveState = NavMoveState.Idle;
