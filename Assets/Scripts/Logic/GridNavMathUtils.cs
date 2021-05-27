@@ -48,8 +48,8 @@ namespace GridNav
         }
         public static float DistanceApproximately(int startIndex, int endIndex)
         {
-            NavUtils.GetSquareXZ(startIndex, out var sx, out var sz);
-            NavUtils.GetSquareXZ(endIndex, out var ex, out var ez);
+            NavUtils.SquareXZ(startIndex, out var sx, out var sz);
+            NavUtils.SquareXZ(endIndex, out var ex, out var ez);
             return DistanceApproximately(sx, sz, ex, ez);
         }
         public static float SqrDistance2D(Vector3 a, Vector3 b)

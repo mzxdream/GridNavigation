@@ -204,8 +204,8 @@ namespace GridNav
                 if (agent.moveState == NavMoveState.Requesting)
                 {
                     agent.moveState = NavMoveState.WaitForPath;
-                    NavUtils.GetSquareXZ(agent.squareIndex, out var sx, out var sz);
-                    NavUtils.GetSquareXZ(agent.goalSquareIndex, out var ex, out var ez);
+                    NavUtils.SquareXZ(agent.squareIndex, out var sx, out var sz);
+                    NavUtils.SquareXZ(agent.goalSquareIndex, out var ex, out var ez);
                     var constraint = new NavQueryConstraint(agent, agent.squareIndex, agent.pos, agent.goalSquareIndex, agent.goalPos, agent.goalRadius);
                     moveRequestNavQuery.InitSlicedFindPath(constraint);
                 }

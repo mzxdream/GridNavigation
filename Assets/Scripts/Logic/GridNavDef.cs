@@ -68,6 +68,15 @@ namespace GridNav
 
     public static class NavUtils
     {
+        public static int SquareIndex(int x, int z)
+        {
+            return x + (z << 16);
+        }
+        public static void SquareXZ(int index, out int x, out int z)
+        {
+            x = index & 0xFFFF;
+            z = index >> 16;
+        }
         public static int CalcUnitSize(float radius, float squareSize)
         {
             int unitSize = (int)(radius * 2 / squareSize - NavMathUtils.EPSILON) + 1;
@@ -76,15 +85,6 @@ namespace GridNav
         public static float CalcMaxInteriorRadius(int unitSize, float squareSize)
         {
             return unitSize * squareSize * 0.5f - NavMathUtils.EPSILON;
-        }
-        public static int GetSquareIndex(int x, int z)
-        {
-            return x + (z << 16);
-        }
-        public static void GetSquareXZ(int index, out int x, out int z)
-        {
-            x = index & 0xFFFF;
-            z = index >> 16;
         }
         public static bool TestMoveSquare(NavMap navMap, NavAgent agent, int x, int z)
         {
@@ -205,7 +205,7 @@ namespace GridNav
         }
         public static bool IsBlockedRange(NavMap navMap, NavBlockingObjectMap blockingObjectMap, NavAgent agent, int index)
         {
-            GetSquareXZ(index, out var x, out var z);
+            SquareXZ(index, out var x, out var z);
             return IsBlockedRange(navMap, blockingObjectMap, agent, x, z);
         }
     }

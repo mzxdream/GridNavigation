@@ -25,7 +25,7 @@ namespace GridNav
         {
             xsize &= ~1;
             zsize &= ~1;
-            if (xsize < 1 || zsize < 1 || squareSize <= 0.0f)
+            if (xsize < 1 || zsize < 1 || squareSize <= NavMathUtils.EPSILON)
             {
                 return false;
             }
@@ -75,7 +75,7 @@ namespace GridNav
         public int GetSquareIndex(Vector3 pos)
         {
             GetSquareXZ(pos, out var x, out var z);
-            return NavUtils.GetSquareIndex(x, z);
+            return NavUtils.SquareIndex(x, z);
         }
         public void ClampInBounds(Vector3 pos, out int nearestX, out int nearestZ, out Vector3 nearestPos)
         {
@@ -94,7 +94,7 @@ namespace GridNav
         public void ClampInBounds(Vector3 pos, out int nearestIndex, out Vector3 nearestPos)
         {
             ClampInBounds(pos, out var nx, out var nz, out nearestPos);
-            nearestIndex = NavUtils.GetSquareIndex(nx, nz);
+            nearestIndex = NavUtils.SquareIndex(nx, nz);
         }
         public Vector3 GetSquarePos(int x, int z)
         {
@@ -105,7 +105,7 @@ namespace GridNav
         }
         public Vector3 GetSquarePos(int index)
         {
-            NavUtils.GetSquareXZ(index, out var x, out var z);
+            NavUtils.SquareXZ(index, out var x, out var z);
             return GetSquarePos(x, z);
         }
         public Vector3 GetSquareCornerPos(int x, int z)
@@ -123,18 +123,12 @@ namespace GridNav
         public float GetSquareSlope(int x, int z)
         {
             Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
-            var halfX = xsize >> 1;
-            var halfZ = zsize >> 1;
             return slopeMap[(x >> 1) + (z >> 1) * (xsize >> 1)];
         }
         public Vector3 GetSquareCenterNormal2D(int x, int z)
         {
             Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
             return centerNormals2D[x + z * xsize];
-        }
-        public float GetHeight(Vector3 pos)
-        {
-            return GetHeight(pos.x, pos.z);
         }
         public float GetHeight(float posX, float posZ)
         {
@@ -164,6 +158,10 @@ namespace GridNav
                 float zDiff = (1.0f - dz) * (hTR - hBR);
                 return hBR + xDiff + zDiff;
             }
+        }
+        public float GetHeight(Vector3 pos)
+        {
+            return GetHeight(pos.x, pos.z);
         }
         private void UpdateCenterHeightMap(int xmin, int xmax, int zmin, int zmax)
         {

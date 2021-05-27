@@ -17,9 +17,9 @@ namespace GridNav
         public NavQueryConstraint(NavAgent agent, int startIndex, Vector3 startPos, int goalIndex, Vector3 goalPos, float goalRadius)
         {
             this.agent = agent;
-            NavUtils.GetSquareXZ(startIndex, out sx, out sz);
+            NavUtils.SquareXZ(startIndex, out sx, out sz);
             this.startPos = startPos;
-            NavUtils.GetSquareXZ(goalIndex, out ex, out ez);
+            NavUtils.SquareXZ(goalIndex, out ex, out ez);
             this.goalPos = goalPos;
             this.goalRadius = goalRadius;
         }
@@ -191,7 +191,7 @@ namespace GridNav
             }
             do
             {
-                path.Add(NavUtils.GetSquareIndex(curNode.x, curNode.z));
+                path.Add(NavUtils.SquareIndex(curNode.x, curNode.z));
                 curNode = curNode.parent;
             } while (curNode != null);
             path.Reverse();
@@ -202,7 +202,7 @@ namespace GridNav
             Debug.Assert(agent != null && radius > 0);
 
             navMap.ClampInBounds(pos, out var x, out var z, out nearestPos);
-            nearestIndex = NavUtils.GetSquareIndex(x, z);
+            nearestIndex = NavUtils.SquareIndex(x, z);
             if (!NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
             {
                 return true;
@@ -253,7 +253,7 @@ namespace GridNav
             }
             if (!NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
             {
-                index = NavUtils.GetSquareIndex(x, z);
+                index = NavUtils.SquareIndex(x, z);
                 pos = navMap.GetSquarePos(x, z);
                 return false;
             }
