@@ -71,13 +71,13 @@ namespace GridNav
                 }
                 var nextSquareIndex = agent.path[0];
                 var nextPos = (nextSquareIndex == agent.goalSquareIndex) ? agent.goalPos : navMap.GetSquarePos(nextSquareIndex);
-                if (!navQuery.FindCorners(agent, agent.squareIndex, agent.pos, nextSquareIndex, nextPos, 128, out var cornerVerts))
+                if (!navQuery.FindCorners(agent, agent.squareIndex, agent.pos, nextSquareIndex, nextPos, 512, out var cornerVerts))
                 {
                     agent.prefVelocity = Vector3.zero;
                     agent.isRepath = true;
                     continue;
                 }
-                agent.prefVelocity = new Vector3(cornerVerts[0].x - agent.pos.x, 0, cornerVerts[0].z - agent.pos.z);
+                agent.prefVelocity = NavMathUtils.Normalized2D(cornerVerts[0] - agent.pos) * agent.param.maxSpeed;
             }
         }
         private static void UpdateNewVelocity(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQuerys, float deltaTime)
