@@ -72,6 +72,10 @@ namespace GridNav
         {
             return navMap;
         }
+        public NavQuery GetNavQuery()
+        {
+            return navQuery;
+        }
         public NavBlockingObjectMap GetBlockingObjectMap()
         {
             return blockingObjectMap;
@@ -167,6 +171,23 @@ namespace GridNav
             agent.prefVelocity = Vector3.zero;
             moveRequestQueue.Add(agent.id);
             return true;
+        }
+        public void StopMoving(int agentID)
+        {
+            if (!agents.TryGetValue(agentID, out var agent))
+            {
+                return;
+            }
+            if (agent.moveState == NavMoveState.Requesting)
+            {
+                moveRequestQueue.Remove(agent.id);
+            }
+            else if (agent.moveState == NavMoveState.WaitForPath)
+            {
+                Debug.Assert(moveRequestQueue[0] == agent.id);
+                moveRequestQueue.RemoveAt(0);
+            }
+            agent.moveState = NavMoveState.Idle;
         }
         public bool GetLocation(int agentID, out Vector3 pos, out Vector3 forward)
         {

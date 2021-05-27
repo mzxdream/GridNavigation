@@ -29,7 +29,11 @@ namespace GridNav
         }
         public bool IsGoal(NavMap navMap, int x, int z)
         {
-            return NavMathUtils.SqrDistance2D(navMap.GetSquarePos(x, z), goalPos) <= goalRadius * goalRadius;
+            if (x == ex && z == ez)
+            {
+                return true;
+            }
+            return NavMathUtils.DistanceApproximately(x, z, ex, ez) * navMap.SquareSize <= goalRadius;
         }
         public virtual bool WithinConstraints(NavMap navMap, int x, int z)
         {
