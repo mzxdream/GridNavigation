@@ -177,12 +177,29 @@ namespace GridNav
             path.Reverse();
             return queryData.status;
         }
-        public bool FindCorners(NavAgent agent, int startIndex, Vector3 startPos, int endIndex, Vector3 endPos, int maxNodes, out List<Vector3> cornerVerts)
+        public bool FindCorners(NavAgent agent, int startIndex, Vector3 startPos, int goalIndex, Vector3 goalPos, int maxNodes, out List<Vector3> cornerVerts)
         {
             Debug.Assert(agent != null);
             cornerVerts = new List<Vector3>();
 
+            var constraint = new NavQueryConstraint(agent, startIndex, startPos, goalIndex, goalPos, NavMathUtils.EPSILON);
+            InitSlicedFindPath(constraint);
+            var status = UpdateSlicedFindPath(maxNodes, out _);
+            if ((status & NavQueryStatus.Success) == 0 || (status & NavQueryStatus.Partial) != 0)
+            {
+                return false;
+            }
+            FinalizeSlicedFindPath(out var path);
 
+            var cornerIndex = path.Count > 1 ? path[1] : path[0];
+            if (cornerIndex == goalIndex)
+            {
+                cornerVerts.Add(goalPos);
+            }
+            else
+            {
+                cornerVerts.Add(navMap.GetSquarePos(cornerIndex));
+            }
             return true;
         }
         public bool FindNearestSquare(NavAgent agent, Vector3 pos, float radius, out int nearestIndex, out Vector3 nearestPos)
