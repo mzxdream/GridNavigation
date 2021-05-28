@@ -77,6 +77,7 @@ namespace GridNav
                     agent.isRepath = true;
                     continue;
                 }
+                agent.cornerVerts = cornerVerts;
                 agent.prefVelocity = NavMathUtils.Normalized2D(cornerVerts[0] - agent.pos) * agent.param.maxSpeed;
             }
         }
@@ -107,11 +108,10 @@ namespace GridNav
                 {
                     continue;
                 }
-                if (NavMathUtils.SqrDistance2D(agent.pos, newPos) <= NavMathUtils.EPSILON)
+                if ((newPos - agent.pos).sqrMagnitude >= Mathf.Epsilon)
                 {
-                    continue;
+                    agent.isMoving = true;
                 }
-                agent.isMoving = true;
                 agent.pos = newPos;
                 // 更新索引
                 if (newSquareIndex != agent.squareIndex)

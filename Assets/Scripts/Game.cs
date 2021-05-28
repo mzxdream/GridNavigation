@@ -291,6 +291,16 @@ public class Game : MonoBehaviour
                     p1 = p2;
                 }
             }
+            if (agent.cornerVerts != null && agent.cornerVerts.Count > 0)
+            {
+                var p1 = agent.pos + Vector3.up;
+                for (int i = 0; i < agent.cornerVerts.Count; i++)
+                {
+                    var p2 = agent.cornerVerts[i] + Vector3.up;
+                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 5);
+                    p1 = p2;
+                }
+            }
         }
     }
     void AddRedCharacter()
