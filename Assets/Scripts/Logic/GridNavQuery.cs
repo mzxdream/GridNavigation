@@ -25,7 +25,7 @@ namespace GridNav
         }
         public float GetHeuristicCost(NavMap navMap, int x, int z)
         {
-            return NavMathUtils.DistanceApproximately(x, z, ex, ez) * navMap.SquareSize;
+            return NavUtils.DistanceApproximately(x, z, ex, ez) * navMap.SquareSize;
         }
         public bool IsGoal(NavMap navMap, int x, int z)
         {
@@ -33,7 +33,7 @@ namespace GridNav
             {
                 return true;
             }
-            return NavMathUtils.DistanceApproximately(x, z, ex, ez) * navMap.SquareSize <= goalRadius;
+            return NavUtils.DistanceApproximately(x, z, ex, ez) * navMap.SquareSize <= goalRadius;
         }
         public virtual bool WithinConstraints(NavMap navMap, int x, int z)
         {
@@ -357,7 +357,7 @@ namespace GridNav
         }
         private bool TestNeighborBlocked(NavQueryConstraint constraint, NavQueryNode node, NavDirection dir, ref float lastBestNodeCost, ref NavQueryNode lastBestNode)
         {
-            NavMathUtils.GetNeighborXZ(node.x, node.z, dir, out var nx, out var nz);
+            NavUtils.GetNeighborXZ(node.x, node.z, dir, out var nx, out var nz);
             if (nx < 0 || nx >= navMap.XSize || nz < 0 || nz >= navMap.ZSize)
             {
                 return true;
@@ -388,7 +388,7 @@ namespace GridNav
                 neighborNode.flags |= (int)(NavNodeFlags.Closed | NavNodeFlags.Blocked);
                 return true;
             }
-            var speed = NavUtils.GetSquareSpeed(navMap, agent, neighborNode.x, neighborNode.z, NavMathUtils.DirToVector3(dir));
+            var speed = NavUtils.GetSquareSpeed(navMap, agent, neighborNode.x, neighborNode.z, NavUtils.DirToVector3(dir));
             if (agent.moveParam.isAvoidMobilesOnPath)
             {
                 if ((blockTypes & NavBlockType.Busy) != 0)
@@ -404,8 +404,8 @@ namespace GridNav
                     speed *= agent.moveParam.speedModMults[(int)NavSpeedModMultType.Move];
                 }
             }
-            float dirMoveCost = NavMathUtils.DirCost(dir) * navMap.SquareSize;
-            float nodeCost = dirMoveCost / Mathf.Max(1e-4f, speed);
+            float dirMoveCost = NavUtils.DirDistanceApproximately(dir) * navMap.SquareSize;
+            float nodeCost = dirMoveCost / Mathf.Max(NavMathUtils.EPSILON, speed);
             float gCost = node.gCost + nodeCost;
             float hCost = constraint.GetHeuristicCost(navMap, neighborNode.x, neighborNode.z);
             float fCost = gCost + hCost;

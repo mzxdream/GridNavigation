@@ -66,5 +66,10 @@ namespace GridNav
             var index = x + z * xsize;
             return agents.TryGetValue(index, out agentList);
         }
+        public bool GetSquareAgents(int index, out List<NavAgent> agentList)
+        {
+            NavUtils.SquareXZ(index, out var x, out var z);
+            return GetSquareAgents(x, z, out agentList);
+        }
     }
 }
