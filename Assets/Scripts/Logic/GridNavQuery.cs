@@ -290,6 +290,9 @@ namespace GridNav
         {
             Debug.Assert(agent != null);
 
+            //startPos = new Vector3(16.00237f, 0, -3.808542f);
+            //endPos = new Vector3(15.97629f, 0, 0.09902147f);
+
             navMap.GetSquareXZ(startPos, out var sx, out var sz);
             navMap.GetSquareXZ(endPos, out var ex, out var ez);
 
@@ -301,7 +304,7 @@ namespace GridNav
             {
                 return false;
             }
-            for (int ix = 0, iz = 0; ix < nx || iz < nz;)
+            for (int ix = 0, iz = 0; ix < nx && iz < nz;)
             {
                 var tx = dz * (ix + 0.5f);
                 var tz = dx * (iz + 0.5f);
@@ -315,6 +318,22 @@ namespace GridNav
                     iz++;
                     z += signZ;
                 }
+                if (NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
+                {
+                    return false;
+                }
+            }
+            while (x != ex)
+            {
+                x += signX;
+                if (NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
+                {
+                    return false;
+                }
+            }
+            while (z != ez)
+            {
+                z += signZ;
                 if (NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
                 {
                     return false;
