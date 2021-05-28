@@ -186,6 +186,12 @@ namespace GridNav
             Debug.Assert(agent != null);
             cornerVerts = new List<Vector3>();
 
+            if (IsStraightWalkable(agent, startPos, goalPos))
+            {
+                cornerVerts.Add(goalPos);
+                return true;
+            }
+
             var constraint = new NavQueryConstraint(agent, startIndex, startPos, goalIndex, goalPos, NavMathUtils.EPSILON);
             InitSlicedFindPath(constraint);
             var status = UpdateSlicedFindPath(maxNodes, out _);
@@ -194,15 +200,41 @@ namespace GridNav
                 return false;
             }
             FinalizeSlicedFindPath(out var path);
-
-            var cornerIndex = path.Count > 1 ? path[1] : path[0];
-            if (cornerIndex == goalIndex)
+            //
+            var straightPath = new List<int>();
+            straightPath.Add(path[0]);
+            var oldDir = path[1] - path[0];
+            for (int i = 2; i < path.Count; i++)
             {
-                cornerVerts.Add(goalPos);
+                var newDir = path[i] - path[i - 1];
+                if (oldDir != newDir)
+                {
+                    oldDir = newDir;
+                    straightPath.Add(path[i - 1]);
+                }
             }
-            else
+            straightPath.Add(path[path.Count - 1]);
+            //去除可以直达的拐点
+            for (int i = straightPath.Count - 1; i > 1; i--)
             {
-                cornerVerts.Add(navMap.GetSquarePos(cornerIndex));
+                var epos = straightPath[i] == goalIndex ? goalPos : navMap.GetSquarePos(straightPath[i]);
+                for (int j = 0; j < i - 1; j++)
+                {
+                    var spos = straightPath[j] == startIndex ? startPos : navMap.GetSquarePos(straightPath[j]);
+                    if (IsStraightWalkable(agent, spos, epos))
+                    {
+                        for (int k = i - 1; k > j; k--)
+                        {
+                            straightPath.RemoveAt(k);
+                        }
+                        i = j + 1;
+                        break;
+                    }
+                }
+            }
+            for (int i = 1; i < ncorner && i < straightPath.Count; i++)
+            {
+                cornerVerts.Add(straightPath[i] == goalIndex ? goalPos : navMap.GetSquarePos(straightPath[i]));
             }
             return true;
         }
@@ -253,6 +285,42 @@ namespace GridNav
                 }
             }
             return false;
+        }
+        private bool IsStraightWalkable(NavAgent agent, Vector3 startPos, Vector3 endPos)
+        {
+            Debug.Assert(agent != null);
+
+            navMap.GetSquareXZ(startPos, out var sx, out var sz);
+            navMap.GetSquareXZ(endPos, out var ex, out var ez);
+
+            int signX = ex > sx ? 1 : -1, signZ = ez > sz ? 1 : -1;
+            int nx = Mathf.Abs(ex - sx), nz = Mathf.Abs(ez - sz);
+            float dx = Mathf.Abs(endPos.x - startPos.x), dz = Mathf.Abs(endPos.z - startPos.z);
+            int x = sx, z = sz;
+            if (NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
+            {
+                return false;
+            }
+            for (int ix = 0, iz = 0; ix < nx || iz < nz;)
+            {
+                var tx = dz * (ix + 0.5f);
+                var tz = dx * (iz + 0.5f);
+                if (tx < tz)
+                {
+                    ix++;
+                    x += signX;
+                }
+                else
+                {
+                    iz++;
+                    z += signZ;
+                }
+                if (NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
         private bool TestBlocked(NavAgent agent, int x, int z, ref int index, ref Vector3 pos)
         {
