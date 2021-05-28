@@ -71,7 +71,7 @@ namespace GridNav
                 }
                 var nextSquareIndex = agent.path[0];
                 var nextPos = (nextSquareIndex == agent.goalSquareIndex) ? agent.goalPos : navMap.GetSquarePos(nextSquareIndex);
-                if (!navQuery.FindCorners(agent, agent.squareIndex, agent.pos, nextSquareIndex, nextPos, 512, out var cornerVerts))
+                if (!navQuery.FindCorners(agent, agent.squareIndex, agent.pos, nextSquareIndex, nextPos, 4, 512, out var cornerVerts))
                 {
                     agent.prefVelocity = Vector3.zero;
                     agent.isRepath = true;

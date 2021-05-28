@@ -181,7 +181,7 @@ namespace GridNav
             path.Reverse();
             return queryData.status;
         }
-        public bool FindCorners(NavAgent agent, int startIndex, Vector3 startPos, int goalIndex, Vector3 goalPos, int maxNodes, out List<Vector3> cornerVerts)
+        public bool FindCorners(NavAgent agent, int startIndex, Vector3 startPos, int goalIndex, Vector3 goalPos, int ncorner, int maxNodes, out List<Vector3> cornerVerts)
         {
             Debug.Assert(agent != null);
             cornerVerts = new List<Vector3>();

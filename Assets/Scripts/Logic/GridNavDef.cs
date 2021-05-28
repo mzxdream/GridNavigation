@@ -57,6 +57,7 @@ namespace GridNav
         public int goalSquareIndex;
         public float goalRadius;
         public List<int> path;
+        public List<Vector3> cornerVerts;
         public Vector3 prefVelocity;
         public Vector3 velocity;
         public Vector3 newVelocity;
