@@ -64,7 +64,7 @@ namespace GridNav
             Debug.Assert(navMap != null && blockingObjectMap != null && maxNodes > 0);
             this.navMap = navMap;
             this.blockingObjectMap = blockingObjectMap;
-            this.nodePool = new NavQueryNodePool(navMap.XSize, navMap.ZSize, maxNodes);
+            this.nodePool = new NavQueryNodePool(maxNodes);
             this.openQueue = new NavQueryPriorityQueue(maxNodes);
             this.queryData = new QueryData();
             return true;

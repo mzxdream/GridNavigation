@@ -16,16 +16,12 @@ namespace GridNav
 
     class NavQueryNodePool
     {
-        private int xszie;
-        private int zsize;
         private NavQueryNode[] nodes;
         private int count;
         private Dictionary<int, NavQueryNode> nodeIndexes;
 
-        public NavQueryNodePool(int xsize, int zsize, int maxNodes)
+        public NavQueryNodePool(int maxNodes)
         {
-            this.xszie = xsize;
-            this.zsize = zsize;
             nodes = new NavQueryNode[maxNodes];
             for (int i = 0; i < maxNodes; i++)
             {
@@ -41,7 +37,7 @@ namespace GridNav
         }
         public NavQueryNode GetNode(int x, int z)
         {
-            var index = x + z * xszie;
+            var index = NavUtils.SquareIndex(x, z);
             if (!nodeIndexes.TryGetValue(index, out var node))
             {
                 if (count >= nodes.Length)
