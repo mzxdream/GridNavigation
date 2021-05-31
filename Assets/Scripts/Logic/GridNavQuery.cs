@@ -89,8 +89,8 @@ namespace GridNav
             queryData.lastBestNode = null;
             queryData.lastBestNodeCost = 0.0f;
 
-            if (!NavUtils.TestMoveSquareRange(navMap, constraint.agent, constraint.sx, constraint.sz)
-                || (NavUtils.TestBlockTypesSquareRange(blockingObjectMap, constraint.agent, constraint.sx, constraint.sz) & NavBlockType.Block) != 0)
+            if (!NavUtils.TestMoveSquare(navMap, constraint.agent, constraint.sx, constraint.sz)
+                || (NavUtils.TestBlockTypesSquare(blockingObjectMap, constraint.agent, constraint.sx, constraint.sz) & NavBlockType.Block) != 0)
             {
                 return NavQueryStatus.Failed;
             }
@@ -244,7 +244,7 @@ namespace GridNav
 
             navMap.ClampInBounds(pos, out var x, out var z, out nearestPos);
             nearestIndex = NavUtils.SquareIndex(x, z);
-            if (!NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
+            if (!NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
             {
                 return true;
             }
@@ -300,7 +300,7 @@ namespace GridNav
             int nx = Mathf.Abs(ex - sx), nz = Mathf.Abs(ez - sz);
             float dx = Mathf.Abs(endPos.x - startPos.x), dz = Mathf.Abs(endPos.z - startPos.z);
             int x = sx, z = sz;
-            if (NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
+            if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
             {
                 return false;
             }
@@ -318,7 +318,7 @@ namespace GridNav
                     iz++;
                     z += signZ;
                 }
-                if (NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
+                if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
                 {
                     return false;
                 }
@@ -326,7 +326,7 @@ namespace GridNav
             while (x != ex)
             {
                 x += signX;
-                if (NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
+                if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
                 {
                     return false;
                 }
@@ -334,7 +334,7 @@ namespace GridNav
             while (z != ez)
             {
                 z += signZ;
-                if (NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
+                if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
                 {
                     return false;
                 }
@@ -347,7 +347,7 @@ namespace GridNav
             {
                 return true;
             }
-            if (!NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
+            if (!NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
             {
                 index = NavUtils.SquareIndex(x, z);
                 pos = navMap.GetSquarePos(x, z);
@@ -377,12 +377,12 @@ namespace GridNav
                 return true;
             }
             var agent = constraint.agent;
-            if (!NavUtils.TestMoveSquareRange(navMap, agent, neighborNode.x, neighborNode.z))
+            if (!NavUtils.TestMoveSquare(navMap, agent, neighborNode.x, neighborNode.z))
             {
                 neighborNode.flags |= (int)(NavNodeFlags.Closed | NavNodeFlags.Blocked);
                 return true;
             }
-            var blockTypes = NavUtils.TestBlockTypesSquareRange(blockingObjectMap, agent, neighborNode.x, neighborNode.z);
+            var blockTypes = NavUtils.TestBlockTypesSquare(blockingObjectMap, agent, neighborNode.x, neighborNode.z);
             if ((blockTypes & NavBlockType.Block) != 0)
             {
                 neighborNode.flags |= (int)(NavNodeFlags.Closed | NavNodeFlags.Blocked);

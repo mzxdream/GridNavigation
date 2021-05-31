@@ -56,7 +56,7 @@ namespace GridNav
                 bool isNextSquareFound = false;
                 while (agent.path.Count > 0 && NavMathUtils.SqrDistance2D(agent.pos, navMap.GetSquarePos(agent.path[0])) < distanceMaxSqr)
                 {
-                    if (!NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, agent.path[0]))
+                    if (!NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, agent.path[0]))
                     {
                         isNextSquareFound = true;
                         break;
@@ -98,7 +98,7 @@ namespace GridNav
                 agent.velocity = agent.newVelocity;
                 var newPos = agent.pos + agent.velocity * deltaTime;
                 navMap.ClampInBounds(newPos, out var newSquareIndex, out newPos);
-                if (NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, newSquareIndex))
+                if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, newSquareIndex))
                 {
                     newPos = agent.pos;
                 }
@@ -145,7 +145,7 @@ namespace GridNav
                             }
                         }
                     }
-                    if (isBlocked || !NavUtils.TestMoveSquare(navMap, agent, x, z))
+                    if (isBlocked || !NavUtils.TestMoveSquareCenter(navMap, agent, x, z))
                     {
                         List<Vector3> vertices = new List<Vector3>();
 
