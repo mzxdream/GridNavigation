@@ -19,6 +19,14 @@ namespace GridNav
         public const int MaxSpeedModMultTypes = 3;
     }
 
+    public struct NavAgentParam
+    {
+        public float mass;
+        public float radius;
+        public float maxSpeed;
+        public bool isPushResistant;
+    }
+
     public class NavMoveParam
     {
         // speed = speedMod * speedModMult / (1.0f + slope * slopeMod)
@@ -35,29 +43,19 @@ namespace GridNav
         }
     }
 
-    public struct NavAgentParam
-    {
-        public float mass;
-        public float radius;
-        public float maxSpeed;
-        public bool isPushResistant;
-    }
-
     public class NavAgent
     {
         public int id;
         public NavAgentParam param;
         public NavMoveParam moveParam;
         public int halfUnitSize; //unitSize = 1 + halfUnitSize * 2;
-        public float maxInteriorRadius;
         public NavMoveState moveState;
-        public Vector3 pos;
         public int squareIndex;
+        public Vector3 pos;
         public Vector3 goalPos;
-        public int goalSquareIndex;
         public float goalRadius;
-        public List<int> path;
-        public List<Vector3> cornerVerts;
+        public List<Vector3> path;
+        public List<Vector3> corners;
         public Vector3 prefVelocity;
         public Vector3 velocity;
         public Vector3 newVelocity;

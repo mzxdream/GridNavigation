@@ -283,20 +283,20 @@ public class Game : MonoBehaviour
         {
             if (agent.path != null && agent.path.Count > 0)
             {
-                var p1 = navMap.GetSquarePos(agent.path[0]) + Vector3.up;
+                var p1 = agent.path[0] + Vector3.up;
                 for (int i = 1; i < agent.path.Count; i++)
                 {
-                    var p2 = navMap.GetSquarePos(agent.path[i]) + Vector3.up;
+                    var p2 = agent.path[i] + Vector3.up;
                     UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.yellow, null, 5);
                     p1 = p2;
                 }
             }
-            if (agent.cornerVerts != null && agent.cornerVerts.Count > 0)
+            if (agent.corners != null && agent.corners.Count > 0)
             {
                 var p1 = agent.pos + Vector3.up;
-                for (int i = 0; i < agent.cornerVerts.Count; i++)
+                for (int i = 0; i < agent.corners.Count; i++)
                 {
-                    var p2 = agent.cornerVerts[i] + Vector3.up;
+                    var p2 = agent.corners[i] + Vector3.up;
                     UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 5);
                     p1 = p2;
                 }

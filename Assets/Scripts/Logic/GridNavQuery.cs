@@ -201,6 +201,7 @@ namespace GridNav
                     }
                 }
             }
+            corners.RemoveAt(corners.Count - 1);
             return true;
         }
         public bool FindNearestSquare(NavAgent agent, Vector3 pos, float radius, out int nearestIndex, out Vector3 nearestPos)
@@ -209,7 +210,7 @@ namespace GridNav
 
             navMap.ClampInBounds(pos, out var x, out var z, out nearestPos);
             nearestIndex = NavUtils.SquareIndex(x, z);
-            if (!NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
+            if (!NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z, true))
             {
                 return true;
             }
@@ -312,7 +313,7 @@ namespace GridNav
             {
                 return true;
             }
-            if (!NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
+            if (!NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z, true))
             {
                 index = NavUtils.SquareIndex(x, z);
                 pos = navMap.GetSquarePos(x, z);

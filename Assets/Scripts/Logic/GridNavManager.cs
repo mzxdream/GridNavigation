@@ -89,21 +89,20 @@ namespace GridNav
                 param = param,
                 moveParam = moveParam,
                 halfUnitSize = unitSize >> 1,
-                maxInteriorRadius = NavUtils.CalcMaxInteriorRadius(unitSize, navMap.SquareSize),
                 moveState = NavMoveState.Idle,
+                squareIndex = 0,
                 pos = pos,
-                squareIndex = -1,
                 goalPos = Vector3.zero,
-                goalSquareIndex = -1,
                 goalRadius = 0.0f,
-                path = new List<int>(),
+                path = null,
+                corners = null,
                 prefVelocity = Vector3.zero,
                 velocity = Vector3.zero,
                 newVelocity = Vector3.zero,
                 isMoving = false,
                 isRepath = false,
-                agentNeighbors = new List<NavAgent>(),
-                obstacleNeighbors = new List<NavRVOObstacle>(),
+                agentNeighbors = null,
+                obstacleNeighbors = null,
             };
             navMap.ClampInBounds(agent.pos, out agent.squareIndex, out agent.pos);
             if (navQuery.FindNearestSquare(agent, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearesetPos))
@@ -158,7 +157,7 @@ namespace GridNav
             if (agent.moveState == NavMoveState.WaitForPath)
             {
                 Debug.Assert(agent.id == moveRequestQueue[0]);
-                if (neareastIndex == agent.goalSquareIndex && Mathf.Abs(goalRadius - agent.goalRadius) < navMap.SquareSize)
+                if (neareastIndex == navMap.GetSquareIndex(agent.goalPos) && Mathf.Abs(goalRadius - agent.goalRadius) < navMap.SquareSize)
                 {
                     return true;
                 }
@@ -167,7 +166,6 @@ namespace GridNav
             agent.moveState = NavMoveState.Requesting;
             agent.goalPos = nearestPos;
             agent.goalRadius = goalRadius;
-            agent.goalSquareIndex = neareastIndex;
             agent.prefVelocity = Vector3.zero;
             moveRequestQueue.Add(agent.id);
             return true;
@@ -225,10 +223,7 @@ namespace GridNav
                 if (agent.moveState == NavMoveState.Requesting)
                 {
                     agent.moveState = NavMoveState.WaitForPath;
-                    NavUtils.SquareXZ(agent.squareIndex, out var sx, out var sz);
-                    NavUtils.SquareXZ(agent.goalSquareIndex, out var ex, out var ez);
-                    var constraint = new NavQueryConstraint(agent, agent.squareIndex, agent.pos, agent.goalSquareIndex, agent.goalPos, agent.goalRadius);
-                    moveRequestNavQuery.InitSlicedFindPath(constraint);
+                    moveRequestNavQuery.InitSlicedFindPath(agent, agent.pos, agent.goalPos, agent.goalRadius);
                 }
                 if (agent.moveState == NavMoveState.WaitForPath)
                 {

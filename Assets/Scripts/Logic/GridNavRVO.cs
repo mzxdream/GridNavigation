@@ -28,7 +28,7 @@ namespace GridNav
             float timeHorizonObst = 1.0f; // TODO
             float invTimeHorizonObst = 1.0f / timeHorizonObst;
 
-            float radius = agent.maxInteriorRadius;
+            float radius = agent.param.radius;
             var position = agent.pos;
             var velocity = agent.velocity;
             /* Create obstacle ORCA lines. */
@@ -301,7 +301,7 @@ namespace GridNav
                 Vector3 relativePosition = other.pos - position;
                 Vector3 relativeVelocity = velocityOpt - neighborVelocityOpt; // origin is  Vector3 relativeVelocity = velocity - other.velocity;
                 float distSq = NavMathUtils.SqrMagnitude2D(relativePosition);
-                float combinedRadius = radius + other.maxInteriorRadius;
+                float combinedRadius = radius + other.param.radius;
                 float combinedRadiusSq = combinedRadius * combinedRadius;
 
                 NavRVOLine line;
