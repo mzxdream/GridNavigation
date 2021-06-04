@@ -3,44 +3,6 @@ using UnityEngine;
 
 namespace GridNav
 {
-    public class NavQueryConstraint
-    {
-        public NavAgent agent;
-        public int sx;
-        public int sz;
-        public Vector3 startPos;
-        public int ex;
-        public int ez;
-        public Vector3 goalPos;
-        public float goalRadius;
-
-        public NavQueryConstraint(NavAgent agent, int startIndex, Vector3 startPos, int goalIndex, Vector3 goalPos, float goalRadius)
-        {
-            this.agent = agent;
-            NavUtils.SquareXZ(startIndex, out sx, out sz);
-            this.startPos = startPos;
-            NavUtils.SquareXZ(goalIndex, out ex, out ez);
-            this.goalPos = goalPos;
-            this.goalRadius = goalRadius;
-        }
-        public float GetHeuristicCost(NavMap navMap, int x, int z)
-        {
-            return NavUtils.DistanceApproximately(x, z, ex, ez) * navMap.SquareSize;
-        }
-        public bool IsGoal(NavMap navMap, int x, int z)
-        {
-            if (x == ex && z == ez)
-            {
-                return true;
-            }
-            return NavUtils.DistanceApproximately(x, z, ex, ez) * navMap.SquareSize <= goalRadius;
-        }
-        public virtual bool WithinConstraints(NavMap navMap, int x, int z)
-        {
-            return true;
-        }
-    }
-
     public enum NavQueryStatus { Success = 1, Failed = 2, InProgress = 4, Partial = 8 }
 
     public class NavQuery
@@ -55,7 +17,7 @@ namespace GridNav
             public int ex;
             public int ez;
             public Vector3 goalPos;
-            public float goalRadiusSqr;
+            public int goalRadiusSqr;
             public NavQueryNode lastBestNode;
             public float lastBestNodeCost;
         }
@@ -87,7 +49,7 @@ namespace GridNav
             queryData.agent = agent;
             navMap.ClampInBounds(startPos, out queryData.sx, out queryData.sz, out queryData.startPos);
             navMap.ClampInBounds(goalPos, out queryData.ex, out queryData.ez, out queryData.goalPos);
-            queryData.goalRadiusSqr = goalRadius * goalRadius;
+            queryData.goalRadiusSqr = (int)NavMathUtils.Square(goalRadius / navMap.SquareSize);
             queryData.lastBestNode = null;
             queryData.lastBestNodeCost = 0.0f;
 
@@ -129,8 +91,7 @@ namespace GridNav
                 bestNode.flags &= ~(int)NavNodeFlags.Open;
                 bestNode.flags |= (int)NavNodeFlags.Closed;
 
-                if ((bestNode.x == queryData.ex && bestNode.z == queryData.ez)
-                    || NavMathUtils.SqrDistance2D(navMap.GetSquarePos(bestNode.x, bestNode.z), queryData.goalPos) <= queryData.goalRadiusSqr)
+                if (NavMathUtils.Square(bestNode.x - queryData.ex) + NavMathUtils.Square(bestNode.z - queryData.ez) <= queryData.goalRadiusSqr)
                 {
                     queryData.lastBestNode = bestNode;
                     queryData.status = NavQueryStatus.Success;
@@ -183,60 +144,62 @@ namespace GridNav
             } while (curNode != null);
             return queryData.status;
         }
-        public bool FindCorners(NavAgent agent, int startIndex, Vector3 startPos, int goalIndex, Vector3 goalPos, int ncorner, int maxNodes, out List<Vector3> cornerVerts)
+        public bool FindCorners(NavAgent agent, Vector3 startPos, Vector3 goalPos, int maxNodes, out List<Vector3> corners)
         {
             Debug.Assert(agent != null);
-            cornerVerts = new List<Vector3>();
 
+            corners = new List<Vector3>();
             if (IsStraightWalkable(agent, startPos, goalPos))
             {
-                cornerVerts.Add(goalPos);
+                corners.Add(goalPos);
                 return true;
             }
-
-            var constraint = new NavQueryConstraint(agent, startIndex, startPos, goalIndex, goalPos, NavMathUtils.EPSILON);
-            InitSlicedFindPath(constraint);
+            InitSlicedFindPath(agent, startPos, goalPos, 0.0f);
             var status = UpdateSlicedFindPath(maxNodes, out _);
             if ((status & NavQueryStatus.Success) == 0 || (status & NavQueryStatus.Partial) != 0)
             {
                 return false;
             }
-            FinalizeSlicedFindPath(out var path);
-            //
-            var straightPath = new List<int>();
-            straightPath.Add(path[0]);
-            var oldDir = path[1] - path[0];
-            for (int i = 2; i < path.Count; i++)
+            var curNode = queryData.lastBestNode;
+            Debug.Assert(curNode != null);
+            var nodes = new List<NavQueryNode>();
+            do
             {
-                var newDir = path[i] - path[i - 1];
-                if (oldDir != newDir)
+                nodes.Add(curNode);
+                curNode = curNode.parent;
+            } while (curNode != null);
+            Debug.Assert(nodes.Count >= 2);
+            //去除多余的点
+            corners.Add(goalPos);
+            var oldDirX = nodes[1].x - nodes[0].x;
+            var oldDirZ = nodes[1].z - nodes[0].z;
+            for (int i = 2; i < nodes.Count; i++)
+            {
+                var newDirX = nodes[i].x - nodes[i - 1].x;
+                var newDirZ = nodes[i].z - nodes[i - 1].z;
+                if (newDirX != oldDirX || newDirZ != oldDirZ)
                 {
-                    oldDir = newDir;
-                    straightPath.Add(path[i - 1]);
+                    oldDirX = newDirX;
+                    oldDirZ = newDirZ;
+                    corners.Add(navMap.GetSquarePos(nodes[i - 1].x, nodes[i - 1].z));
                 }
             }
-            straightPath.Add(path[path.Count - 1]);
+            corners.Add(startPos);
             //去除可以直达的拐点
-            for (int i = straightPath.Count - 1; i > 1; i--)
+            for (int i = corners.Count - 1; i > 1; i--)
             {
-                var epos = straightPath[i] == goalIndex ? goalPos : navMap.GetSquarePos(straightPath[i]);
                 for (int j = 0; j < i - 1; j++)
                 {
-                    var spos = straightPath[j] == startIndex ? startPos : navMap.GetSquarePos(straightPath[j]);
-                    if (IsStraightWalkable(agent, spos, epos))
+                    if (IsStraightWalkable(agent, corners[j], corners[i]))
                     {
                         for (int k = i - 1; k > j; k--)
                         {
-                            straightPath.RemoveAt(k);
+                            corners.RemoveAt(k);
                         }
                         i = j + 1;
                         break;
                     }
                 }
-            }
-            for (int i = 1; i < ncorner && i < straightPath.Count; i++)
-            {
-                cornerVerts.Add(straightPath[i] == goalIndex ? goalPos : navMap.GetSquarePos(straightPath[i]));
             }
             return true;
         }
@@ -246,7 +209,7 @@ namespace GridNav
 
             navMap.ClampInBounds(pos, out var x, out var z, out nearestPos);
             nearestIndex = NavUtils.SquareIndex(x, z);
-            if (!NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
+            if (!NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
             {
                 return true;
             }
@@ -302,7 +265,7 @@ namespace GridNav
             int nx = Mathf.Abs(ex - sx), nz = Mathf.Abs(ez - sz);
             float dx = Mathf.Abs(endPos.x - startPos.x), dz = Mathf.Abs(endPos.z - startPos.z);
             int x = sx, z = sz;
-            if (NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
+            if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
             {
                 return false;
             }
@@ -320,7 +283,7 @@ namespace GridNav
                     iz++;
                     z += signZ;
                 }
-                if (NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
+                if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
                 {
                     return false;
                 }
@@ -328,7 +291,7 @@ namespace GridNav
             while (x != ex)
             {
                 x += signX;
-                if (NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
+                if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
                 {
                     return false;
                 }
@@ -336,7 +299,7 @@ namespace GridNav
             while (z != ez)
             {
                 z += signZ;
-                if (NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
+                if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
                 {
                     return false;
                 }
@@ -349,7 +312,7 @@ namespace GridNav
             {
                 return true;
             }
-            if (!NavUtils.IsBlockedRange(navMap, blockingObjectMap, agent, x, z))
+            if (!NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
             {
                 index = NavUtils.SquareIndex(x, z);
                 pos = navMap.GetSquarePos(x, z);

@@ -8,6 +8,14 @@ namespace GridNav
         public static readonly float SQRT2 = 1.41421356237f;
         public static readonly float HALF_SQRT2 = 0.70710678118f;
 
+        public static int Square(int a)
+        {
+            return a * a;
+        }
+        public static float Square(float a)
+        {
+            return a * a;
+        }
         public static float SqrDistance2D(Vector3 a, Vector3 b)
         {
             return (b.x - a.x) * (b.x - a.x) + (b.z - a.z) * (b.z - a.z);
