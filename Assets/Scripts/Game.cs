@@ -30,7 +30,7 @@ class MeshObj
 
 public class Game : MonoBehaviour
 {
-    [SerializeField, Range(0.1f, 1.0f)]
+    [SerializeField, Range(0.1f, 5.0f)]
     float squareSize = 0.2f;
     [SerializeField]
     Texture2D squareTexture = default;

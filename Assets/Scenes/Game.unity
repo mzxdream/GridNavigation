@@ -153,7 +153,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 228bace5d1114154d868745b603bd07a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  squareSize: 0.5
+  squareSize: 2
   squareTexture: {fileID: 2800000, guid: 1847a973a20a9ad4e9d15d05965d1b1e, type: 3}
   wallPrefab: {fileID: 615282614731244379, guid: 195a1f7e12cbbce48a82e0041794bca1,
     type: 3}
@@ -166,7 +166,7 @@ MonoBehaviour:
   blueCharacterPrefab: {fileID: 4430799067832463752, guid: 27afe6d2f6d618942b6d5f6b3b84bf2a,
     type: 3}
   mass: 1
-  radius: 0.2
+  radius: 0.4
   maxSpeed: 1
   showPath: 1
 --- !u!65 &705349665
