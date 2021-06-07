@@ -39,6 +39,10 @@ namespace GridNav
                 {
                     agent.prefVelocity = Vector3.zero;
                     agent.moveState = NavMoveState.Idle;
+                    if (NavMathUtils.SqrDistance2D(agent.pos, agent.goalPos) > agent.goalRadius * agent.goalRadius)
+                    {
+                        agent.isRepath = true;
+                    }
                     continue;
                 }
                 float distanceMinSqr = NavMathUtils.Square(10.0f * navMap.SquareSize); // TODO const
