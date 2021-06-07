@@ -34,7 +34,7 @@ namespace GridNav
                     agent.prefVelocity = Vector3.zero;
                     continue;
                 }
-                Debug.Assert(agent.path != null && agent.path.Count > 1);
+                Debug.Assert(agent.path != null && agent.path.Count > 0);
                 if (NavMathUtils.SqrDistance2D(agent.pos, agent.path[0]) <= agent.goalRadius * agent.goalRadius)
                 {
                     agent.prefVelocity = Vector3.zero;
