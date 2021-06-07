@@ -97,16 +97,19 @@ namespace GridNav
             {
                 agent.velocity = agent.newVelocity;
                 var newPos = agent.pos + agent.velocity * deltaTime;
-                navMap.ClampInBounds(newPos, out var newSquareIndex, out newPos);
-                if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, newSquareIndex))
+                navMap.ClampInBounds(newPos, out _, out newPos);
+                navQuery.Raycast(agent, agent.pos, newPos, out var t);
+                if (t < 1.0f)
                 {
-                    newPos = agent.pos;
+                    t = Mathf.Max(0.0f, t - 1e-4f);
                 }
+                newPos = Vector3.Lerp(agent.pos, newPos, t);
+                newPos.y = navMap.GetHeight(newPos);
                 agent.velocity = newPos - agent.pos;
                 agent.isMoving = (agent.velocity.sqrMagnitude >= Mathf.Epsilon);
                 agent.pos = newPos;
                 // 更新索引
-                newSquareIndex = navMap.GetSquareIndex(agent.pos);
+                var newSquareIndex = navMap.GetSquareIndex(agent.pos);
                 if (newSquareIndex != agent.squareIndex)
                 {
                     blockingObjectMap.RemoveAgent(agent);

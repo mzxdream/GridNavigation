@@ -149,7 +149,7 @@ namespace GridNav
             Debug.Assert(agent != null);
 
             corners = new List<Vector3>();
-            if (IsStraightWalkable(agent, startPos, goalPos))
+            if (IsStraightWalkable(agent, startPos, goalPos, false, out _, out _))
             {
                 corners.Add(goalPos);
                 return true;
@@ -190,7 +190,7 @@ namespace GridNav
             {
                 for (int j = 0; j < i - 1; j++)
                 {
-                    if (IsStraightWalkable(agent, corners[j], corners[i]))
+                    if (IsStraightWalkable(agent, corners[j], corners[i], false, out _, out _))
                     {
                         for (int k = i - 1; k > j; k--)
                         {
@@ -252,7 +252,19 @@ namespace GridNav
             }
             return false;
         }
-        private bool IsStraightWalkable(NavAgent agent, Vector3 startPos, Vector3 endPos)
+        public void Raycast(NavAgent agent, Vector3 startPos, Vector3 endPos, out float t)
+        {
+            Debug.Assert(agent != null);
+            t = 1.0f;
+            if (IsStraightWalkable(agent, startPos, endPos, true, out var x, out var z))
+            {
+                return;
+            }
+            var pos = navMap.GetSquarePos(x, z);
+            var radius = agent.param.radius + navMap.SquareSize * NavMathUtils.HALF_SQRT2;
+            NavMathUtils.IsSegmentCircleIntersection(pos, radius, startPos, endPos, out t);
+        }
+        private bool IsStraightWalkable(NavAgent agent, Vector3 startPos, Vector3 endPos, bool isExcludeMoving, out int x, out int z)
         {
             Debug.Assert(agent != null);
 
@@ -265,8 +277,9 @@ namespace GridNav
             int signX = ex > sx ? 1 : -1, signZ = ez > sz ? 1 : -1;
             int nx = Mathf.Abs(ex - sx), nz = Mathf.Abs(ez - sz);
             float dx = Mathf.Abs(endPos.x - startPos.x), dz = Mathf.Abs(endPos.z - startPos.z);
-            int x = sx, z = sz;
-            if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
+            x = sx;
+            z = sz;
+            if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z, isExcludeMoving))
             {
                 return false;
             }

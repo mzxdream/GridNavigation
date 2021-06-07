@@ -104,6 +104,64 @@ namespace GridNav
             }
             return from.x * to.z - from.z * to.x > 0 ? Rotate2D(from, -angle) : Rotate2D(from, angle);
         }
+        public static float SqrPointToSegmentDistance2D(Vector3 p, Vector3 a, Vector3 b)
+        {
+            var cross = (b.x - a.x) * (p.x - a.x) + (b.z - a.z) * (p.z - a.z);
+            if (cross <= EPSILON)
+            {
+                return (p.x - a.x) * (p.x - a.x) + (p.z - a.z) * (p.z - a.z);
+            }
+            var d2 = (b.x - a.x) * (b.x - a.x) + (b.z - a.z) * (b.z - a.z);
+            if (cross >= d2)
+            {
+                return (p.x - b.x) * (p.x - b.x) + (p.z - b.z) * (p.z - b.z);
+            }
+            var r = cross / d2;
+            var x = a.x + (b.x - a.x) * r;
+            var z = a.z + (b.z - a.z) * r;
+            return (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z);
+        }
+        public static bool IsSegmentCircleIntersection(Vector3 circleCenter, float circleRadius, Vector3 startPos, Vector3 endPos, out float t)
+        {
+            t = 0.0f;
+
+            var dx = endPos.x - startPos.x;
+            var dz = endPos.z - startPos.z;
+
+            var a = dx * dx + dz * dz;
+            var b = 2 * (dx * (startPos.x - circleCenter.x) + dz * (startPos.z - circleCenter.z));
+            var c = (startPos.x - circleCenter.x) * (startPos.x - circleCenter.x) + (startPos.z - circleCenter.z) * (startPos.z - circleCenter.z) - circleRadius * circleRadius;
+
+            var determinate = b * b - 4 * a * c;
+            if (a <= EPSILON || determinate < -EPSILON)
+            {
+                return false;
+            }
+            if (determinate < EPSILON && determinate > -EPSILON)
+            {
+                t = -b / (2 * a);
+                return t >= 0.0f && t <= 1.0f;
+            }
+            float tmp = Mathf.Sqrt(determinate);
+            var t1 = (-b + tmp) / (2 * a);
+            var t2 = (-b - tmp) / (2 * a);
+            if ((t1 < 0.0f && t2 > 1.0f) || (t1 > 1.0f && t2 < 0.0f))
+            {
+                t = 0.0f;
+                return true;
+            }
+            if (t1 >= 0.0f && t1 <= 1.0f)
+            {
+                t = t1;
+                if (t2 >= 0.0f && t2 <= 1.0f)
+                {
+                    t = Mathf.Min(t, t2);
+                }
+                return true;
+            }
+            t = t2;
+            return t >= 0.0f && t <= 1.0f;
+        }
         public static bool ClosestHeightPointTriangle(Vector3 p, Vector3 a, Vector3 b, Vector3 c, out float h)
         {
             h = 0.0f;
