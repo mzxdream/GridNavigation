@@ -107,6 +107,7 @@ namespace GridNav
                 newPos.y = navMap.GetHeight(newPos);
                 agent.velocity = newPos - agent.pos;
                 agent.isMoving = (agent.velocity.sqrMagnitude >= Mathf.Epsilon);
+                var lastPos = agent.pos;
                 agent.pos = newPos;
                 // 更新索引
                 var newSquareIndex = navMap.GetSquareIndex(agent.pos);

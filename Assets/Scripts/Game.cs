@@ -283,8 +283,8 @@ public class Game : MonoBehaviour
         {
             if (agent.path != null && agent.path.Count > 0)
             {
-                var p1 = agent.path[0] + Vector3.up;
-                for (int i = 1; i < agent.path.Count; i++)
+                var p1 = agent.path[agent.path.Count - 1] + Vector3.up;
+                for (int i = agent.path.Count - 2; i >= 0; i--)
                 {
                     var p2 = agent.path[i] + Vector3.up;
                     UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.yellow, null, 5);
@@ -294,7 +294,7 @@ public class Game : MonoBehaviour
             if (agent.corners != null && agent.corners.Count > 0)
             {
                 var p1 = agent.pos + Vector3.up;
-                for (int i = 0; i < agent.corners.Count; i++)
+                for (int i = agent.corners.Count - 1; i >= 0; i--)
                 {
                     var p2 = agent.corners[i] + Vector3.up;
                     UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 5);
