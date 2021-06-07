@@ -115,7 +115,7 @@ namespace GridNav
         {
             agent.agentNeighbors.Clear();
             agent.obstacleNeighbors.Clear();
-            float queryRadius = agent.maxInteriorRadius + agent.param.maxSpeed * 2.0f;
+            float queryRadius = agent.param.radius + Mathf.Max(navMap.SquareSize, agent.param.maxSpeed) * 2.0f;
             navMap.GetSquareXZ(new Vector3(agent.pos.x - queryRadius, 0, agent.pos.z - queryRadius), out var sx, out var sz);
             navMap.GetSquareXZ(new Vector3(agent.pos.x + queryRadius, 0, agent.pos.z + queryRadius), out var ex, out var ez);
             for (int z = sz; z <= ez; z++)
@@ -135,7 +135,7 @@ namespace GridNav
                             {
                                 agent.agentNeighbors.Add(other);
                             }
-                            if ((NavUtils.TestBlockType(agent, other) & NavBlockType.Block) != 0)
+                            if ((NavUtils.TestBlockType(agent, other, true) & NavBlockType.Block) != 0)
                             {
                                 isBlocked = true;
                             }
