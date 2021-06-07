@@ -297,7 +297,7 @@ namespace GridNav
                     iz++;
                     z += signZ;
                 }
-                if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
+                if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z, isExcludeMoving))
                 {
                     return false;
                 }
@@ -305,7 +305,7 @@ namespace GridNav
             while (x != ex)
             {
                 x += signX;
-                if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
+                if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z, isExcludeMoving))
                 {
                     return false;
                 }
@@ -313,7 +313,7 @@ namespace GridNav
             while (z != ez)
             {
                 z += signZ;
-                if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
+                if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z, isExcludeMoving))
                 {
                     return false;
                 }
