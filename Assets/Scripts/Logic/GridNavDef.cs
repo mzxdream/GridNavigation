@@ -61,6 +61,7 @@ namespace GridNav
         public Vector3 newVelocity;
         public bool isMoving;
         public bool isRepath;
+        public Vector3 lastPos;
         public List<NavAgent> agentNeighbors;
         public List<NavRVOObstacle> obstacleNeighbors;
     }

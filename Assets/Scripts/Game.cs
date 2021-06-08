@@ -293,7 +293,7 @@ public class Game : MonoBehaviour
             }
             if (agent.corners != null && agent.corners.Count > 0)
             {
-                var p1 = agent.pos + Vector3.up;
+                var p1 = agent.lastPos + Vector3.up;
                 for (int i = agent.corners.Count - 1; i >= 0; i--)
                 {
                     var p2 = agent.corners[i] + Vector3.up;
