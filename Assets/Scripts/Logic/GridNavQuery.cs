@@ -375,7 +375,7 @@ namespace GridNav
                 }
                 else if ((blockTypes & NavBlockType.Moving) != 0)
                 {
-                    speed *= agent.moveParam.speedModMults[(int)NavSpeedModMultType.Move];
+                    speed *= agent.moveParam.speedModMults[(int)NavSpeedModMultType.Moving];
                 }
             }
             float dirMoveCost = NavUtils.DirDistanceApproximately(dir) * navMap.SquareSize;
