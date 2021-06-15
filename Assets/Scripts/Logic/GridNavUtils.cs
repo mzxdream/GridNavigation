@@ -93,7 +93,7 @@ namespace GridNav
         public static bool TestMoveSquare(NavMap navMap, NavAgent agent, int x, int z)
         {
             Debug.Assert(x >= 0 && x < navMap.XSize && z >= 0 && z < navMap.ZSize);
-            var halfUnitSize = agent.moveParam.unitSize >> 1;
+            var halfUnitSize = agent.moveParam.unitSize >> 2;
             int xmin = x - halfUnitSize;
             int xmax = x + halfUnitSize;
             int zmin = z - halfUnitSize;
@@ -114,19 +114,19 @@ namespace GridNav
             }
             return true;
         }
-        public static NavBlockType TestBlockType(NavAgent collider, NavAgent collidee, bool isExcludeMoving = false)
+        public static NavBlockType TestBlockType(NavAgent collider, NavAgent collidee)
         {
             if (collider == collidee)
             {
                 return NavBlockType.None;
             }
-            if (!isExcludeMoving && collidee.isMoving)
+            if (collidee.isMoving)
             {
                 return NavBlockType.Moving;
             }
             if (collidee.param.isPushResistant)
             {
-                return NavBlockType.Block;
+                return NavBlockType.Structure;
             }
             if (collidee.moveState != NavMoveState.Idle)
             {
@@ -134,7 +134,7 @@ namespace GridNav
             }
             return NavBlockType.Idle;
         }
-        public static NavBlockType TestBlockTypesSquareCenter(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z, bool isExcludeMoving = false)
+        public static NavBlockType TestBlockTypesSquareCenter(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
         {
             if (!blockingObjectMap.GetSquareAgents(x, z, out var agentList))
             {
@@ -143,28 +143,29 @@ namespace GridNav
             var blockTypes = NavBlockType.None;
             foreach (var other in agentList)
             {
-                blockTypes |= TestBlockType(agent, other, isExcludeMoving);
-                if ((blockTypes & NavBlockType.Block) != 0)
+                blockTypes |= TestBlockType(agent, other);
+                if ((blockTypes & NavBlockType.Structure) != 0)
                 {
                     break;
                 }
             }
             return blockTypes;
         }
-        public static NavBlockType TestBlockTypesSquare(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z, bool isExcludeMoving = false)
+        public static NavBlockType TestBlockTypesSquare(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
         {
-            int xmin = x - agent.halfUnitSize;
-            int xmax = x + agent.halfUnitSize;
-            int zmin = z - agent.halfUnitSize;
-            int zmax = z + agent.halfUnitSize;
+            var halfUnitSize = agent.moveParam.unitSize >> 2;
+            int xmin = x - halfUnitSize;
+            int xmax = x + halfUnitSize;
+            int zmin = z - halfUnitSize;
+            int zmax = z + halfUnitSize;
 
             var blockTypes = NavBlockType.None;
             for (int tz = zmin; tz <= zmax; tz++)
             {
                 for (int tx = xmin; tx <= xmax; tx++)
                 {
-                    blockTypes |= TestBlockTypesSquareCenter(blockingObjectMap, agent, tx, tz, isExcludeMoving);
-                    if ((blockTypes & NavBlockType.Block) != 0)
+                    blockTypes |= TestBlockTypesSquareCenter(blockingObjectMap, agent, tx, tz);
+                    if ((blockTypes & NavBlockType.Structure) != 0)
                     {
                         return blockTypes;
                     }
@@ -172,15 +173,15 @@ namespace GridNav
             }
             return blockTypes;
         }
-        public static bool IsSquareBlocked(NavMap navMap, NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z, bool isExcludeMoving = false)
+        public static bool IsSquareBlocked(NavMap navMap, NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
         {
             Debug.Assert(x >= 0 && x < navMap.XSize && z >= 0 && z < navMap.ZSize);
-            return !TestMoveSquare(navMap, agent, x, z) || (TestBlockTypesSquare(blockingObjectMap, agent, x, z, isExcludeMoving) & NavBlockType.Block) != 0;
+            return !TestMoveSquare(navMap, agent, x, z) || (TestBlockTypesSquare(blockingObjectMap, agent, x, z) & NavBlockType.Structure) != 0;
         }
-        public static bool IsSquareBlocked(NavMap navMap, NavBlockingObjectMap blockingObjectMap, NavAgent agent, int index, bool isExcludeMoving = false)
+        public static bool IsSquareBlocked(NavMap navMap, NavBlockingObjectMap blockingObjectMap, NavAgent agent, int index)
         {
             SquareXZ(index, out var x, out var z);
-            return IsSquareBlocked(navMap, blockingObjectMap, agent, x, z, isExcludeMoving);
+            return IsSquareBlocked(navMap, blockingObjectMap, agent, x, z);
         }
     }
 }
