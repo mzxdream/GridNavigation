@@ -109,6 +109,7 @@ namespace GridNav
                 agent.isMoving = (agent.velocity.sqrMagnitude >= Mathf.Epsilon);
                 agent.lastPos = agent.pos;
                 agent.pos = newPos;
+                //todo CheckCollision
                 // 更新索引
                 var newSquareIndex = navMap.GetSquareIndex(agent.pos);
                 if (newSquareIndex != agent.squareIndex)
