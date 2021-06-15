@@ -46,16 +46,15 @@ namespace GridNav
             int dz = Mathf.Abs(ez - sz);
             return (dx + dz) + Mathf.Min(dx, dz) * (1.4142f - 2.0f);
         }
-        public static int CalcUnitSize(float radius, float squareSize)
-        {
-            Debug.Assert(radius > 0 && squareSize > 0);
-            int unitSize = (int)(radius * 2 / squareSize - NavMathUtils.EPSILON) + 1;
-            return (unitSize & 1) == 0 ? unitSize + 1 : unitSize;
-        }
         public static float CalcMaxInteriorRadius(int unitSize, float squareSize)
         {
-            Debug.Assert(unitSize > 0 && squareSize > 0);
-            return unitSize * squareSize * 0.5f - NavMathUtils.EPSILON;
+            Debug.Assert(unitSize > 0 && squareSize > 0.0f);
+            return (unitSize - 1) * squareSize * 0.5f - NavMathUtils.EPSILON;
+        }
+        public static float CalcMinExteriorRadius(int unitSize, float squareSize)
+        {
+            Debug.Assert(unitSize > 0 && squareSize > 0.0f);
+            return (unitSize - 1) * squareSize * NavMathUtils.HALF_SQRT2 - NavMathUtils.EPSILON;
         }
         public static float GetSquareSpeed(NavMap navMap, NavAgent agent, int x, int z)
         {
@@ -94,10 +93,11 @@ namespace GridNav
         public static bool TestMoveSquare(NavMap navMap, NavAgent agent, int x, int z)
         {
             Debug.Assert(x >= 0 && x < navMap.XSize && z >= 0 && z < navMap.ZSize);
-            int xmin = x - agent.halfUnitSize;
-            int xmax = x + agent.halfUnitSize;
-            int zmin = z - agent.halfUnitSize;
-            int zmax = z + agent.halfUnitSize;
+            var halfUnitSize = agent.moveParam.unitSize >> 1;
+            int xmin = x - halfUnitSize;
+            int xmax = x + halfUnitSize;
+            int zmin = z - halfUnitSize;
+            int zmax = z + halfUnitSize;
             if (xmin < 0 || xmax >= navMap.XSize || zmin < 0 || zmax >= navMap.ZSize)
             {
                 return false;
