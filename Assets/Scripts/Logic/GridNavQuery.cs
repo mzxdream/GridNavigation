@@ -150,11 +150,11 @@ namespace GridNav
             Debug.Assert(agent != null);
 
             corners = new List<Vector3>();
-            //if (IsStraightWalkable(agent, startPos, goalPos, false))
-            //{
-            //    corners.Add(goalPos);
-            //    return true;
-            //}
+            if (IsStraightWalkable(agent, startPos, goalPos, false))
+            {
+                corners.Add(goalPos);
+                return true;
+            }
             InitSlicedFindPath(agent, startPos, goalPos, 0.0f);
             var status = UpdateSlicedFindPath(maxNodes, out _);
             if ((status & NavQueryStatus.Success) == 0 || (status & NavQueryStatus.Partial) != 0)
@@ -186,23 +186,23 @@ namespace GridNav
                 }
             }
             //去除可以直达的拐点
-            //corners.Add(startPos);
-            //for (int i = corners.Count - 1; i > 1; i--)
-            //{
-            //    for (int j = 0; j < i - 1; j++)
-            //    {
-            //        if (IsStraightWalkable(agent, corners[j], corners[i], false))
-            //        {
-            //            for (int k = i - 1; k > j; k--)
-            //            {
-            //                corners.RemoveAt(k);
-            //            }
-            //            i = j + 1;
-            //            break;
-            //        }
-            //    }
-            //}
-            //corners.RemoveAt(corners.Count - 1);
+            corners.Add(startPos);
+            for (int i = corners.Count - 1; i > 1; i--)
+            {
+                for (int j = 0; j < i - 1; j++)
+                {
+                    if (IsStraightWalkable(agent, corners[j], corners[i], false))
+                    {
+                        for (int k = i - 1; k > j; k--)
+                        {
+                            corners.RemoveAt(k);
+                        }
+                        i = j + 1;
+                        break;
+                    }
+                }
+            }
+            corners.RemoveAt(corners.Count - 1);
             return true;
         }
         public bool FindNearestSquare(NavAgent agent, Vector3 pos, float radius, bool isNotCheckMoving, out Vector3 nearestPos)
