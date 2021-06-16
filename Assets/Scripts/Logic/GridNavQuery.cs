@@ -53,7 +53,8 @@ namespace GridNav
             queryData.lastBestNode = null;
             queryData.lastBestNodeCost = 0.0f;
 
-            if (NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, queryData.sx, queryData.sz))
+            if (!NavUtils.TestMoveSquare(navMap, agent, queryData.sx, queryData.sz)
+                || (NavUtils.TestBlockTypesSquare(blockingObjectMap, agent, queryData.sx, queryData.sz) & NavBlockType.Structure) != 0)
             {
                 return queryData.status;
             }

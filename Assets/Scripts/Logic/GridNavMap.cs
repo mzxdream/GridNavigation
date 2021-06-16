@@ -25,7 +25,7 @@ namespace GridNav
         {
             xsize &= ~1;
             zsize &= ~1;
-            if (xsize < 1 || zsize < 1 || squareSize <= NavMathUtils.EPSILON)
+            if (xsize < 1 || zsize < 1 || squareSize < NavMathUtils.EPSILON)
             {
                 return false;
             }
@@ -72,11 +72,6 @@ namespace GridNav
             x = Mathf.Clamp(x, 0, xsize - 1);
             z = Mathf.Clamp(z, 0, zsize - 1);
         }
-        public int GetSquareIndex(Vector3 pos)
-        {
-            GetSquareXZ(pos, out var x, out var z);
-            return NavUtils.SquareIndex(x, z);
-        }
         public void ClampInBounds(Vector3 pos, out int nearestX, out int nearestZ, out Vector3 nearestPos)
         {
             nearestX = (int)((pos.x - bmin.x) / squareSize);
@@ -91,22 +86,12 @@ namespace GridNav
             nearestZ = Mathf.Clamp(nearestZ, 0, zsize - 1);
             nearestPos = GetSquarePos(nearestX, nearestZ);
         }
-        public void ClampInBounds(Vector3 pos, out int nearestIndex, out Vector3 nearestPos)
-        {
-            ClampInBounds(pos, out var nx, out var nz, out nearestPos);
-            nearestIndex = NavUtils.SquareIndex(nx, nz);
-        }
         public Vector3 GetSquarePos(int x, int z)
         {
             Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
             var pos = new Vector3(bmin.x + (x + 0.5f) * squareSize, 0, bmin.z + (z + 0.5f) * squareSize);
             pos.y = GetHeight(pos);
             return pos;
-        }
-        public Vector3 GetSquarePos(int index)
-        {
-            NavUtils.SquareXZ(index, out var x, out var z);
-            return GetSquarePos(x, z);
         }
         public Vector3 GetSquareCornerPos(int x, int z)
         {
