@@ -68,7 +68,7 @@ namespace GridNav
                 return queryData.status;
             }
             snode.gCost = 0;
-            snode.fCost = GetHeuristicCost(queryData.sx, queryData.sz, queryData.ex, queryData.ez);
+            snode.fCost = NavUtils.DistanceApproximately(queryData.sx, queryData.sz, queryData.ex, queryData.ez) * navMap.SquareSize;
             snode.parent = null;
             snode.flags |= (int)NavNodeFlags.Open;
             openQueue.Push(snode);
@@ -431,7 +431,7 @@ namespace GridNav
             float dirMoveCost = NavUtils.DirDistanceApproximately(dir) * navMap.SquareSize;
             float nodeCost = dirMoveCost / Mathf.Max(NavMathUtils.EPSILON, speed);
             float gCost = node.gCost + nodeCost;
-            float hCost = GetHeuristicCost(neighborNode.x, neighborNode.z, queryData.ex, queryData.ez);
+            float hCost = NavUtils.DistanceApproximately(neighborNode.x, neighborNode.z, queryData.ex, queryData.ez) * navMap.SquareSize;
             float fCost = gCost + hCost;
 
             if ((neighborNode.flags & (int)NavNodeFlags.Open) != 0)
@@ -458,10 +458,6 @@ namespace GridNav
                 }
             }
             return false;
-        }
-        private float GetHeuristicCost(int sx, int sz, int ex, int ez)
-        {
-            return NavUtils.DistanceApproximately(sx, sz, ex, ez) * navMap.SquareSize;
         }
     }
 }
