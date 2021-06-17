@@ -87,7 +87,7 @@ namespace GridNav
             {
                 //agent.newVelocity = agent.prefVelocity.normalized * agent.param.maxSpeed;
                 CollectNeighbors(navMap, blockingObjectMap, agent);
-                NavRVO.ComputeNewVelocity(agent, agent.obstacleNeighbors, agent.agentNeighbors, deltaTime);
+                NavRVO.ComputeNewVelocity(navMap, agent, agent.obstacleNeighbors, agent.agentNeighbors, deltaTime);
             }
         }
         private static void UpdatePos(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQuerys, float deltaTime)
