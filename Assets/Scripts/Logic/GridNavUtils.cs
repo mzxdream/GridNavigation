@@ -16,17 +16,6 @@ namespace GridNav
             0, 1.0f, 1.0f, 1.0f, 1.0f, NavMathUtils.SQRT2, NavMathUtils.SQRT2, NavMathUtils.SQRT2, NavMathUtils.SQRT2
         };
 
-        public static int SquareIndex(int x, int z)
-        {
-            Debug.Assert(x >= 0 && x <= 0xFFFF && z >= 0 && z <= 0x7FFF);
-            return x + (z << 16);
-        }
-        public static void SquareXZ(int index, out int x, out int z)
-        {
-            Debug.Assert(index >= 0 && index < 0x7FFFFFFF);
-            x = index & 0xFFFF;
-            z = index >> 16;
-        }
         public static Vector3 DirToVector3(NavDirection dir)
         {
             return dirVector3[(int)dir];
@@ -55,6 +44,15 @@ namespace GridNav
         {
             Debug.Assert(unitSize > 0 && squareSize > 0.0f);
             return (unitSize - 1) * squareSize * NavMathUtils.HALF_SQRT2 - NavMathUtils.EPSILON;
+        }
+        public static Vector2Int CalcMapPos(NavMap navMap, int unitSize, Vector3 pos)
+        {
+            Debug.Assert(navMap != null && unitSize > 0 && unitSize < navMap.XSize && unitSize < navMap.ZSize);
+            navMap.GetSquareXZ(pos.x + navMap.SquareSize * 0.5f, pos.z + navMap.SquareSize * 0.5f, out var x, out var z);
+            Vector2Int mapPos = new Vector2Int();
+            mapPos.x = Mathf.Clamp(x - (unitSize >> 1), 0, navMap.XSize - unitSize);
+            mapPos.y = Mathf.Clamp(z - (unitSize >> 1), 0, navMap.ZSize - unitSize);
+            return mapPos;
         }
         public static float GetSquareSpeed(NavMap navMap, NavAgent agent, int x, int z)
         {
@@ -161,9 +159,9 @@ namespace GridNav
             int zmax = z + halfUnitSize;
 
             var blockTypes = NavBlockType.None;
-            for (int tz = zmin; tz <= zmax; tz++)
+            for (int tz = zmin; tz <= zmax; tz += 2)
             {
-                for (int tx = xmin; tx <= xmax; tx++)
+                for (int tx = xmin; tx <= xmax; tx += 2)
                 {
                     blockTypes |= TestBlockTypesSquareCenter(blockingObjectMap, agent, tx, tz, isNotCheckMoving);
                     if ((blockTypes & NavBlockType.Structure) != 0)

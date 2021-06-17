@@ -65,12 +65,16 @@ namespace GridNav
             UpdateFaceNormals(xmin, xmax, zmin, zmax);
             UpdateSlopeMap(xmin, xmax, zmin, zmax);
         }
-        public void GetSquareXZ(Vector3 pos, out int x, out int z)
+        public void GetSquareXZ(float posX, float posZ, out int x, out int z)
         {
-            x = (int)((pos.x - bmin.x) / squareSize);
-            z = (int)((pos.z - bmin.z) / squareSize);
+            x = (int)((posX - bmin.x) / squareSize);
+            z = (int)((posZ - bmin.z) / squareSize);
             x = Mathf.Clamp(x, 0, xsize - 1);
             z = Mathf.Clamp(z, 0, zsize - 1);
+        }
+        public void GetSquareXZ(Vector3 pos, out int x, out int z)
+        {
+            GetSquareXZ(pos.x, pos.z, out x, out z);
         }
         public void ClampInBounds(Vector3 pos, out int nearestX, out int nearestZ, out Vector3 nearestPos)
         {

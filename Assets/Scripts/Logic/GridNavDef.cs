@@ -45,7 +45,8 @@ namespace GridNav
         public NavAgentParam param;
         public NavMoveParam moveParam;
         public NavMoveState moveState;
-        public int mapPos;
+        public float radius;
+        public Vector2Int mapPos;
         public Vector3 pos;
         public Vector3 lastPos;
         public Vector3 goalPos;

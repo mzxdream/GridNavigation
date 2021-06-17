@@ -17,14 +17,15 @@ namespace GridNav
         }
         public void AddAgent(NavAgent agent)
         {
-            NavUtils.SquareXZ(agent.mapPos, out var x, out var z);
-            int xmax = Mathf.Min(xsize - 1, x + agent.moveParam.unitSize);
-            int zmax = Mathf.Min(zsize - 1, z + agent.moveParam.unitSize);
-            for (int tz = z; tz <= zmax; tz++)
+            int xmin = agent.mapPos.x;
+            int zmin = agent.mapPos.y;
+            int xmax = Mathf.Min(xsize - 1, xmin + agent.moveParam.unitSize);
+            int zmax = Mathf.Min(zsize - 1, zmin + agent.moveParam.unitSize);
+            for (int z = zmin; z <= zmax; z++)
             {
-                for (int tx = x; tx <= xmax; tx++)
+                for (int x = xmin; x <= xmax; x++)
                 {
-                    var index = tx + tz * xsize;
+                    var index = x + z * xsize;
                     if (!agents.TryGetValue(index, out var agentList))
                     {
                         agentList = new List<NavAgent>();
@@ -36,14 +37,15 @@ namespace GridNav
         }
         public void RemoveAgent(NavAgent agent)
         {
-            NavUtils.SquareXZ(agent.mapPos, out var x, out var z);
-            int xmax = Mathf.Min(xsize - 1, x + agent.moveParam.unitSize);
-            int zmax = Mathf.Min(zsize - 1, z + agent.moveParam.unitSize);
-            for (int tz = z; tz <= zmax; tz++)
+            int xmin = agent.mapPos.x;
+            int zmin = agent.mapPos.y;
+            int xmax = Mathf.Min(xsize - 1, xmin + agent.moveParam.unitSize);
+            int zmax = Mathf.Min(zsize - 1, zmin + agent.moveParam.unitSize);
+            for (int z = zmin; z <= zmax; z++)
             {
-                for (int tx = x; tx <= xmax; tx++)
+                for (int x = xmin; x <= xmax; x++)
                 {
-                    var index = tx + tz * xsize;
+                    var index = x + z * xsize;
                     if (!agents.TryGetValue(index, out var agentList))
                     {
                         continue;

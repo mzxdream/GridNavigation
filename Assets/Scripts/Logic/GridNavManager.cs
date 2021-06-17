@@ -17,6 +17,7 @@ namespace GridNav
         public bool Init(NavMap navMap, int maxAgents = 1024, int maxWorkers = 1)
         {
             Debug.Assert(navMap != null && maxAgents > 0 && maxWorkers > 0);
+
             this.navMap = navMap;
             this.blockingObjectMap = new NavBlockingObjectMap(navMap.XSize, navMap.ZSize);
             this.navQuery = new NavQuery();
@@ -82,35 +83,40 @@ namespace GridNav
         }
         public int AddAgent(Vector3 pos, NavAgentParam param, NavMoveParam moveParam)
         {
-            var unitSize = NavUtils.CalcUnitSize(param.radius, navMap.SquareSize);
+            if (moveParam.unitSize < 4 || (moveParam.unitSize & 1) != 0)
+            {
+                Debug.LogError("move param unitSize need >=4 even");
+                return 0;
+            }
             var agent = new NavAgent
             {
                 id = ++lastAgentID,
                 param = param,
                 moveParam = moveParam,
-                halfUnitSize = unitSize >> 1,
                 moveState = NavMoveState.Idle,
-                squareIndex = 0,
+                radius = NavUtils.CalcMaxInteriorRadius(moveParam.unitSize, navMap.SquareSize),
+                mapPos = new Vector2Int(),
                 pos = pos,
+                lastPos = pos,
                 goalPos = Vector3.zero,
                 goalRadius = 0.0f,
                 path = null,
                 corners = null,
-                prefVelocity = Vector3.zero,
                 velocity = Vector3.zero,
+                prefVelocity = Vector3.zero,
                 newVelocity = Vector3.zero,
                 isMoving = false,
                 isRepath = false,
                 agentNeighbors = new List<NavAgent>(),
                 obstacleNeighbors = new List<NavRVOObstacle>(),
             };
-            navMap.ClampInBounds(agent.pos, out agent.squareIndex, out agent.pos);
-            if (navQuery.FindNearestSquare(agent, agent.pos, agent.param.radius * 20.0f, out var nearestIndex, out var nearesetPos))
+            navMap.ClampInBounds(agent.pos, out _, out _, out agent.pos);
+            if (navQuery.FindNearestSquare(agent, agent.pos, 20.0f * agent.radius, true, out var nearesetPos))
             {
-                agent.squareIndex = nearestIndex;
                 agent.pos = nearesetPos;
             }
             agents.Add(agent.id, agent);
+            agent.mapPos = NavUtils.CalcMapPos(navMap, agent.moveParam.unitSize, agent.pos);
             blockingObjectMap.AddAgent(agent);
             return agent.id;
         }
@@ -145,9 +151,9 @@ namespace GridNav
             }
             if (goalRadius <= 0.0f)
             {
-                goalRadius = agent.param.radius;
+                goalRadius = agent.radius;
             }
-            navMap.ClampInBounds(goalPos, out var neareastIndex, out var nearestPos);
+            navMap.ClampInBounds(goalPos, out var x, out var z, out var nearestPos);
             if (agent.moveState == NavMoveState.Requesting)
             {
                 agent.goalPos = nearestPos;
@@ -157,7 +163,8 @@ namespace GridNav
             if (agent.moveState == NavMoveState.WaitForPath)
             {
                 Debug.Assert(agent.id == moveRequestQueue[0]);
-                if (neareastIndex == navMap.GetSquareIndex(agent.goalPos) && Mathf.Abs(goalRadius - agent.goalRadius) < navMap.SquareSize)
+                navMap.GetSquareXZ(agent.goalPos, out var oldX, out var oldZ);
+                if (x == oldX && z == oldZ && Mathf.Abs(goalRadius - agent.goalRadius) < navMap.SquareSize)
                 {
                     return true;
                 }

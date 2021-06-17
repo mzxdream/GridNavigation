@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace GridNav
 {
@@ -37,7 +38,8 @@ namespace GridNav
         }
         public NavQueryNode GetNode(int x, int z)
         {
-            var index = NavUtils.SquareIndex(x, z);
+            Debug.Assert(x >= 0 && x < 0xFFFF && z >= 0 && z < 0x7FFF);
+            var index = x + (z << 16);
             if (!nodeIndexes.TryGetValue(index, out var node))
             {
                 if (count >= nodes.Length)
