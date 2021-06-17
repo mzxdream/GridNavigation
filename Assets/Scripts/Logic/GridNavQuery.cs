@@ -53,8 +53,7 @@ namespace GridNav
             queryData.lastBestNode = null;
             queryData.lastBestNodeCost = 0.0f;
 
-            if (!NavUtils.TestMoveSquare(navMap, agent, queryData.sx, queryData.sz)
-                || (NavUtils.TestBlockTypesSquare(blockingObjectMap, agent, queryData.sx, queryData.sz) & NavBlockType.Structure) != 0)
+            if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, queryData.sx, queryData.sz))
             {
                 return queryData.status;
             }
@@ -185,8 +184,8 @@ namespace GridNav
                     corners.Add(navMap.GetSquarePos(nodes[i - 1].x, nodes[i - 1].z));
                 }
             }
-            //去除可以直达的拐点
             corners.Add(startPos);
+            //去除可以直达的拐点
             for (int i = corners.Count - 1; i > 1; i--)
             {
                 for (int j = 0; j < i - 1; j++)
@@ -202,7 +201,6 @@ namespace GridNav
                     }
                 }
             }
-            corners.RemoveAt(corners.Count - 1);
             return true;
         }
         public bool FindNearestSquare(NavAgent agent, Vector3 pos, float radius, bool isNotCheckMoving, out Vector3 nearestPos)
@@ -403,8 +401,7 @@ namespace GridNav
                     speed *= agent.moveParam.speedModMults[(int)NavSpeedModMultType.Moving];
                 }
             }
-            float dirMoveCost = NavUtils.DirDistanceApproximately(dir) * navMap.SquareSize;
-            float nodeCost = dirMoveCost / Mathf.Max(NavMathUtils.EPSILON, speed);
+            float nodeCost = NavUtils.DirDistanceApproximately(dir) * navMap.SquareSize / Mathf.Max(NavMathUtils.EPSILON, speed);
             float gCost = node.gCost + nodeCost;
             float hCost = NavUtils.DistanceApproximately(neighborNode.x, neighborNode.z, queryData.ex, queryData.ez) * navMap.SquareSize;
             float fCost = gCost + hCost;
