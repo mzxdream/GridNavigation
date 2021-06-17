@@ -10,7 +10,8 @@ class Wall
 
 class Destination
 {
-    public int index;
+    public int x;
+    public int z;
     public GameObject asset;
 }
 
@@ -40,8 +41,8 @@ public class Game : MonoBehaviour
     Transform redCharacterPrefab = default, blueCharacterPrefab = default;
     [SerializeField]
     float mass = 1.0f;
-    [SerializeField]
-    float radius = 0.6f;
+    [SerializeField, RangeEx(4, 10, 2)]
+    int unitSize = 4;
     [SerializeField]
     float maxSpeed = 2.0f;
     [SerializeField]
@@ -64,12 +65,14 @@ public class Game : MonoBehaviour
         blueCharacters = new List<Character>();
         redDestination = new Destination
         {
-            index = 0,
+            x = 0, 
+            z = 0,
             asset = GameObject.Instantiate(redDestinationPrefab).gameObject,
         };
         blueDestination = new Destination
         {
-            index = 1,
+            x = 1,
+            z = 1,
             asset = GameObject.Instantiate(blueDestinationPrefab).gameObject,
         };
         navMap = new NavMap();
@@ -85,8 +88,8 @@ public class Game : MonoBehaviour
         UpdateMap();
         navManager = new NavManager();
         navManager.Init(navMap);
-        redDestination.asset.transform.position = navMap.GetSquarePos(redDestination.index);
-        blueDestination.asset.transform.position = navMap.GetSquarePos(blueDestination.index);
+        redDestination.asset.transform.position = navMap.GetSquarePos(redDestination.x, redDestination.z);
+        blueDestination.asset.transform.position = navMap.GetSquarePos(blueDestination.x, blueDestination.z);
     }
     void UpdateMap()
     {
@@ -252,18 +255,16 @@ public class Game : MonoBehaviour
     }
     void DrawCharacterDetail(Character c, Color color)
     {
-        Gizmos.color = color;
-        navMap.ClampInBounds(c.asset.transform.position, out var index, out var pos);
-        pos = navMap.GetSquarePos(index);
-
-        int unitSize = NavUtils.CalcUnitSize(c.radius, navMap.SquareSize);
-        Gizmos.DrawCube(pos, new Vector3(unitSize * navMap.SquareSize, 0.1f, unitSize * navMap.SquareSize));
-
         var agent = navManager.GetAgent(c.navAgentID);
         if (agent == null)
         {
             return;
         }
+        var pos = navMap.GetSquarePos(agent.mapPos.x, agent.mapPos.y);
+        pos.x += agent.moveParam.unitSize * navMap.SquareSize * 0.5f;
+        pos.z += agent.moveParam.unitSize * navMap.SquareSize * 0.5f;
+        Gizmos.color = color;
+        Gizmos.DrawCube(pos, new Vector3(unitSize * navMap.SquareSize, 0.1f, unitSize * navMap.SquareSize));
         {
             var p1 = c.asset.transform.position + Vector3.up;
             var prefVelocity = agent.prefVelocity;
@@ -293,8 +294,8 @@ public class Game : MonoBehaviour
             }
             if (agent.corners != null && agent.corners.Count > 0)
             {
-                var p1 = agent.lastPos + Vector3.up;
-                for (int i = agent.corners.Count - 1; i >= 0; i--)
+                var p1 = agent.corners[agent.corners.Count - 1] + Vector3.up;
+                for (int i = agent.corners.Count - 2; i >= 0; i--)
                 {
                     var p2 = agent.corners[i] + Vector3.up;
                     UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 5);
@@ -303,73 +304,65 @@ public class Game : MonoBehaviour
             }
         }
     }
-    void AddRedCharacter()
+    Character CreateCharacter(Transform prefab)
     {
         var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
         {
-            return;
+            return null;
         }
-        var asset = GameObject.Instantiate(redCharacterPrefab).gameObject;
+        var asset = GameObject.Instantiate(prefab).gameObject;
         asset.transform.position = hit.point;
         asset.transform.forward = Vector3.forward;
+        var radius = NavUtils.CalcMaxInteriorRadius(unitSize, navMap.SquareSize);
         asset.transform.localScale = new Vector3(radius * 2.0f, 0.5f, radius * 2.0f);
         var moveParam = new NavMoveParam
         {
+            unitSize = unitSize,
         };
         var param = new NavAgentParam
         {
             mass = mass,
-            radius = radius,
             maxSpeed = maxSpeed,
             isPushResistant = true,
         };
         var navAgentID = navManager.AddAgent(asset.transform.position, param, moveParam);
         var c = new Character { asset = asset, navAgentID = navAgentID, radius = radius };
-        redCharacters.Add(c);
+        return c;
+    }
+    void AddRedCharacter()
+    {
+        var c = CreateCharacter(redCharacterPrefab);
+        if (c != null)
+        {
+            redCharacters.Add(c);
+        }
     }
     void AddBlueCharacter()
     {
-        var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
+        var c = CreateCharacter(blueCharacterPrefab);
+        if (c != null)
         {
-            return;
+            blueCharacters.Add(c);
         }
-        var asset = GameObject.Instantiate(blueCharacterPrefab).gameObject;
-        asset.transform.position = hit.point;
-        asset.transform.forward = Vector3.forward;
-        asset.transform.localScale = new Vector3(radius * 2.0f, 0.5f, radius * 2.0f);
-        var moveParam = new NavMoveParam
-        {
-        };
-        var param = new NavAgentParam
-        {
-            mass = mass,
-            radius = radius,
-            maxSpeed = maxSpeed,
-            isPushResistant = true,
-        };
-        var navAgentID = navManager.AddAgent(asset.transform.position, param, moveParam);
-        var c = new Character { asset = asset, navAgentID = navAgentID, radius = radius };
-        blueCharacters.Add(c);
     }
     void AddWall()
     {
-        var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
-        {
-            return;
-        }
-        var index = navMap.GetSquareIndex(hit.point);
-        if (walls.ContainsKey(index))
-        {
-            return;
-        }
-        var asset = GameObject.Instantiate(wallPrefab).gameObject;
-        asset.transform.position = navMap.GetSquarePos(index);
-        asset.transform.localScale = new Vector3(navMap.SquareSize, 0.2f, navMap.SquareSize);
-        var wall = new Wall { asset = asset };
-        walls.Add(index, wall);
+        //var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        //if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
+        //{
+        //    return;
+        //}
+        //var index = navMap.GetSquareIndex(hit.point);
+        //if (walls.ContainsKey(index))
+        //{
+        //    return;
+        //}
+        //var asset = GameObject.Instantiate(wallPrefab).gameObject;
+        //asset.transform.position = navMap.GetSquarePos(index);
+        //asset.transform.localScale = new Vector3(navMap.SquareSize, 0.2f, navMap.SquareSize);
+        //var wall = new Wall { asset = asset };
+        //walls.Add(index, wall);
         // todo
     }
     void SetRedDesitination()
@@ -379,8 +372,9 @@ public class Game : MonoBehaviour
         {
             return;
         }
-        navMap.ClampInBounds(hit.point, out var index, out var pos);
-        redDestination.index = index;
+        navMap.ClampInBounds(hit.point, out var x, out var z, out var pos);
+        redDestination.x = x;
+        redDestination.z = z;
         redDestination.asset.transform.position = pos;
         foreach (var c in redCharacters)
         {
@@ -394,8 +388,9 @@ public class Game : MonoBehaviour
         {
             return;
         }
-        navMap.ClampInBounds(hit.point, out var index, out var pos);
-        blueDestination.index = index;
+        navMap.ClampInBounds(hit.point, out var x, out var z, out var pos);
+        blueDestination.x = x;
+        blueDestination.z = z;
         blueDestination.asset.transform.position = pos;
         foreach (var c in blueCharacters)
         {
@@ -409,13 +404,13 @@ public class Game : MonoBehaviour
         {
             return;
         }
-        var index = navMap.GetSquareIndex(hit.point);
-        if (walls.TryGetValue(index, out var wall))
-        {
-            Destroy(wall.asset);
-            walls.Remove(index);
-            // todo
-        }
+        //var index = navMap.GetSquareIndex(hit.point);
+        //if (walls.TryGetValue(index, out var wall))
+        //{
+        //    Destroy(wall.asset);
+        //    walls.Remove(index);
+        //    // todo
+        //}
         foreach (var c in redCharacters)
         {
             if ((c.asset.transform.position - hit.point).sqrMagnitude <= c.radius * c.radius)
