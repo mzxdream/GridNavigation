@@ -60,7 +60,7 @@ namespace GridNav
                         break;
                     }
                     navMap.GetSquareXZ(pos, out var x, out var z);
-                    if (!NavUtils.IsSquareBlocked(navMap, blockingObjectMap, agent, x, z))
+                    if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x, z))
                     {
                         break;
                     }
@@ -78,7 +78,8 @@ namespace GridNav
                     agent.isRepath = true;
                     continue;
                 }
-                agent.prefVelocity = NavMathUtils.Normalized2D(agent.corners[agent.corners.Count - 1] - agent.pos) * agent.param.maxSpeed;
+                Debug.Assert(agent.corners.Count >= 2);
+                agent.prefVelocity = NavMathUtils.Normalized2D(agent.corners[agent.corners.Count - 2] - agent.corners[agent.corners.Count - 1]) * agent.param.maxSpeed;
             }
         }
         private static void UpdateNewVelocity(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQuerys, float deltaTime)
@@ -95,27 +96,27 @@ namespace GridNav
             var navQuery = navQuerys[0];
             foreach (var agent in agents)
             {
-                agent.velocity = agent.newVelocity;
-                var newPos = agent.pos + agent.velocity * deltaTime;
-                navMap.ClampInBounds(newPos, out _, out newPos);
-                navQuery.Raycast(agent, agent.pos, newPos, out var t);
-                if (t < 1.0f)
-                {
-                    t = Mathf.Max(0.0f, t - 1e-4f);
-                }
-                newPos = Vector3.Lerp(agent.pos, newPos, t);
+                var newPos = agent.pos + agent.newVelocity * deltaTime;
                 newPos.y = navMap.GetHeight(newPos);
-                agent.velocity = newPos - agent.pos;
-                agent.isMoving = (agent.velocity.sqrMagnitude >= Mathf.Epsilon);
+                navMap.ClampInBounds(newPos, out var x, out var z, out newPos);
+                if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x, z, true))
+                {
+                    //todo checkcollision
+                    if (!navQuery.FindNearestSquare(agent, newPos, 20.0f * agent.radius, true, out newPos))
+                    {
+                        newPos = agent.pos;
+                    }
+                }
                 agent.lastPos = agent.pos;
                 agent.pos = newPos;
-                //todo CheckCollision
+                agent.velocity = newPos - agent.pos;
+                agent.isMoving = (agent.velocity.sqrMagnitude >= Mathf.Epsilon);
                 // 更新索引
-                var newSquareIndex = navMap.GetSquareIndex(agent.pos);
-                if (newSquareIndex != agent.squareIndex)
+                var mapPos = NavUtils.CalcMapPos(navMap, agent.moveParam.unitSize, agent.pos);
+                if (mapPos != agent.mapPos)
                 {
                     blockingObjectMap.RemoveAgent(agent);
-                    agent.squareIndex = newSquareIndex;
+                    agent.mapPos = mapPos;
                     blockingObjectMap.AddAgent(agent);
                 }
             }
@@ -124,7 +125,7 @@ namespace GridNav
         {
             agent.agentNeighbors.Clear();
             agent.obstacleNeighbors.Clear();
-            float queryRadius = agent.param.radius + Mathf.Max(navMap.SquareSize, agent.param.maxSpeed) * 2.0f;
+            float queryRadius = agent.radius + Mathf.Max(navMap.SquareSize, agent.param.maxSpeed) * 2.0f;
             navMap.GetSquareXZ(new Vector3(agent.pos.x - queryRadius, 0, agent.pos.z - queryRadius), out var sx, out var sz);
             navMap.GetSquareXZ(new Vector3(agent.pos.x + queryRadius, 0, agent.pos.z + queryRadius), out var ex, out var ez);
             for (int z = sz; z <= ez; z++)
@@ -144,7 +145,7 @@ namespace GridNav
                             {
                                 agent.agentNeighbors.Add(other);
                             }
-                            if ((NavUtils.TestBlockType(agent, other, true) & NavBlockType.Block) != 0)
+                            if ((NavUtils.TestBlockType(agent, other, true) & NavBlockType.Structure) != 0)
                             {
                                 isBlocked = true;
                             }
