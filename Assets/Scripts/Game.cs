@@ -260,7 +260,7 @@ public class Game : MonoBehaviour
         {
             return;
         }
-        var pos = navMap.GetSquarePos(agent.mapPos.x, agent.mapPos.y);
+        var pos = navMap.GetSquareCornerPos(agent.mapPos.x, agent.mapPos.y);
         pos.x += agent.moveParam.unitSize * navMap.SquareSize * 0.5f;
         pos.z += agent.moveParam.unitSize * navMap.SquareSize * 0.5f;
         Gizmos.color = color;
