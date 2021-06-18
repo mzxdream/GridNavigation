@@ -46,7 +46,7 @@ public class Game : MonoBehaviour
     [SerializeField]
     float maxSpeed = 2.0f;
     [SerializeField]
-    bool showPath = true;
+    bool showGizmos = true;
     List<MeshObj> meshObjs;
     List<Mesh> gridMeshs = null;
 
@@ -225,6 +225,10 @@ public class Game : MonoBehaviour
     }
     void OnDrawGizmos()
     {
+        if (!showGizmos)
+        {
+            return;
+        }
         if (redCharacters != null)
         {
             foreach (var c in redCharacters)
@@ -280,27 +284,24 @@ public class Game : MonoBehaviour
                 UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.white, null, 5);
             }
         }
-        if (showPath)
+        if (agent.path != null && agent.path.Count > 0)
         {
-            if (agent.path != null && agent.path.Count > 0)
+            var p1 = agent.path[agent.path.Count - 1] + Vector3.up;
+            for (int i = agent.path.Count - 2; i >= 0; i--)
             {
-                var p1 = agent.path[agent.path.Count - 1] + Vector3.up;
-                for (int i = agent.path.Count - 2; i >= 0; i--)
-                {
-                    var p2 = agent.path[i] + Vector3.up;
-                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.yellow, null, 5);
-                    p1 = p2;
-                }
+                var p2 = agent.path[i] + Vector3.up;
+                UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.yellow, null, 5);
+                p1 = p2;
             }
-            if (agent.corners != null && agent.corners.Count > 0)
+        }
+        if (agent.corners != null && agent.corners.Count > 0)
+        {
+            var p1 = agent.corners[agent.corners.Count - 1] + Vector3.up;
+            for (int i = agent.corners.Count - 2; i >= 0; i--)
             {
-                var p1 = agent.corners[agent.corners.Count - 1] + Vector3.up;
-                for (int i = agent.corners.Count - 2; i >= 0; i--)
-                {
-                    var p2 = agent.corners[i] + Vector3.up;
-                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 5);
-                    p1 = p2;
-                }
+                var p2 = agent.corners[i] + Vector3.up;
+                UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 5);
+                p1 = p2;
             }
         }
     }
