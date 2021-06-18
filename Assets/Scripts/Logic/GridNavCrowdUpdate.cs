@@ -109,7 +109,7 @@ namespace GridNav
                 }
                 agent.lastPos = agent.pos;
                 agent.pos = newPos;
-                agent.velocity = newPos - agent.pos;
+                agent.velocity = newPos - agent.lastPos;
                 agent.isMoving = (agent.velocity.sqrMagnitude >= Mathf.Epsilon);
                 // 更新索引
                 var mapPos = NavUtils.CalcMapPos(navMap, agent.moveParam.unitSize, agent.pos);
