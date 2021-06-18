@@ -187,21 +187,21 @@ namespace GridNav
             }
             corners.Add(startPos);
             //去除可以直达的拐点
-            for (int i = corners.Count - 1; i > 1; i--)
-            {
-                for (int j = 0; j < i - 1; j++)
-                {
-                    if (IsStraightWalkable(agent, corners[j], corners[i], false))
-                    {
-                        for (int k = i - 1; k > j; k--)
-                        {
-                            corners.RemoveAt(k);
-                        }
-                        i = j + 1;
-                        break;
-                    }
-                }
-            }
+            //for (int i = corners.Count - 1; i > 1; i--)
+            //{
+            //    for (int j = 0; j < i - 1; j++)
+            //    {
+            //        if (IsStraightWalkable(agent, corners[j], corners[i], false))
+            //        {
+            //            for (int k = i - 1; k > j; k--)
+            //            {
+            //                corners.RemoveAt(k);
+            //            }
+            //            i = j + 1;
+            //            break;
+            //        }
+            //    }
+            //}
             return true;
         }
         public bool FindNearestSquare(NavAgent agent, Vector3 pos, float radius, bool isNotCheckMoving, out Vector3 nearestPos)
