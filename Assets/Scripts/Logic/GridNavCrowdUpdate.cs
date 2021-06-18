@@ -99,14 +99,14 @@ namespace GridNav
                 var newPos = agent.pos + agent.newVelocity * deltaTime;
                 newPos.y = navMap.GetHeight(newPos);
                 navMap.ClampInBounds(newPos, out var x, out var z, out newPos);
-                //if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x, z, true))
-                //{
-                //    //todo checkcollision
-                //    if (!navQuery.FindNearestSquare(agent, newPos, 20.0f * agent.radius, true, out newPos))
-                //    {
-                //        newPos = agent.pos;
-                //    }
-                //}
+                if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x, z))
+                {
+                    //todo checkcollision
+                    if (!navQuery.FindNearestSquare(agent, newPos, 20.0f * agent.radius, false, out newPos))
+                    {
+                        newPos = agent.pos;
+                    }
+                }
                 agent.lastPos = agent.pos;
                 agent.pos = newPos;
                 agent.velocity = newPos - agent.lastPos;
@@ -145,10 +145,10 @@ namespace GridNav
                             {
                                 agent.agentNeighbors.Add(other);
                             }
-                            if ((NavUtils.TestBlockType(agent, other, true) & NavBlockType.Structure) != 0)
-                            {
-                                isBlocked = true;
-                            }
+                            //if ((NavUtils.TestBlockType(agent, other, true) & NavBlockType.Structure) != 0)
+                            //{
+                            //    isBlocked = true;
+                            //}
                         }
                     }
                     if (isBlocked || !NavUtils.TestMoveSquareCenter(navMap, agent, x, z))
