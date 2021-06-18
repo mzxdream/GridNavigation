@@ -167,8 +167,8 @@ MonoBehaviour:
     type: 3}
   mass: 1
   unitSize: 4
-  maxSpeed: 1
-  showPath: 1
+  maxSpeed: 2
+  showGizmos: 1
 --- !u!65 &705349665
 BoxCollider:
   m_ObjectHideFlags: 0

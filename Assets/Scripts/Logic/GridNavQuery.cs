@@ -53,10 +53,10 @@ namespace GridNav
             queryData.lastBestNode = null;
             queryData.lastBestNodeCost = 0.0f;
 
-            if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, queryData.sx, queryData.sz))
-            {
-                return queryData.status;
-            }
+            //if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, queryData.sx, queryData.sz))
+            //{
+            //    return queryData.status;
+            //}
 
             nodePool.Clear();
             openQueue.Clear();
@@ -309,10 +309,10 @@ namespace GridNav
 
             navMap.GetSquareXZ(startPos, out var sx, out var sz);
             navMap.GetSquareXZ(endPos, out var ex, out var ez);
-            if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, sx, sz, isNotCheckMoving))
-            {
-                return false;
-            }
+            //if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, sx, sz, isNotCheckMoving))
+            //{
+            //    return false;
+            //}
             if (sx == ex && sz == ez)
             {
                 return true;
