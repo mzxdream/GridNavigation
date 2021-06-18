@@ -21,9 +21,9 @@ namespace GridNav
             int zmin = agent.mapPos.y;
             int xmax = Mathf.Min(xsize - 1, xmin + agent.moveParam.unitSize);
             int zmax = Mathf.Min(zsize - 1, zmin + agent.moveParam.unitSize);
-            for (int z = zmin; z <= zmax; z++)
+            for (int z = zmin; z < zmax; z++)
             {
-                for (int x = xmin; x <= xmax; x++)
+                for (int x = xmin; x < xmax; x++)
                 {
                     var index = x + z * xsize;
                     if (!agents.TryGetValue(index, out var agentList))
@@ -41,9 +41,9 @@ namespace GridNav
             int zmin = agent.mapPos.y;
             int xmax = Mathf.Min(xsize - 1, xmin + agent.moveParam.unitSize);
             int zmax = Mathf.Min(zsize - 1, zmin + agent.moveParam.unitSize);
-            for (int z = zmin; z <= zmax; z++)
+            for (int z = zmin; z < zmax; z++)
             {
-                for (int x = xmin; x <= xmax; x++)
+                for (int x = xmin; x < xmax; x++)
                 {
                     var index = x + z * xsize;
                     if (!agents.TryGetValue(index, out var agentList))
