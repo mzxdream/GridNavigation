@@ -152,6 +152,7 @@ namespace GridNav
             if (IsStraightWalkable(agent, startPos, goalPos, false))
             {
                 corners.Add(goalPos);
+                corners.Add(startPos);
                 return true;
             }
             InitSlicedFindPath(agent, startPos, goalPos, 0.0f);
@@ -308,7 +309,7 @@ namespace GridNav
 
             navMap.GetSquareXZ(startPos, out var sx, out var sz);
             navMap.GetSquareXZ(endPos, out var ex, out var ez);
-            if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, sx, sz, isNotCheckMoving))
+            if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, sx, sz, isNotCheckMoving))
             {
                 return false;
             }
@@ -326,7 +327,7 @@ namespace GridNav
                 int t1 = (2 * ix + 1) * nz, t2 = (2 * iz + 1) * nx;
                 if (t1 < t2) //Horizontal
                 {
-                    if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x + signX, z, isNotCheckMoving))
+                    if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x + signX, z, isNotCheckMoving))
                     {
                         return false;
                     }
@@ -335,7 +336,7 @@ namespace GridNav
                 }
                 else if (t1 > t2) //Vertical
                 {
-                    if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x, z + signZ, isNotCheckMoving))
+                    if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x, z + signZ, isNotCheckMoving))
                     {
                         return false;
                     }
@@ -344,9 +345,9 @@ namespace GridNav
                 }
                 else //Cross
                 {
-                    if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x + signX, z, isNotCheckMoving)
-                        || !NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x, z + signZ, isNotCheckMoving)
-                        || !NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x + signX, z + signZ, isNotCheckMoving))
+                    if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x + signX, z, isNotCheckMoving)
+                        || NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x, z + signZ, isNotCheckMoving)
+                        || NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x + signX, z + signZ, isNotCheckMoving))
                     {
                         return false;
                     }
