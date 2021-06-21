@@ -16,6 +16,10 @@ namespace GridNav
             0, 1.0f, 1.0f, 1.0f, 1.0f, NavMathUtils.SQRT2, NavMathUtils.SQRT2, NavMathUtils.SQRT2, NavMathUtils.SQRT2
         };
 
+        public static float DegreesToSlope(float degrees)
+        {
+            return 1.0f - Mathf.Cos(degrees * Mathf.Deg2Rad);
+        }
         public static Vector3 DirToVector3(NavDirection dir)
         {
             return dirVector3[(int)dir];
