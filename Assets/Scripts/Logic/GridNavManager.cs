@@ -13,12 +13,19 @@ namespace GridNav
         private NavQuery[] workNavQuerys;
         private List<int> moveRequestQueue;
         private NavQuery moveRequestNavQuery;
+        private int framesPerSecond;
+        private float frameTime;
 
-        public bool Init(NavMap navMap, int maxAgents = 1024, int maxWorkers = 1)
+        public int FramesPerSecond { get => framesPerSecond; }
+        public float FrameTime { get => frameTime; }
+
+        public bool Init(NavMap navMap, int maxAgents = 1024, int maxWorkers = 1, int framesPerSecond = 30)
         {
-            Debug.Assert(navMap != null && maxAgents > 0 && maxWorkers > 0);
+            Debug.Assert(navMap != null && maxAgents > 0 && maxWorkers > 0 && framesPerSecond > 0);
 
             this.navMap = navMap;
+            this.framesPerSecond = framesPerSecond;
+            this.frameTime = 1.0f / framesPerSecond;
             this.blockingObjectMap = new NavBlockingObjectMap(navMap.XSize, navMap.ZSize);
             this.navQuery = new NavQuery();
             if (!navQuery.Init(navMap, blockingObjectMap))
@@ -64,10 +71,10 @@ namespace GridNav
                 moveRequestNavQuery.Clear();
             }
         }
-        public void Update(float deltaTime)
+        public void Update()
         {
             var agentList = new List<NavAgent>(agents.Values);
-            NavCrowdUpdate.Update(this, navMap, blockingObjectMap, agentList, workNavQuerys, deltaTime);
+            NavCrowdUpdate.Update(this, navMap, blockingObjectMap, agentList, workNavQuerys);
         }
         public NavMap GetNavMap()
         {

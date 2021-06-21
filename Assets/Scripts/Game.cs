@@ -197,7 +197,6 @@ public class Game : MonoBehaviour
         {
             RemoveObject();
         }
-        navManager.Update(Time.deltaTime);
         foreach (var c in redCharacters)
         {
             if (!navManager.GetLocation(c.navAgentID, out var pos, out var forward))
@@ -222,6 +221,10 @@ public class Game : MonoBehaviour
                 c.asset.transform.forward = forward;
             }
         }
+    }
+    void FixedUpdate()
+    {
+        navManager.Update();
     }
     void OnDrawGizmos()
     {
