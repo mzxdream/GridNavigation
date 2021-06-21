@@ -127,7 +127,7 @@ namespace GridNav
             {
                 return NavBlockType.Moving;
             }
-            if (collidee.param.isPushResistant)
+            if (collidee.isPushResistant)
             {
                 return NavBlockType.Structure;
             }

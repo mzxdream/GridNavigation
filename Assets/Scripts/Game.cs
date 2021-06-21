@@ -129,7 +129,7 @@ public class Game : MonoBehaviour
                     continue;
                 }
                 var slope = navMap.GetSquareSlope(x, z);
-                if (slope >= 0.5f)
+                if (slope >= 0.5f) //0.5f = 60*
                 {
                     continue;
                 }
@@ -248,11 +248,6 @@ public class Game : MonoBehaviour
         }
         if (gridMeshs != null)
         {
-            Gizmos.color = new Color(0x0, 0xFF, 0xFF);
-            foreach (var mesh in gridMeshs)
-            {
-                Gizmos.DrawMesh(mesh);
-            }
             Gizmos.color = Color.green;
             foreach (var mesh in gridMeshs)
             {
@@ -320,7 +315,7 @@ public class Game : MonoBehaviour
         asset.transform.forward = Vector3.forward;
         var radius = NavUtils.CalcMaxInteriorRadius(unitSize, navMap.SquareSize);
         asset.transform.localScale = new Vector3(radius * 2.0f, 0.5f, radius * 2.0f);
-        var moveParam = new NavMoveParam
+        var moveParam = new NavMoveDef
         {
             unitSize = unitSize,
         };

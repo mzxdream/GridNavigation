@@ -79,7 +79,7 @@ namespace GridNav
                     continue;
                 }
                 Debug.Assert(agent.corners.Count >= 2);
-                agent.prefVelocity = NavMathUtils.Normalized2D(agent.corners[agent.corners.Count - 2] - agent.corners[agent.corners.Count - 1]) * agent.param.maxSpeed;
+                agent.prefVelocity = NavMathUtils.Normalized2D(agent.corners[agent.corners.Count - 2] - agent.corners[agent.corners.Count - 1]) * agent.maxSpeed;
             }
         }
         private static void UpdateNewVelocity(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQuerys, float deltaTime)
@@ -125,7 +125,7 @@ namespace GridNav
         {
             agent.agentNeighbors.Clear();
             agent.obstacleNeighbors.Clear();
-            float queryRadius = agent.radius + Mathf.Max(navMap.SquareSize, agent.param.maxSpeed) * 2.0f;
+            float queryRadius = agent.radius + Mathf.Max(navMap.SquareSize, agent.maxSpeed) * 2.0f;
             navMap.GetSquareXZ(new Vector3(agent.pos.x - queryRadius, 0, agent.pos.z - queryRadius), out var sx, out var sz);
             navMap.GetSquareXZ(new Vector3(agent.pos.x + queryRadius, 0, agent.pos.z + queryRadius), out var ex, out var ez);
             for (int z = sz; z <= ez; z++)

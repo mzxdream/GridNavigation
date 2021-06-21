@@ -88,7 +88,7 @@ namespace GridNav
         {
             return blockingObjectMap;
         }
-        public int AddAgent(Vector3 pos, NavAgentParam param, NavMoveParam moveParam)
+        public int AddAgent(Vector3 pos, NavAgentParam param, NavMoveDef moveParam)
         {
             if (moveParam.unitSize < 4 || (moveParam.unitSize & 1) != 0)
             {
@@ -98,7 +98,7 @@ namespace GridNav
             var agent = new NavAgent
             {
                 id = ++lastAgentID,
-                param = param,
+                //param = param,
                 moveParam = moveParam,
                 moveState = NavMoveState.Idle,
                 radius = NavUtils.CalcMaxInteriorRadius(moveParam.unitSize, navMap.SquareSize),

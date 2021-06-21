@@ -13,16 +13,16 @@ namespace GridNav
         public const int MaxAreaTypes = 32;
     }
 
-    public class NavMoveParam
+    public class NavMoveDef
     {
         // speed = speedMod * speedModMult / (1.0f + slope * slopeMod)
         public int unitSize; // >=4的偶数
-        public float maxSlope = 0.5f; // 最大爬坡角度(0.0f - 1.0f) => (0 - 90) cos曲线
+        public float maxSlope = 0.5f; // 最大爬坡角度(0.0f - 1.0f) => (0 - 90) cos曲线(1-cos60*)
         public float slopeMod = 0.0f; // 爬坡消耗,值越大，消耗越大 
         public float[] speedMods = new float[NavDef.MaxAreaTypes]; // <=0表示不能行走,值越大速度越快
         public float[] speedModMults = new float[(int)NavSpeedModMultType.NumTypes]; // 对应NavSpeedModMultType 值越小，寻路消耗越大
 
-        public NavMoveParam()
+        public NavMoveDef()
         {
             speedMods[0] = 1.0f;
             speedMods[1] = 0.0f;
@@ -37,13 +37,16 @@ namespace GridNav
         public float mass;
         public float maxSpeed;
         public bool isPushResistant;
+        public int moveType;
     }
 
     public class NavAgent
     {
         public int id;
-        public NavAgentParam param;
-        public NavMoveParam moveParam;
+        public float mass;
+        public float maxSpeed;
+        public bool isPushResistant;
+        public NavMoveDef moveParam;
         public NavMoveState moveState;
         public float radius;
         public Vector2Int mapPos;
