@@ -34,21 +34,21 @@ namespace GridNav
 
     public struct NavAgentParam
     {
+        public int moveType;
         public float mass;
         public float maxSpeed;
         public bool isPushResistant;
-        public int moveType;
     }
 
     public class NavAgent
     {
         public int id;
+        public NavMoveDef moveDef;
         public float mass;
         public float maxSpeed;
         public bool isPushResistant;
-        public NavMoveDef moveParam;
-        public NavMoveState moveState;
         public float radius;
+        public NavMoveState moveState;
         public Vector2Int mapPos;
         public Vector3 pos;
         public Vector3 lastPos;
