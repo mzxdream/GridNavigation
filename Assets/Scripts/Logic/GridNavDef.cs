@@ -44,6 +44,7 @@ namespace GridNav
     {
         public int id;
         public NavAgentParam param;
+        public NavMoveDef moveDef;
         public Vector3 pos;
         public float radius;
         public Vector2Int mapPos;

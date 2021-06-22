@@ -391,15 +391,15 @@ namespace GridNav
             {
                 if ((blockTypes & NavBlockType.Busy) != 0)
                 {
-                    speed *= agent.moveParam.speedModMults[(int)NavSpeedModMultType.Busy];
+                    speed *= agent.moveDef.speedModMults[(int)NavSpeedModMultType.Busy];
                 }
                 else if ((blockTypes & NavBlockType.Idle) != 0)
                 {
-                    speed *= agent.moveParam.speedModMults[(int)NavSpeedModMultType.Idle];
+                    speed *= agent.moveDef.speedModMults[(int)NavSpeedModMultType.Idle];
                 }
                 else if ((blockTypes & NavBlockType.Moving) != 0)
                 {
-                    speed *= agent.moveParam.speedModMults[(int)NavSpeedModMultType.Moving];
+                    speed *= agent.moveDef.speedModMults[(int)NavSpeedModMultType.Moving];
                 }
             }
             float nodeCost = NavUtils.DirDistanceApproximately(dir) * navMap.SquareSize / Mathf.Max(NavMathUtils.EPSILON, speed);

@@ -109,6 +109,7 @@ namespace GridNav
             {
                 id = lastAgentID,
                 param = param,
+                moveDef = moveDef,
                 pos = pos,
                 radius = NavUtils.CalcMaxInteriorRadius(moveDef.unitSize, navMap.SquareSize),
                 mapPos = new Vector2Int(-1, -1),
@@ -126,6 +127,7 @@ namespace GridNav
                 agentNeighbors = new List<NavAgent>(),
                 obstacleNeighbors = new List<NavRVOObstacle>(),
             };
+            agent.param.maxSpeed /= framesPerSecond;
             navMap.ClampInBounds(agent.pos, out _, out _, out agent.pos);
             if (navQuery.FindNearestSquare(agent, agent.pos, 20.0f * agent.radius, true, out var nearesetPos))
             {
