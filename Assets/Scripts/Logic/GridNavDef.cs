@@ -24,6 +24,7 @@ namespace GridNav
 
         public NavMoveDef()
         {
+            unitSize = 4;
             speedMods[0] = 1.0f;
             speedMods[1] = 0.0f;
             speedModMults[(int)NavSpeedModMultType.Idle] = 0.35f;

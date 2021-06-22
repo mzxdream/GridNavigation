@@ -39,10 +39,10 @@ public class Game : MonoBehaviour
     Transform wallPrefab = default, redDestinationPrefab = default, blueDestinationPrefab = default;
     [SerializeField]
     Transform redCharacterPrefab = default, blueCharacterPrefab = default;
+    [SerializeField, Range(0, 3)]
+    int moveType = 0;
     [SerializeField]
     float mass = 1.0f;
-    [SerializeField, RangeEx(4, 10, 2)]
-    int unitSize = 4;
     [SerializeField]
     float maxSpeed = 2.0f;
     [SerializeField]
@@ -88,6 +88,11 @@ public class Game : MonoBehaviour
         UpdateMap();
         navManager = new NavManager();
         navManager.Init(navMap);
+        navManager.GetMoveDef(0).unitSize = 4;
+        navManager.GetMoveDef(1).unitSize = 6;
+        navManager.GetMoveDef(2).unitSize = 8;
+        navManager.GetMoveDef(3).unitSize = 10;
+        navManager.AfterInit();
         redDestination.asset.transform.position = navMap.GetSquarePos(redDestination.x, redDestination.z);
         blueDestination.asset.transform.position = navMap.GetSquarePos(blueDestination.x, blueDestination.z);
     }
@@ -263,10 +268,10 @@ public class Game : MonoBehaviour
             return;
         }
         var pos = navMap.GetSquareCornerPos(agent.mapPos.x, agent.mapPos.y);
-        pos.x += agent.moveParam.unitSize * navMap.SquareSize * 0.5f;
-        pos.z += agent.moveParam.unitSize * navMap.SquareSize * 0.5f;
+        pos.x += agent.moveDef.unitSize * navMap.SquareSize * 0.5f;
+        pos.z += agent.moveDef.unitSize * navMap.SquareSize * 0.5f;
         Gizmos.color = color;
-        Gizmos.DrawCube(pos, new Vector3(unitSize * navMap.SquareSize, 0.1f, unitSize * navMap.SquareSize));
+        Gizmos.DrawCube(pos, new Vector3(agent.moveDef.unitSize * navMap.SquareSize, 0.1f, agent.moveDef.unitSize * navMap.SquareSize));
         {
             var p1 = c.asset.transform.position + Vector3.up;
             var prefVelocity = agent.prefVelocity;
@@ -292,16 +297,16 @@ public class Game : MonoBehaviour
                 p1 = p2;
             }
         }
-        if (agent.corners != null && agent.corners.Count > 0)
-        {
-            var p1 = agent.corners[agent.corners.Count - 1] + Vector3.up;
-            for (int i = agent.corners.Count - 2; i >= 0; i--)
-            {
-                var p2 = agent.corners[i] + Vector3.up;
-                UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 5);
-                p1 = p2;
-            }
-        }
+        //if (agent.corners != null && agent.corners.Count > 0)
+        //{
+        //    var p1 = agent.corners[agent.corners.Count - 1] + Vector3.up;
+        //    for (int i = agent.corners.Count - 2; i >= 0; i--)
+        //    {
+        //        var p2 = agent.corners[i] + Vector3.up;
+        //        UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 5);
+        //        p1 = p2;
+        //    }
+        //}
     }
     Character CreateCharacter(Transform prefab)
     {
@@ -310,22 +315,21 @@ public class Game : MonoBehaviour
         {
             return null;
         }
-        var asset = GameObject.Instantiate(prefab).gameObject;
-        asset.transform.position = hit.point;
-        asset.transform.forward = Vector3.forward;
-        var radius = NavUtils.CalcMaxInteriorRadius(unitSize, navMap.SquareSize);
-        asset.transform.localScale = new Vector3(radius * 2.0f, 0.5f, radius * 2.0f);
-        var moveParam = new NavMoveDef
-        {
-            unitSize = unitSize,
-        };
         var param = new NavAgentParam
         {
+            moveType = moveType,
             mass = mass,
             maxSpeed = maxSpeed,
             isPushResistant = true,
         };
-        var navAgentID = navManager.AddAgent(asset.transform.position, param, moveParam);
+        var navAgentID = navManager.AddAgent(hit.point, param);
+        var agent = navManager.GetAgent(navAgentID);
+        var radius = agent.radius;
+
+        var asset = GameObject.Instantiate(prefab).gameObject;
+        asset.transform.position = hit.point;
+        asset.transform.forward = Vector3.forward;
+        asset.transform.localScale = new Vector3(radius * 2.0f, 0.5f, radius * 2.0f);
         var c = new Character { asset = asset, navAgentID = navAgentID, radius = radius };
         return c;
     }
