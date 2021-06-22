@@ -43,20 +43,17 @@ namespace GridNav
     public class NavAgent
     {
         public int id;
-        public NavMoveDef moveDef;
-        public float mass;
-        public float maxSpeed;
-        public bool isPushResistant;
-        public float radius;
-        public NavMoveState moveState;
-        public Vector2Int mapPos;
+        public NavAgentParam param;
         public Vector3 pos;
+        public float radius;
+        public Vector2Int mapPos;
+        public NavMoveState moveState;
         public Vector3 lastPos;
         public Vector3 goalPos;
         public float goalRadius;
         public List<Vector3> path;
-        public List<Vector3> corners;
         public Vector3 velocity;
+        public float speed;
         public Vector3 prefVelocity;
         public Vector3 newVelocity;
         public bool isMoving;

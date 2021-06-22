@@ -5,35 +5,37 @@ namespace GridNav
 {
     public class NavManager
     {
+        private int frameNum;
+        private int framesPerSecond;
+        private float frameTime;
         private NavMap navMap;
         private NavBlockingObjectMap blockingObjectMap;
         private NavQuery navQuery;
+        private NavQuery[] workNavQuerys;
+        private NavQuery moveRequestNavQuery;
+        private List<int> moveRequestQueue;
         private Dictionary<int, NavAgent> agents; // TODO 后续做成缓冲池
         private int lastAgentID;
-        private NavQuery[] workNavQuerys;
-        private List<int> moveRequestQueue;
-        private NavQuery moveRequestNavQuery;
-        private int framesPerSecond;
-        private float frameTime;
+        private NavMoveDef[] moveDefs;
 
+        public int FrameNum { get => frameNum; }
         public int FramesPerSecond { get => framesPerSecond; }
         public float FrameTime { get => frameTime; }
 
-        public bool Init(NavMap navMap, int maxAgents = 1024, int maxWorkers = 1, int framesPerSecond = 30)
+        public bool Init(NavMap navMap, int maxAgents = 1024, int maxMoveDefs = 16, int maxWorkers = 4, int framesPerSecond = 30)
         {
-            Debug.Assert(navMap != null && maxAgents > 0 && maxWorkers > 0 && framesPerSecond > 0);
+            Debug.Assert(navMap != null && maxAgents > 0 && maxMoveDefs > 0 && maxWorkers > 0 && framesPerSecond > 0);
 
-            this.navMap = navMap;
+            this.frameNum = 0;
             this.framesPerSecond = framesPerSecond;
             this.frameTime = 1.0f / framesPerSecond;
+            this.navMap = navMap;
             this.blockingObjectMap = new NavBlockingObjectMap(navMap.XSize, navMap.ZSize);
             this.navQuery = new NavQuery();
             if (!navQuery.Init(navMap, blockingObjectMap))
             {
                 return false;
             }
-            this.agents = new Dictionary<int, NavAgent>();
-            this.lastAgentID = 0;
             this.workNavQuerys = new NavQuery[maxWorkers];
             for (int i = 0; i < maxWorkers; i++)
             {
@@ -44,12 +46,20 @@ namespace GridNav
                 }
                 this.workNavQuerys[i] = query;
             }
-            this.moveRequestQueue = new List<int>();
             this.moveRequestNavQuery = new NavQuery();
             if (!this.moveRequestNavQuery.Init(navMap, blockingObjectMap))
             {
                 return false;
             }
+            this.moveRequestQueue = new List<int>();
+            this.agents = new Dictionary<int, NavAgent>();
+            this.lastAgentID = 0;
+            this.moveDefs = new NavMoveDef[maxMoveDefs];
+            return true;
+        }
+        public bool AfterInit()
+        {
+            // TODO
             return true;
         }
         public void Clear()
@@ -73,6 +83,7 @@ namespace GridNav
         }
         public void Update()
         {
+            frameNum++;
             var agentList = new List<NavAgent>(agents.Values);
             NavCrowdUpdate.Update(this, navMap, blockingObjectMap, agentList, workNavQuerys);
         }
@@ -84,32 +95,30 @@ namespace GridNav
         {
             return navQuery;
         }
-        public NavBlockingObjectMap GetBlockingObjectMap()
+        public NavMoveDef GetMoveDef(int type)
         {
-            return blockingObjectMap;
+            Debug.Assert(type >= 0 && type < moveDefs.Length);
+            return moveDefs[type];
         }
-        public int AddAgent(Vector3 pos, NavAgentParam param, NavMoveDef moveParam)
+        public int AddAgent(Vector3 pos, NavAgentParam param)
         {
-            if (moveParam.unitSize < 4 || (moveParam.unitSize & 1) != 0)
-            {
-                Debug.LogError("move param unitSize need >=4 even");
-                return 0;
-            }
+            var moveDef = GetMoveDef(param.moveType);
+            Debug.Assert(moveDef == null || moveDef.unitSize < 4 || (moveDef.unitSize & 1) != 0);
+            lastAgentID++;
             var agent = new NavAgent
             {
-                id = ++lastAgentID,
-                //param = param,
-                moveParam = moveParam,
-                moveState = NavMoveState.Idle,
-                radius = NavUtils.CalcMaxInteriorRadius(moveParam.unitSize, navMap.SquareSize),
-                mapPos = new Vector2Int(),
+                id = lastAgentID,
+                param = param,
                 pos = pos,
+                radius = NavUtils.CalcMaxInteriorRadius(moveDef.unitSize, navMap.SquareSize),
+                mapPos = new Vector2Int(-1, -1),
+                moveState = NavMoveState.Idle,
                 lastPos = pos,
                 goalPos = Vector3.zero,
                 goalRadius = 0.0f,
                 path = null,
-                corners = null,
                 velocity = Vector3.zero,
+                speed = 0.0f,
                 prefVelocity = Vector3.zero,
                 newVelocity = Vector3.zero,
                 isMoving = false,
@@ -123,7 +132,7 @@ namespace GridNav
                 agent.pos = nearesetPos;
             }
             agents.Add(agent.id, agent);
-            agent.mapPos = NavUtils.CalcMapPos(navMap, agent.moveParam.unitSize, agent.pos);
+            agent.mapPos = NavUtils.CalcMapPos(navMap, moveDef.unitSize, agent.pos);
             blockingObjectMap.AddAgent(agent);
             return agent.id;
         }
