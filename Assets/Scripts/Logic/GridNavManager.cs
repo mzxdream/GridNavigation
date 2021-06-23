@@ -103,7 +103,7 @@ namespace GridNav
         public int AddAgent(Vector3 pos, NavAgentParam param)
         {
             var moveDef = GetMoveDef(param.moveType);
-            Debug.Assert(moveDef == null || moveDef.unitSize < 4 || (moveDef.unitSize & 1) != 0);
+            Debug.Assert(moveDef == null);
             lastAgentID++;
             var agent = new NavAgent
             {
@@ -111,7 +111,7 @@ namespace GridNav
                 param = param,
                 moveDef = moveDef,
                 pos = pos,
-                radius = NavUtils.CalcMaxInteriorRadius(moveDef.unitSize, navMap.SquareSize),
+                radius = NavUtils.CalcMaxInteriorRadius(moveDef.GetUnitSize(), navMap.SquareSize),
                 mapPos = new Vector2Int(-1, -1),
                 moveState = NavMoveState.Idle,
                 lastPos = pos,
@@ -119,7 +119,6 @@ namespace GridNav
                 goalRadius = 0.0f,
                 path = null,
                 velocity = Vector3.zero,
-                speed = 0.0f,
                 prefVelocity = Vector3.zero,
                 newVelocity = Vector3.zero,
                 isMoving = false,
@@ -129,12 +128,12 @@ namespace GridNav
             };
             agent.param.maxSpeed /= framesPerSecond;
             navMap.ClampInBounds(agent.pos, out _, out _, out agent.pos);
-            if (navQuery.FindNearestSquare(agent, agent.pos, 20.0f * agent.radius, true, out var nearesetPos))
-            {
-                agent.pos = nearesetPos;
-            }
+            //if (navQuery.FindNearestSquare(agent, agent.pos, 20.0f * agent.radius, true, out var nearesetPos))
+            //{
+            //    agent.pos = nearesetPos;
+            //}
             agents.Add(agent.id, agent);
-            agent.mapPos = NavUtils.CalcMapPos(navMap, moveDef.unitSize, agent.pos);
+            agent.mapPos = NavUtils.CalcMapPos(navMap, moveDef.GetUnitSize(), agent.pos);
             blockingObjectMap.AddAgent(agent);
             return agent.id;
         }
