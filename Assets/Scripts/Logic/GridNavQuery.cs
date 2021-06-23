@@ -53,10 +53,10 @@ namespace GridNav
             queryData.lastBestNode = null;
             queryData.lastBestNodeCost = 0.0f;
 
-            //if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, queryData.sx, queryData.sz))
-            //{
-            //    return queryData.status;
-            //}
+            if (!NavUtils.TestMoveSquare(navMap, agent, queryData.sx, queryData.sz))
+            {
+                return queryData.status;
+            }
 
             nodePool.Clear();
             openQueue.Clear();
@@ -149,43 +149,43 @@ namespace GridNav
             Debug.Assert(agent != null);
 
             corners = new List<Vector3>();
-            if (IsStraightWalkable(agent, startPos, goalPos, false))
-            {
-                corners.Add(goalPos);
-                corners.Add(startPos);
-                return true;
-            }
-            InitSlicedFindPath(agent, startPos, goalPos, 0.0f);
-            var status = UpdateSlicedFindPath(maxNodes, out _);
-            if ((status & NavQueryStatus.Success) == 0 || (status & NavQueryStatus.Partial) != 0)
-            {
-                return false;
-            }
-            var curNode = queryData.lastBestNode;
-            Debug.Assert(curNode != null);
-            var nodes = new List<NavQueryNode>();
-            do
-            {
-                nodes.Add(curNode);
-                curNode = curNode.parent;
-            } while (curNode != null);
-            Debug.Assert(nodes.Count >= 2);
-            //去除多余的点
-            corners.Add(goalPos);
-            var oldDirX = nodes[1].x - nodes[0].x;
-            var oldDirZ = nodes[1].z - nodes[0].z;
-            for (int i = 2; i < nodes.Count; i++)
-            {
-                var newDirX = nodes[i].x - nodes[i - 1].x;
-                var newDirZ = nodes[i].z - nodes[i - 1].z;
-                if (newDirX != oldDirX || newDirZ != oldDirZ)
-                {
-                    oldDirX = newDirX;
-                    oldDirZ = newDirZ;
-                    corners.Add(navMap.GetSquarePos(nodes[i - 1].x, nodes[i - 1].z));
-                }
-            }
-            corners.Add(startPos);
+            //if (IsStraightWalkable(agent, startPos, goalPos, false))
+            //{
+            //    corners.Add(goalPos);
+            //    corners.Add(startPos);
+            //    return true;
+            //}
+            //InitSlicedFindPath(agent, startPos, goalPos, 0.0f);
+            //var status = UpdateSlicedFindPath(maxNodes, out _);
+            //if ((status & NavQueryStatus.Success) == 0 || (status & NavQueryStatus.Partial) != 0)
+            //{
+            //    return false;
+            //}
+            //var curNode = queryData.lastBestNode;
+            //Debug.Assert(curNode != null);
+            //var nodes = new List<NavQueryNode>();
+            //do
+            //{
+            //    nodes.Add(curNode);
+            //    curNode = curNode.parent;
+            //} while (curNode != null);
+            //Debug.Assert(nodes.Count >= 2);
+            ////去除多余的点
+            //corners.Add(goalPos);
+            //var oldDirX = nodes[1].x - nodes[0].x;
+            //var oldDirZ = nodes[1].z - nodes[0].z;
+            //for (int i = 2; i < nodes.Count; i++)
+            //{
+            //    var newDirX = nodes[i].x - nodes[i - 1].x;
+            //    var newDirZ = nodes[i].z - nodes[i - 1].z;
+            //    if (newDirX != oldDirX || newDirZ != oldDirZ)
+            //    {
+            //        oldDirX = newDirX;
+            //        oldDirZ = newDirZ;
+            //        corners.Add(navMap.GetSquarePos(nodes[i - 1].x, nodes[i - 1].z));
+            //    }
+            //}
+            //corners.Add(startPos);
             //去除可以直达的拐点
             //for (int i = corners.Count - 1; i > 1; i--)
             //{

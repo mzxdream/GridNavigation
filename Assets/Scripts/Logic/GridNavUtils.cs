@@ -1,12 +1,12 @@
+using System;
 using UnityEngine;
 
 namespace GridNav
 {
     public static class NavUtils
     {
-        // 前、后、左、右、左前、右前、左后、右后
-        private static readonly int[] neighborDirX = { 0, 0, 0, -1, 1, -1, 1, -1, 1 };
-        private static readonly int[] neighborDirZ = { 0, 1, -1, 0, 0, 1, 1, -1, -1 };
+        // None, Forward, Back, Left, Right, LeftForward, RightForward, LeftBack, RightBack
+        private static readonly int[,] dirNeighbor = { { 0, 0 }, { 0, 1 }, { 0, -1 }, { -1, 0 }, { 1, 0 }, { -1, 1 }, { 1, 1 }, { -1, -1 }, { 1, -1 } };
         private static readonly Vector3[] dirVector3 = {
              new Vector3(0, 0, 0), new Vector3(0, 0, 1), new Vector3(0, 0, -1), new Vector3(-1, 0, 0), new Vector3(1, 0, 0),
              new Vector3(-NavMathUtils.HALF_SQRT2, 0, NavMathUtils.HALF_SQRT2), new Vector3(NavMathUtils.HALF_SQRT2, 0, NavMathUtils.HALF_SQRT2),
@@ -26,8 +26,8 @@ namespace GridNav
         }
         public static void GetNeighborXZ(int x, int z, NavDirection dir, out int nx, out int nz)
         {
-            nx = x + neighborDirX[(int)dir];
-            nz = z + neighborDirZ[(int)dir];
+            nx = x + dirNeighbor[(int)dir, 0];
+            nz = z + dirNeighbor[(int)dir, 1];
         }
         public static float DirDistanceApproximately(NavDirection dir)
         {
@@ -42,28 +42,57 @@ namespace GridNav
         public static float CalcMaxInteriorRadius(int unitSize, float squareSize)
         {
             Debug.Assert(unitSize > 0 && squareSize > 0.0f);
+
             return (unitSize - 1) * squareSize * 0.5f - NavMathUtils.EPSILON;
         }
         public static float CalcMinExteriorRadius(int unitSize, float squareSize)
         {
             Debug.Assert(unitSize > 0 && squareSize > 0.0f);
+
             return (unitSize - 1) * squareSize * NavMathUtils.HALF_SQRT2 - NavMathUtils.EPSILON;
         }
         public static Vector2Int CalcMapPos(NavMap navMap, int unitSize, Vector3 pos)
         {
             Debug.Assert(navMap != null && unitSize > 0 && unitSize < navMap.XSize && unitSize < navMap.ZSize);
+
             navMap.GetSquareXZ(pos.x + navMap.SquareSize * 0.5f, pos.z + navMap.SquareSize * 0.5f, out var x, out var z);
             Vector2Int mapPos = new Vector2Int();
             mapPos.x = Mathf.Clamp(x - (unitSize >> 1), 0, navMap.XSize - unitSize);
             mapPos.y = Mathf.Clamp(z - (unitSize >> 1), 0, navMap.ZSize - unitSize);
             return mapPos;
         }
+        public static void ForeachNearestSquare(int x, int z, int radius, Func<int, int, bool> cb)
+        {
+            Debug.Assert(cb != null);
+
+            for (int k = 1; k < radius; k++)
+            {
+                int xmin = x - k, xmax = x + k, zmin = z - k, zmax = z + k;
+                if (!cb(x, zmax) || !cb(x, zmin) || !cb(xmin, z) || !cb(xmax, z)) // forward, back, left, right
+                {
+                    return;
+                }
+                for (int t = 1; t < k; t++)
+                {
+                    if (!cb(xmin, z + t) || !cb(xmin, z - t) || !cb(xmax, z + t) || !cb(xmax, z - t) // left[forward], left[back], right[forward], right[back]
+                        || !cb(x - t, zmax) || !cb(x + t, zmax) || !cb(x - t, zmin) || !cb(x + t, zmin)) // [left]forward, [right]forward, [left]back, [right]back
+                    {
+                        return;
+                    }
+                }
+                if (!cb(xmin, zmax) || !cb(xmax, zmax) || !cb(xmin, zmin) || !cb(xmax, zmin)) // left forward, right forward, left back, right back
+                {
+                    return;
+                }
+            }
+        }
         public static float GetSquareSpeed(NavMap navMap, NavAgent agent, int x, int z)
         {
             var slope = navMap.GetSquareSlope(x, z);
             var squareType = navMap.GetSquareType(x, z);
-            Debug.Assert(squareType >= 0 && squareType < agent.moveParam.speedMods.Length);
-            return agent.moveParam.speedMods[squareType] / (1.0f + slope * agent.moveParam.slopeMod);
+            var speedMod = agent.moveDef.GetSpeedMod(squareType);
+            var slopeMod = agent.moveDef.GetSlopeMod();
+            return speedMod / (1.0f + slope * slopeMod);
         }
         public static float GetSquareSpeed(NavMap navMap, NavAgent agent, int x, int z, NavDirection dir)
         {
@@ -72,22 +101,23 @@ namespace GridNav
             var centerNormal2D = navMap.GetSquareCenterNormal2D(x, z);
             var moveDir = DirToVector3(dir);
             var dirSlopeMod = -NavMathUtils.Dot2D(moveDir, centerNormal2D);
-            Debug.Assert(squareType >= 0 && squareType < agent.moveParam.speedMods.Length);
-            return agent.moveParam.speedMods[squareType] / (1.0f + Mathf.Max(0.0f, slope * dirSlopeMod) * agent.moveParam.slopeMod);
+            var speedMod = agent.moveDef.GetSpeedMod(squareType);
+            var slopeMod = agent.moveDef.GetSlopeMod();
+            return speedMod / (1.0f + Mathf.Max(0.0f, slope * dirSlopeMod) * slopeMod);
         }
         public static bool TestMoveSquareCenter(NavMap navMap, NavAgent agent, int x, int z)
         {
             Debug.Assert(x >= 0 && x < navMap.XSize && z >= 0 && z < navMap.ZSize);
-            var squareType = navMap.GetSquareType(x, z);
-            Debug.Assert(squareType >= 0 && squareType < agent.moveParam.speedMods.Length);
 
-            var speedMod = agent.moveParam.speedMods[squareType];
+            var squareType = navMap.GetSquareType(x, z);
+            var speedMod = agent.moveDef.GetSpeedMod(squareType);
             if (speedMod <= 0.0f)
             {
                 return false;
             }
             var slope = navMap.GetSquareSlope(x, z);
-            if (slope > agent.moveParam.maxSlope)
+            var maxSlope = agent.moveDef.GetMaxSlope();
+            if (slope > maxSlope)
             {
                 return false;
             }
@@ -96,7 +126,8 @@ namespace GridNav
         public static bool TestMoveSquare(NavMap navMap, NavAgent agent, int x, int z)
         {
             Debug.Assert(x >= 0 && x < navMap.XSize && z >= 0 && z < navMap.ZSize);
-            var halfUnitSize = agent.moveParam.unitSize >> 2;
+
+            var halfUnitSize = (agent.moveDef.GetUnitSize() - 1) >> 1;
             int xmin = x - halfUnitSize;
             int xmax = x + halfUnitSize;
             int zmin = z - halfUnitSize;
@@ -119,6 +150,8 @@ namespace GridNav
         }
         public static NavBlockType TestBlockType(NavAgent collider, NavAgent collidee, bool isNotCheckMoving = false)
         {
+            Debug.Assert(collider != null && collidee != null);
+
             if (collider == collidee)
             {
                 return NavBlockType.None;
@@ -127,7 +160,7 @@ namespace GridNav
             {
                 return NavBlockType.Moving;
             }
-            if (collidee.isPushResistant)
+            if (collidee.param.isPushResistant)
             {
                 return NavBlockType.Structure;
             }
@@ -139,6 +172,8 @@ namespace GridNav
         }
         public static NavBlockType TestBlockTypesSquareCenter(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z, bool isNotCheckMoving = false)
         {
+            Debug.Assert(blockingObjectMap != null && agent != null);
+
             if (!blockingObjectMap.GetSquareAgents(x, z, out var agentList))
             {
                 return NavBlockType.None;
@@ -156,7 +191,9 @@ namespace GridNav
         }
         public static NavBlockType TestBlockTypesSquare(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z, bool isNotCheckMoving = false)
         {
-            var halfUnitSize = agent.moveParam.unitSize >> 2;
+            Debug.Assert(blockingObjectMap != null && agent != null);
+
+            var halfUnitSize = (agent.moveDef.GetUnitSize() - 1) >> 1;
             int xmin = x - halfUnitSize;
             int xmax = x + halfUnitSize;
             int zmin = z - halfUnitSize;
@@ -178,6 +215,8 @@ namespace GridNav
         }
         public static bool IsBlockedSquare(NavMap navMap, NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z, bool isNotCheckMoving = false)
         {
+            Debug.Assert(navMap != null && blockingObjectMap != null && agent != null);
+
             if (x < 0 || x >= navMap.XSize || z < 0 || z >= navMap.ZSize)
             {
                 return true;
