@@ -17,10 +17,11 @@ namespace GridNav
         }
         public void AddAgent(NavAgent agent)
         {
+            int unitSize = agent.moveDef.GetUnitSize();
             int xmin = agent.mapPos.x;
             int zmin = agent.mapPos.y;
-            int xmax = Mathf.Min(xsize - 1, xmin + agent.moveParam.unitSize);
-            int zmax = Mathf.Min(zsize - 1, zmin + agent.moveParam.unitSize);
+            int xmax = Mathf.Min(xsize - 1, xmin + unitSize);
+            int zmax = Mathf.Min(zsize - 1, zmin + unitSize);
             for (int z = zmin; z < zmax; z++)
             {
                 for (int x = xmin; x < xmax; x++)
@@ -37,10 +38,11 @@ namespace GridNav
         }
         public void RemoveAgent(NavAgent agent)
         {
+            int unitSize = agent.moveDef.GetUnitSize();
             int xmin = agent.mapPos.x;
             int zmin = agent.mapPos.y;
-            int xmax = Mathf.Min(xsize - 1, xmin + agent.moveParam.unitSize);
-            int zmax = Mathf.Min(zsize - 1, zmin + agent.moveParam.unitSize);
+            int xmax = Mathf.Min(xsize - 1, xmin + unitSize);
+            int zmax = Mathf.Min(zsize - 1, zmin + unitSize);
             for (int z = zmin; z < zmax; z++)
             {
                 for (int x = xmin; x < xmax; x++)
