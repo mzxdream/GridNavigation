@@ -88,10 +88,10 @@ public class Game : MonoBehaviour
         UpdateMap();
         navManager = new NavManager();
         navManager.Init(navMap);
-        navManager.GetMoveDef(0).unitSize = 4;
-        navManager.GetMoveDef(1).unitSize = 6;
-        navManager.GetMoveDef(2).unitSize = 8;
-        navManager.GetMoveDef(3).unitSize = 10;
+        navManager.GetMoveDef(0).SetUnitSize(4);
+        navManager.GetMoveDef(1).SetUnitSize(6);
+        navManager.GetMoveDef(2).SetUnitSize(8);
+        navManager.GetMoveDef(3).SetUnitSize(10);
         navManager.AfterInit();
         redDestination.asset.transform.position = navMap.GetSquarePos(redDestination.x, redDestination.z);
         blueDestination.asset.transform.position = navMap.GetSquarePos(blueDestination.x, blueDestination.z);
@@ -267,11 +267,12 @@ public class Game : MonoBehaviour
         {
             return;
         }
+        int unitSize = agent.moveDef.GetUnitSize();
         var pos = navMap.GetSquareCornerPos(agent.mapPos.x, agent.mapPos.y);
-        pos.x += agent.moveDef.unitSize * navMap.SquareSize * 0.5f;
-        pos.z += agent.moveDef.unitSize * navMap.SquareSize * 0.5f;
+        pos.x += unitSize * navMap.SquareSize * 0.5f;
+        pos.z += unitSize * navMap.SquareSize * 0.5f;
         Gizmos.color = color;
-        Gizmos.DrawCube(pos, new Vector3(agent.moveDef.unitSize * navMap.SquareSize, 0.1f, agent.moveDef.unitSize * navMap.SquareSize));
+        Gizmos.DrawCube(pos, new Vector3(unitSize * navMap.SquareSize, 0.1f, unitSize * navMap.SquareSize));
         {
             var p1 = c.asset.transform.position + Vector3.up;
             var prefVelocity = agent.prefVelocity;
