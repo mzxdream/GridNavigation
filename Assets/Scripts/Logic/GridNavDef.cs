@@ -33,6 +33,7 @@ namespace GridNav
         public void SetUnitSize(int unitSize)
         {
             Debug.Assert(unitSize >= 4 && (unitSize & 1) == 0);
+
             this.unitSize = unitSize;
         }
         public int GetUnitSize()
@@ -42,6 +43,7 @@ namespace GridNav
         public void SetMaxSlope(float maxSlope)
         {
             Debug.Assert(maxSlope >= 0.0f && maxSlope <= 1.0f);
+
             this.maxSlope = maxSlope;
         }
         public float GetMaxSlope()
@@ -59,17 +61,26 @@ namespace GridNav
         public void SetSpeedMod(int areaType, float speedMod)
         {
             Debug.Assert(areaType >= 0 && areaType < speedMods.Length);
+
             speedMods[areaType] = speedMod;
         }
         public float GetSpeedMod(int areaType)
         {
             Debug.Assert(areaType >= 0 && areaType < speedMods.Length);
+
             return speedMods[areaType];
         }
         public void SetSpeedModMult(NavSpeedModMultType type, float speedModMult)
         {
             Debug.Assert((int)type >= 0 && (int)type < speedModMults.Length);
+
             speedModMults[(int)type] = speedModMult;
+        }
+        public float GetSpeedModMult(NavSpeedModMultType type)
+        {
+            Debug.Assert((int)type >= 0 && (int)type < speedModMults.Length);
+
+            return speedModMults[(int)type];
         }
     }
 

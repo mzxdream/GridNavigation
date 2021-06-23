@@ -53,11 +53,6 @@ namespace GridNav
             queryData.lastBestNode = null;
             queryData.lastBestNodeCost = 0.0f;
 
-            if (!NavUtils.TestMoveSquare(navMap, agent, queryData.sx, queryData.sz))
-            {
-                return queryData.status;
-            }
-
             nodePool.Clear();
             openQueue.Clear();
 
@@ -204,115 +199,16 @@ namespace GridNav
             //}
             return true;
         }
-        public bool FindNearestSquare(NavAgent agent, Vector3 pos, float radius, bool isNotCheckMoving, out Vector3 nearestPos)
-        {
-            Debug.Assert(agent != null && radius > 0);
-
-            navMap.ClampInBounds(pos, out var x, out var z, out nearestPos);
-            if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x, z, isNotCheckMoving))
-            {
-                return true;
-            }
-            var ext = (int)(radius / navMap.SquareSize);
-            for (int k = 1; k <= ext; k++)
-            {
-                int xmin = x - k, xmax = x + k, zmin = z - k, zmax = z + k;
-                if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x, zmax, isNotCheckMoving)) // forward
-                {
-                    nearestPos = navMap.GetSquarePos(x, zmax);
-                    return true;
-                }
-                if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x, zmin, isNotCheckMoving)) // back
-                {
-                    nearestPos = navMap.GetSquarePos(x, zmin);
-                    return true;
-                }
-                if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, xmin, z, isNotCheckMoving)) // left
-                {
-                    nearestPos = navMap.GetSquarePos(xmin, z);
-                    return true;
-                }
-                if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, xmax, z, isNotCheckMoving)) // right
-                {
-                    nearestPos = navMap.GetSquarePos(xmax, z);
-                    return true;
-                }
-                for (int t = 1; t < k; t++)
-                {
-                    if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, xmin, z + t, isNotCheckMoving)) // left [forward] 
-                    {
-                        nearestPos = navMap.GetSquarePos(xmin, z + t);
-                        return true;
-                    }
-                    if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, xmin, z - t, isNotCheckMoving)) // left [back]
-                    {
-                        nearestPos = navMap.GetSquarePos(xmin, z - t);
-                        return true;
-                    }
-                    if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, xmax, z + t, isNotCheckMoving)) // right [forward]
-                    {
-                        nearestPos = navMap.GetSquarePos(xmax, z + t);
-                        return true;
-                    }
-                    if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, xmax, z - t, isNotCheckMoving)) // right [back]
-                    {
-                        nearestPos = navMap.GetSquarePos(xmax, z - t);
-                        return true;
-                    }
-                    if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x - t, zmax, isNotCheckMoving)) // [left] forward
-                    {
-                        nearestPos = navMap.GetSquarePos(x - t, zmax);
-                        return true;
-                    }
-                    if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x + t, zmax, isNotCheckMoving)) // [right] forwad
-                    {
-                        nearestPos = navMap.GetSquarePos(x + t, zmax);
-                        return true;
-                    }
-                    if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x - t, zmin, isNotCheckMoving)) // [left] back
-                    {
-                        nearestPos = navMap.GetSquarePos(x - t, zmin);
-                        return true;
-                    }
-                    if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x + t, zmin, isNotCheckMoving)) // [right] back
-                    {
-                        nearestPos = navMap.GetSquarePos(x + t, zmin);
-                        return true;
-                    }
-                }
-                if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, xmin, zmax, isNotCheckMoving)) // left forward
-                {
-                    nearestPos = navMap.GetSquarePos(xmin, zmax);
-                    return true;
-                }
-                if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, xmax, zmax, isNotCheckMoving)) // right forward 
-                {
-                    nearestPos = navMap.GetSquarePos(xmax, zmax);
-                    return true;
-                }
-                if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, xmin, zmin, isNotCheckMoving)) // left back
-                {
-                    nearestPos = navMap.GetSquarePos(xmin, zmin);
-                    return true;
-                }
-                if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, xmax, zmin, isNotCheckMoving)) // right back
-                {
-                    nearestPos = navMap.GetSquarePos(xmax, zmin);
-                    return true;
-                }
-            }
-            return false;
-        }
         private bool IsStraightWalkable(NavAgent agent, Vector3 startPos, Vector3 endPos, bool isNotCheckMoving)
         {
             Debug.Assert(agent != null);
 
             navMap.GetSquareXZ(startPos, out var sx, out var sz);
             navMap.GetSquareXZ(endPos, out var ex, out var ez);
-            //if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, sx, sz, isNotCheckMoving))
-            //{
-            //    return false;
-            //}
+            if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, sx, sz, isNotCheckMoving))
+            {
+                return false;
+            }
             if (sx == ex && sz == ez)
             {
                 return true;
@@ -391,15 +287,15 @@ namespace GridNav
             {
                 if ((blockTypes & NavBlockType.Busy) != 0)
                 {
-                    speed *= agent.moveDef.speedModMults[(int)NavSpeedModMultType.Busy];
+                    speed *= agent.moveDef.GetSpeedModMult(NavSpeedModMultType.Busy);
                 }
                 else if ((blockTypes & NavBlockType.Idle) != 0)
                 {
-                    speed *= agent.moveDef.speedModMults[(int)NavSpeedModMultType.Idle];
+                    speed *= agent.moveDef.GetSpeedModMult(NavSpeedModMultType.Idle);
                 }
                 else if ((blockTypes & NavBlockType.Moving) != 0)
                 {
-                    speed *= agent.moveDef.speedModMults[(int)NavSpeedModMultType.Moving];
+                    speed *= agent.moveDef.GetSpeedModMult(NavSpeedModMultType.Moving);
                 }
             }
             float nodeCost = NavUtils.DirDistanceApproximately(dir) * navMap.SquareSize / Mathf.Max(NavMathUtils.EPSILON, speed);
