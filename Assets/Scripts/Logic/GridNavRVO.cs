@@ -46,15 +46,15 @@ namespace GridNav
             for (int i = 0; i < neighbors.Count; ++i)
             {
                 var other = neighbors[i];
-                ComputeAgentLine(agent.pos, radius, agent.velocity, agent.prefVelocity, agent.mass
-                    , other.pos, other.radius, other.velocity, other.prefVelocity, other.mass, -1, invTimeHorizon, deltaTime, ref orcaLines);
+                ComputeAgentLine(agent.pos, radius, agent.velocity, agent.prefVelocity, agent.param.mass
+                    , other.pos, other.radius, other.velocity, other.prefVelocity, other.param.mass, -1, invTimeHorizon, deltaTime, ref orcaLines);
             }
 
-            int lineFail = LinearProgram2(orcaLines, agent.maxSpeed, agent.prefVelocity, false, ref agent.newVelocity);
+            int lineFail = LinearProgram2(orcaLines, agent.param.maxSpeed, agent.prefVelocity, false, ref agent.newVelocity);
 
             if (lineFail < orcaLines.Count)
             {
-                LinearProgram3(orcaLines, numObstLines, lineFail, agent.maxSpeed, ref agent.newVelocity);
+                LinearProgram3(orcaLines, numObstLines, lineFail, agent.param.maxSpeed, ref agent.newVelocity);
             }
         }
         private static void ComputeObstacleLine(Vector3 position, float radius, Vector3 velocity, NavRVOObstacle obstacle1, float invTimeHorizonObst, ref List<NavRVOLine> orcaLines)
