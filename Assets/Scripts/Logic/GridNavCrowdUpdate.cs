@@ -53,7 +53,7 @@ namespace GridNav
                     }
                     checkStartIndex++;
                 }
-                if (checkStartIndex == checkEndIndex)
+                if (checkStartIndex > checkEndIndex)
                 {
                     ReRequestPath(agent);
                     continue;
