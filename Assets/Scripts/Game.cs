@@ -57,6 +57,7 @@ public class Game : MonoBehaviour
     Destination blueDestination;
     NavMap navMap;
     NavManager navManager;
+    float lastTime;
 
     void Awake()
     {
@@ -95,6 +96,7 @@ public class Game : MonoBehaviour
         navManager.AfterInit();
         redDestination.asset.transform.position = navMap.GetSquarePos(redDestination.x, redDestination.z);
         blueDestination.asset.transform.position = navMap.GetSquarePos(blueDestination.x, blueDestination.z);
+        lastTime = Time.realtimeSinceStartup;
     }
     void UpdateMap()
     {
@@ -226,10 +228,12 @@ public class Game : MonoBehaviour
                 c.asset.transform.forward = forward;
             }
         }
-    }
-    void FixedUpdate()
-    {
-        navManager.Update();
+        var nowTime = Time.realtimeSinceStartup;
+        if (nowTime - lastTime > 0.05f)
+        {
+            navManager.Update();
+            lastTime = Time.realtimeSinceStartup;
+        }
     }
     void OnDrawGizmos()
     {
