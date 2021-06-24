@@ -5,10 +5,7 @@ namespace GridNav
 {
     public static class NavCrowdUpdate
     {
-        public static void ReRequestPath(NavAgent agent)
-        {
-            agent.isRepath = true;
-        }
+
         public static void Update(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
         {
             UpdatePath(navManager, navQueries, agents); //多线程
@@ -87,9 +84,10 @@ namespace GridNav
             }
             navManager.UpdateMoveRequest();
         }
-        private static void UpdatePrefVelocity(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQueries, float deltaTime)
+        private static void UpdatePrefVelocity(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
         {
             var navQuery = navQueries[0];
+            var navMap = navManager.GetNavMap();
             foreach (var agent in agents)
             {
                 if (agent.moveState != NavMoveState.InProgress)
@@ -98,6 +96,16 @@ namespace GridNav
                     continue;
                 }
                 Debug.Assert(agent.path != null && agent.path.Count > 0);
+                if (NavMathUtils.SqrDistance2D(agent.pos, agent.path[0]) <= agent.goalRadius * agent.goalRadius)
+                {
+                    agent.prefVelocity = Vector3.zero;
+                    agent.moveState = NavMoveState.Idle;
+                    if (NavMathUtils.SqrDistance2D(agent.pos, agent.goalPos) > agent.goalRadius * agent.goalRadius)
+                    {
+                        ReRequestPath(agent);
+                    }
+                    continue;
+                }
                 var wayPointDistSqr = NavMathUtils.Square(Mathf.Max(agent.param.maxSpeed * 1.05f, 1.25f * navMap.SquareSize));
                 var nextWayPoint = agent.path[agent.path.Count - 1];
                 while (agent.path.Count > 1 && NavMathUtils.SqrDistance2D(agent.pos, nextWayPoint) < wayPointDistSqr)
@@ -105,68 +113,27 @@ namespace GridNav
                     agent.path.RemoveAt(agent.path.Count - 1);
                     nextWayPoint = agent.path[agent.path.Count - 1];
                 }
-                if (NavMathUtils.SqrDistance2D(agent.pos, agent.path[0]) <= agent.goalRadius * agent.goalRadius)
-                {
-                    agent.prefVelocity = Vector3.zero;
-                    agent.moveState = NavMoveState.Idle;
-                    if (NavMathUtils.SqrDistance2D(agent.pos, agent.goalPos) > agent.goalRadius * agent.goalRadius)
-                    {
-                        agent.isRepath = true;
-                    }
-                    continue;
-                }
-                float distanceMinSqr = NavMathUtils.Square(10.0f * navMap.SquareSize); // TODO const
-                while (agent.path.Count > 1 && NavMathUtils.SqrDistance2D(agent.pos, agent.path[agent.path.Count - 1]) < distanceMinSqr)
-                {
-                    agent.path.RemoveAt(agent.path.Count - 1);
-                }
-                float distanceMaxSqr = NavMathUtils.Square(15.0f * navMap.SquareSize); // TODO const
-                while (agent.path.Count > 0)
-                {
-                    var pos = agent.path[agent.path.Count - 1];
-                    if (NavMathUtils.SqrDistance2D(agent.pos, pos) > distanceMaxSqr)
-                    {
-                        agent.path.Clear();
-                        break;
-                    }
-                    navMap.GetSquareXZ(pos, out var x, out var z);
-                    if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x, z))
-                    {
-                        break;
-                    }
-                    agent.path.RemoveAt(0);
-                }
-                if (agent.path.Count == 0)
-                {
-                    agent.prefVelocity = Vector3.zero;
-                    agent.isRepath = true;
-                    continue;
-                }
-                if (!navQuery.FindCorners(agent, agent.pos, agent.path[agent.path.Count - 1], 512, out agent.corners))
-                {
-                    agent.prefVelocity = Vector3.zero;
-                    agent.isRepath = true;
-                    continue;
-                }
-                Debug.Assert(agent.corners.Count >= 2);
-                agent.prefVelocity = NavMathUtils.Normalized2D(agent.corners[agent.corners.Count - 2] - agent.corners[agent.corners.Count - 1]) * agent.maxSpeed;
+                agent.prefVelocity = NavMathUtils.Normalized2D(nextWayPoint - agent.pos) * agent.param.maxSpeed;
             }
         }
-        private static void UpdateNewVelocity(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQueries, float deltaTime)
+        private static void UpdateNewVelocity(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
         {
+            var navMap = navManager.GetNavMap();
+            var blockingObjectMap = navManager.GetBlockingObjectMap();
             foreach (var agent in agents)
             {
-                //agent.newVelocity = agent.prefVelocity.normalized * agent.param.maxSpeed;
                 CollectNeighbors(navMap, blockingObjectMap, agent);
-                NavRVO.ComputeNewVelocity(agent, agent.obstacleNeighbors, agent.agentNeighbors, deltaTime);
+                NavRVO.ComputeNewVelocity(agent, agent.obstacleNeighbors, agent.agentNeighbors);
             }
         }
-        private static void UpdatePos(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQueries, float deltaTime)
+        private static void UpdatePos(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
         {
             var navQuery = navQueries[0];
+            var navMap = navManager.GetNavMap();
+            var blockingObjectMap = navManager.GetBlockingObjectMap();
             foreach (var agent in agents)
             {
-                var newPos = agent.pos + agent.newVelocity * deltaTime;
+                var newPos = agent.pos + agent.newVelocity;
                 newPos.y = navMap.GetHeight(newPos);
                 navMap.ClampInBounds(newPos, out var x, out var z, out newPos);
                 if (!NavUtils.TestMoveSquare(navMap, agent, x, z))
@@ -176,6 +143,7 @@ namespace GridNav
                         if (NavUtils.TestMoveSquare(navMap, agent, tx, tz))
                         {
                             newPos = navMap.GetSquarePos(tx, tz);
+                            //ReRequestPath(agent);
                             return false;
                         }
                         return true;
@@ -199,7 +167,8 @@ namespace GridNav
         {
             agent.agentNeighbors.Clear();
             agent.obstacleNeighbors.Clear();
-            float queryRadius = agent.radius + Mathf.Max(navMap.SquareSize, agent.maxSpeed) * 2.0f;
+
+            float queryRadius = agent.radius + Mathf.Max(navMap.SquareSize, agent.param.maxSpeed) * 2.0f;
             navMap.GetSquareXZ(new Vector3(agent.pos.x - queryRadius, 0, agent.pos.z - queryRadius), out var sx, out var sz);
             navMap.GetSquareXZ(new Vector3(agent.pos.x + queryRadius, 0, agent.pos.z + queryRadius), out var ex, out var ez);
             for (int z = sz; z <= ez; z++)
@@ -276,6 +245,10 @@ namespace GridNav
                 obstacles.Add(obstacle);
             }
             return obstacleNo;
+        }
+        private static void ReRequestPath(NavAgent agent)
+        {
+            agent.isRepath = true;
         }
     }
 }

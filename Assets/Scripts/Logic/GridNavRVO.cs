@@ -21,12 +21,11 @@ namespace GridNav
 
     public static class NavRVO
     {
-        public static void ComputeNewVelocity(NavAgent agent, List<NavRVOObstacle> obstacles, List<NavAgent> neighbors, float deltaTime)
+        public static void ComputeNewVelocity(NavAgent agent, List<NavRVOObstacle> obstacles, List<NavAgent> neighbors)
         {
             var orcaLines = new List<NavRVOLine>();
 
-            float timeHorizonObst = 1.0f; // TODO
-            float invTimeHorizonObst = 1.0f / timeHorizonObst;
+            float invTimeHorizonObst = 0.25f;
 
             float radius = agent.radius;
             var position = agent.pos;
@@ -39,15 +38,14 @@ namespace GridNav
 
             int numObstLines = orcaLines.Count;
 
-            var timeHorizon = 1.0f; // TODO
-            float invTimeHorizon = 1.0f / timeHorizon;
+            float invTimeHorizon = 0.25f;
 
             /* Create agent ORCA lines. */
             for (int i = 0; i < neighbors.Count; ++i)
             {
                 var other = neighbors[i];
                 ComputeAgentLine(agent.pos, radius, agent.velocity, agent.prefVelocity, agent.param.mass
-                    , other.pos, other.radius, other.velocity, other.prefVelocity, other.param.mass, -1, invTimeHorizon, deltaTime, ref orcaLines);
+                    , other.pos, other.radius, other.velocity, other.prefVelocity, other.param.mass, -1, invTimeHorizon, 1.0f, ref orcaLines);
             }
 
             int lineFail = LinearProgram2(orcaLines, agent.param.maxSpeed, agent.prefVelocity, false, ref agent.newVelocity);
