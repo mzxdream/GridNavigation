@@ -41,6 +41,14 @@ namespace GridNav
         public void Clear()
         {
         }
+        public NavMap GetNavMap()
+        {
+            return navMap;
+        }
+        public NavBlockingObjectMap GetBlockingObjectMap()
+        {
+            return blockingObjectMap;
+        }
         public NavQueryStatus InitSlicedFindPath(NavAgent agent, Vector3 startPos, Vector3 goalPos, float goalRadius)
         {
             Debug.Assert(agent != null && goalRadius >= 0.0f);

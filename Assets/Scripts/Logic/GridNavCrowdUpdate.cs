@@ -5,12 +5,22 @@ namespace GridNav
 {
     public static class NavCrowdUpdate
     {
-        public static void Update(NavManager navManager, NavMap navMap, NavBlockingObjectMap blockingObjectMap, List<NavAgent> agents, NavQuery[] navQuerys)
+        public static void Update(NavManager navManager, List<NavAgent> agents, NavQuery[] navQuerys)
         {
-            UpdateMoveRequest(navManager, agents); // 单线程
-            UpdatePrefVelocity(navManager, navMap, blockingObjectMap, agents, navQuerys, navManager.FrameTime); // 多线程
-            UpdateNewVelocity(navManager, navMap, blockingObjectMap, agents, navQuerys, navManager.FrameTime); // 多线程
-            UpdatePos(navManager, navMap, blockingObjectMap, agents, navQuerys, navManager.FrameTime); // 单线程
+            UpdatePath(navManager, agents, navQuerys); //多线程
+            UpdateMoveRequest(navManager, agents, navQuerys); // 单线程
+            UpdatePrefVelocity(navManager, agents, navQuerys); // 多线程
+            UpdateNewVelocity(navManager, agents, navQuerys); // 多线程
+            UpdatePos(navManager, agents, navQuerys); // 单线程
+        }
+        private static void UpdatePath(NavManager navManager, List<NavAgent> agents, NavQuery[] navQuerys)
+        {
+            var navQuery = navQuerys[0];
+            var navMap = navManager.GetNavMap();
+            foreach (var agent in agents)
+            {
+
+            }
         }
         private static void UpdateMoveRequest(NavManager navManager, List<NavAgent> agents)
         {
@@ -99,20 +109,24 @@ namespace GridNav
                 var newPos = agent.pos + agent.newVelocity * deltaTime;
                 newPos.y = navMap.GetHeight(newPos);
                 navMap.ClampInBounds(newPos, out var x, out var z, out newPos);
-                //if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x, z))
-                //{
-                //    //todo checkcollision
-                //    if (!navQuery.FindNearestSquare(agent, newPos, 20.0f * agent.radius, false, out newPos))
-                //    {
-                //        newPos = agent.pos;
-                //    }
-                //}
+                if (!NavUtils.TestMoveSquare(navMap, agent, x, z))
+                {
+                    NavUtils.ForeachNearestSquare(x, z, 20, (int tx, int tz) =>
+                    {
+                        if (NavUtils.TestMoveSquare(navMap, agent, tx, tz))
+                        {
+                            newPos = navMap.GetSquarePos(tx, tz);
+                            return false;
+                        }
+                        return true;
+                    });
+                }
                 agent.lastPos = agent.pos;
                 agent.pos = newPos;
                 agent.velocity = newPos - agent.lastPos;
                 agent.isMoving = (agent.velocity.sqrMagnitude >= 1e-4f);
                 // 更新索引
-                var mapPos = NavUtils.CalcMapPos(navMap, agent.moveParam.unitSize, agent.pos);
+                var mapPos = NavUtils.CalcMapPos(navMap, agent.moveDef.GetUnitSize(), agent.pos);
                 if (mapPos != agent.mapPos)
                 {
                     blockingObjectMap.RemoveAgent(agent);

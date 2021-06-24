@@ -85,7 +85,7 @@ namespace GridNav
         {
             frameNum++;
             var agentList = new List<NavAgent>(agents.Values);
-            NavCrowdUpdate.Update(this, navMap, blockingObjectMap, agentList, workNavQuerys);
+            NavCrowdUpdate.Update(this, agentList, workNavQuerys);
         }
         public NavMap GetNavMap()
         {
