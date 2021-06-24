@@ -19,7 +19,34 @@ namespace GridNav
             var navMap = navManager.GetNavMap();
             foreach (var agent in agents)
             {
-
+                if (agent.moveState != NavMoveState.InProgress)
+                {
+                    continue;
+                }
+                Debug.Assert(agent.path.Count > 0);
+                var wayPointDistSqr = NavMathUtils.Square(Mathf.Max(agent.param.maxSpeed * 1.05f, 1.25f * navMap.SquareSize));
+                while (agent.path.Count > 1 && NavMathUtils.SqrDistance2D(agent.pos, agent.path[agent.path.Count - 1]) < wayPointDistSqr)
+                {
+                    agent.path.RemoveAt(agent.path.Count - 1);
+                }
+                if (NavUtils.IsBlockedSquare())
+                {
+                    while (agent.path.Count > 0)
+                    {
+                        var pos = agent.path[agent.path.Count - 1];
+                        if (NavMathUtils.SqrDistance2D(agent.pos, pos) > distanceMaxSqr)
+                        {
+                            agent.path.Clear();
+                            break;
+                        }
+                        navMap.GetSquareXZ(pos, out var x, out var z);
+                        if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x, z))
+                        {
+                            break;
+                        }
+                        agent.path.RemoveAt(0);
+                    }
+                }
             }
         }
         private static void UpdateMoveRequest(NavManager navManager, List<NavAgent> agents)
