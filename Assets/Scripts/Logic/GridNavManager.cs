@@ -55,6 +55,10 @@ namespace GridNav
             this.agents = new Dictionary<int, NavAgent>();
             this.lastAgentID = 0;
             this.moveDefs = new NavMoveDef[maxMoveDefs];
+            for (int i = 0; i < this.moveDefs.Length; i++)
+            {
+                this.moveDefs[i] = new NavMoveDef();
+            }
             return true;
         }
         public bool AfterInit()
@@ -107,7 +111,7 @@ namespace GridNav
         public int AddAgent(Vector3 pos, NavAgentParam param)
         {
             var moveDef = GetMoveDef(param.moveType);
-            Debug.Assert(moveDef == null);
+            Debug.Assert(moveDef != null);
             lastAgentID++;
             var agent = new NavAgent
             {

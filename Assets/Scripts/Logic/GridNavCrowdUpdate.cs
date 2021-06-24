@@ -140,6 +140,10 @@ namespace GridNav
                 {
                     NavUtils.ForeachNearestSquare(x, z, 20, (int tx, int tz) =>
                     {
+                        if (tx < 0 || tx >= navMap.XSize || tz < 0 || tz >= navMap.ZSize)
+                        {
+                            return true;
+                        }
                         if (NavUtils.TestMoveSquare(navMap, agent, tx, tz))
                         {
                             newPos = navMap.GetSquarePos(tx, tz);
