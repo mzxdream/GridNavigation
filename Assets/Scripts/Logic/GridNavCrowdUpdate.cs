@@ -51,6 +51,7 @@ namespace GridNav
                     {
                         break;
                     }
+                    checkStartIndex++;
                 }
                 if (checkStartIndex == checkEndIndex)
                 {
