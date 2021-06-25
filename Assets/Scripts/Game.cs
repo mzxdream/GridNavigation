@@ -42,6 +42,8 @@ public class Game : MonoBehaviour
     bool showGrid = false;
     [SerializeField]
     bool showCharacter = true;
+    [SerializeField]
+    bool showPath = false;
 
     List<MeshObj> meshObjs;
     List<Mesh> gridMeshs = null;
@@ -225,21 +227,18 @@ public class Game : MonoBehaviour
     }
     void OnDrawGizmos()
     {
-        if (showCharacter)
+        if (redCharacters != null)
         {
-            if (redCharacters != null)
+            foreach (var c in redCharacters)
             {
-                foreach (var c in redCharacters)
-                {
-                    DrawCharacterDetail(c, Color.red);
-                }
+                DrawCharacterDetail(c, Color.red);
             }
-            if (blueCharacters != null)
+        }
+        if (blueCharacters != null)
+        {
+            foreach (var c in blueCharacters)
             {
-                foreach (var c in blueCharacters)
-                {
-                    DrawCharacterDetail(c, Color.blue);
-                }
+                DrawCharacterDetail(c, Color.blue);
             }
         }
         if (showGrid && gridMeshs != null)
@@ -258,47 +257,40 @@ public class Game : MonoBehaviour
         {
             return;
         }
-        int unitSize = agent.moveDef.GetUnitSize();
-        var pos = navMap.GetSquareCornerPos(agent.mapPos.x, agent.mapPos.y);
-        pos.x += unitSize * navMap.SquareSize * 0.5f;
-        pos.z += unitSize * navMap.SquareSize * 0.5f;
-        Gizmos.color = color;
-        Gizmos.DrawCube(pos, new Vector3(unitSize * navMap.SquareSize, 0.1f, unitSize * navMap.SquareSize));
+        if (showCharacter)
         {
-            var p1 = c.asset.transform.position + Vector3.up;
-            var prefVelocity = agent.prefVelocity;
-            if (prefVelocity.sqrMagnitude >= 1e-4f)
+            int unitSize = agent.moveDef.GetUnitSize();
+            var pos = navMap.GetSquareCornerPos(agent.mapPos.x, agent.mapPos.y);
+            pos.x += unitSize * navMap.SquareSize * 0.5f;
+            pos.z += unitSize * navMap.SquareSize * 0.5f;
+            Gizmos.color = color;
+            Gizmos.DrawCube(pos, new Vector3(unitSize * navMap.SquareSize, 0.1f, unitSize * navMap.SquareSize));
             {
-                var p2 = p1 + prefVelocity;
-                UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.black, null, 5);
-            }
-            var velocity = agent.velocity;
-            if (velocity.sqrMagnitude >= 1e-5f)
-            {
-                var p2 = p1 + velocity;
-                UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.white, null, 5);
+                var p1 = c.asset.transform.position + Vector3.up;
+                var prefVelocity = agent.prefVelocity;
+                if (prefVelocity.sqrMagnitude >= 1e-5f)
+                {
+                    var p2 = p1 + prefVelocity.normalized * 2.0f;
+                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 5);
+                }
+                var velocity = agent.velocity;
+                if (velocity.sqrMagnitude >= 1e-5f)
+                {
+                    var p2 = p1 + velocity.normalized * 2.0f;
+                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.white, null, 5);
+                }
             }
         }
-        if (agent.path != null && agent.path.Count > 0)
+        if (showPath && agent.path != null && agent.path.Count > 0)
         {
             var p1 = agent.path[agent.path.Count - 1] + Vector3.up;
-            for (int i = agent.path.Count - 2; i >= 0; i--)
+            for (int i = agent.path.Count - 2, j = 0; i >= 0 && j <= 10; i--, j++)
             {
                 var p2 = agent.path[i] + Vector3.up;
                 UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.yellow, null, 5);
                 p1 = p2;
             }
         }
-        //if (agent.corners != null && agent.corners.Count > 0)
-        //{
-        //    var p1 = agent.corners[agent.corners.Count - 1] + Vector3.up;
-        //    for (int i = agent.corners.Count - 2; i >= 0; i--)
-        //    {
-        //        var p2 = agent.corners[i] + Vector3.up;
-        //        UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 5);
-        //        p1 = p2;
-        //    }
-        //}
     }
     Character CreateCharacter(Transform prefab)
     {

@@ -154,9 +154,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   squareSize: 0.5
-  squareTexture: {fileID: 2800000, guid: 1847a973a20a9ad4e9d15d05965d1b1e, type: 3}
-  wallPrefab: {fileID: 615282614731244379, guid: 195a1f7e12cbbce48a82e0041794bca1,
-    type: 3}
   redDestinationPrefab: {fileID: 5138878698154016187, guid: cc8a88cb3d1756443bcce37349e39ae7,
     type: 3}
   blueDestinationPrefab: {fileID: 5138878698154016187, guid: 4e02893ed76155c4199ff3f48f5c274e,
@@ -168,7 +165,9 @@ MonoBehaviour:
   moveType: 0
   mass: 1
   maxSpeed: 2
-  showGizmos: 0
+  showGrid: 0
+  showCharacter: 1
+  showPath: 1
 --- !u!65 &705349665
 BoxCollider:
   m_ObjectHideFlags: 0
