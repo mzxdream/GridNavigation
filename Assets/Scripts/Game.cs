@@ -46,10 +46,12 @@ public class Game : MonoBehaviour
     [SerializeField]
     float maxSpeed = 2.0f;
     [SerializeField]
-    bool showGizmos = true;
+    bool showGrid = false;
+    [SerializeField]
+    bool showCharacter = true;
+
     List<MeshObj> meshObjs;
     List<Mesh> gridMeshs = null;
-
     Dictionary<int, Wall> walls;
     List<Character> redCharacters;
     List<Character> blueCharacters;
@@ -237,25 +239,24 @@ public class Game : MonoBehaviour
     }
     void OnDrawGizmos()
     {
-        if (!showGizmos)
+        if (showCharacter)
         {
-            return;
-        }
-        if (redCharacters != null)
-        {
-            foreach (var c in redCharacters)
+            if (redCharacters != null)
             {
-                DrawCharacterDetail(c, Color.red);
+                foreach (var c in redCharacters)
+                {
+                    DrawCharacterDetail(c, Color.red);
+                }
+            }
+            if (blueCharacters != null)
+            {
+                foreach (var c in blueCharacters)
+                {
+                    DrawCharacterDetail(c, Color.blue);
+                }
             }
         }
-        if (blueCharacters != null)
-        {
-            foreach (var c in blueCharacters)
-            {
-                DrawCharacterDetail(c, Color.blue);
-            }
-        }
-        if (gridMeshs != null)
+        if (showGrid && gridMeshs != null)
         {
             Gizmos.color = Color.green;
             foreach (var mesh in gridMeshs)
