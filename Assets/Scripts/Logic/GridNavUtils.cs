@@ -148,7 +148,15 @@ namespace GridNav
             }
             return true;
         }
-        public static NavBlockType TestBlockType(NavAgent collider, NavAgent collidee, bool isNotCheckMoving = false)
+        public static bool IsPushResistant(NavAgent collider, NavAgent collidee)
+        {
+            if (collider == collidee)
+            {
+                return false;
+            }
+            return collidee.param.isPushResistant;
+        }
+        public static NavBlockType TestBlockType(NavAgent collider, NavAgent collidee)
         {
             Debug.Assert(collider != null && collidee != null);
 
@@ -156,11 +164,11 @@ namespace GridNav
             {
                 return NavBlockType.None;
             }
-            if (!isNotCheckMoving && collidee.isMoving)
+            if (collidee.isMoving)
             {
                 return NavBlockType.Moving;
             }
-            if (collidee.param.isPushResistant)
+            if (IsPushResistant(collider, collidee))
             {
                 return NavBlockType.Blocked;
             }
@@ -170,14 +178,14 @@ namespace GridNav
             }
             return NavBlockType.Idle;
         }
-        public static NavBlockType TestBlockTypesSquareCenter(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z, bool isNotCheckMoving = false)
+        public static NavBlockType TestBlockTypesSquareCenter(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
         {
             Debug.Assert(blockingObjectMap != null && agent != null);
 
             var blockTypes = NavBlockType.None;
             foreach (var other in blockingObjectMap.GetSquareAgents(x, z))
             {
-                blockTypes |= TestBlockType(agent, other, isNotCheckMoving);
+                blockTypes |= TestBlockType(agent, other);
                 if ((blockTypes & NavBlockType.Blocked) != 0)
                 {
                     break;

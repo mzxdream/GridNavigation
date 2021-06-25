@@ -18,7 +18,6 @@ namespace GridNav
         {
             var navQuery = navQueries[0];
             var navMap = navManager.GetNavMap();
-            var blockingObjectMap = navManager.GetBlockingObjectMap();
             foreach (var agent in agents)
             {
                 if (agent.moveState != NavMoveState.InProgress)
