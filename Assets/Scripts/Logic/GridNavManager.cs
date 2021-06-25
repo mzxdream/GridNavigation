@@ -247,7 +247,7 @@ namespace GridNav
             }
             return agent.velocity;
         }
-        public void UpdateMoveRequest(int maxNodes = 10240)
+        public void UpdateMoveRequest(int maxNodes = 1024)
         {
             while (moveRequestQueue.Count > 0 && maxNodes > 0) //寻路
             {

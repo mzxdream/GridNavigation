@@ -165,10 +165,10 @@ MonoBehaviour:
     type: 3}
   blueCharacterPrefab: {fileID: 4430799067832463752, guid: 27afe6d2f6d618942b6d5f6b3b84bf2a,
     type: 3}
+  moveType: 0
   mass: 1
-  unitSize: 4
   maxSpeed: 2
-  showGizmos: 1
+  showGizmos: 0
 --- !u!65 &705349665
 BoxCollider:
   m_ObjectHideFlags: 0

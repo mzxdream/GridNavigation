@@ -229,7 +229,7 @@ public class Game : MonoBehaviour
             }
         }
         var nowTime = Time.realtimeSinceStartup;
-        if (nowTime - lastTime > 0.05f)
+        if (nowTime - lastTime > 0.0333f)
         {
             navManager.Update();
             lastTime = Time.realtimeSinceStartup;
