@@ -29,7 +29,7 @@ namespace GridNav
             speedModMults[(int)NavSpeedModMultType.Idle] = 0.35f;
             speedModMults[(int)NavSpeedModMultType.Busy] = 0.10f;
             speedModMults[(int)NavSpeedModMultType.Moving] = 0.65f;
-            speedModMults[(int)NavSpeedModMultType.Blocked] = 0.001f;
+            speedModMults[(int)NavSpeedModMultType.Blocked] = 0.01f;
         }
         public void SetUnitSize(int unitSize)
         {
