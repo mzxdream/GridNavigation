@@ -135,11 +135,23 @@ namespace GridNav
                 obstacleNeighbors = new List<NavRVOObstacle>(),
             };
             agent.param.maxSpeed /= framesPerSecond;
-            navMap.ClampInBounds(agent.pos, out _, out _, out agent.pos);
-            //if (navQuery.FindNearestSquare(agent, agent.pos, 20.0f * agent.radius, true, out var nearesetPos))
-            //{
-            //    agent.pos = nearesetPos;
-            //}
+            navMap.ClampInBounds(agent.pos, out var x, out var z, out agent.pos);
+            if (!NavUtils.TestMoveSquare(navMap, agent, x, z) || !NavUtils.IsNoneBlockTypesSquare(blockingObjectMap, agent, x, z))
+            {
+                NavUtils.ForeachNearestSquare(x, z, 20, (int tx, int tz) =>
+                {
+                    if (tx < 0 || tx >= navMap.XSize || tz < 0 || tz >= navMap.ZSize)
+                    {
+                        return true;
+                    }
+                    if (!NavUtils.TestMoveSquare(navMap, agent, tx, tz) || !NavUtils.IsNoneBlockTypesSquare(blockingObjectMap, agent, tx, tz))
+                    {
+                        return true;
+                    }
+                    agent.pos = navMap.GetSquarePos(tx, tz);
+                    return false;
+                });
+            }
             agents.Add(agent.id, agent);
             agent.mapPos = NavUtils.CalcMapPos(navMap, moveDef.GetUnitSize(), agent.pos);
             blockingObjectMap.AddAgent(agent);

@@ -209,6 +209,31 @@ namespace GridNav
             }
             return blockTypes;
         }
+        public static bool IsNoneBlockTypesSquare(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
+        {
+            Debug.Assert(blockingObjectMap != null && agent != null);
+
+            var halfUnitSize = (agent.moveDef.GetUnitSize() - 1) >> 1;
+            int xmin = x - halfUnitSize;
+            int xmax = x + halfUnitSize;
+            int zmin = z - halfUnitSize;
+            int zmax = z + halfUnitSize;
+
+            for (int tz = zmin; tz <= zmax; tz += 2)
+            {
+                for (int tx = xmin; tx <= xmax; tx += 2)
+                {
+                    foreach (var other in blockingObjectMap.GetSquareAgents(tx, tz))
+                    {
+                        if (other != agent)
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
         public static bool IsBlockedSquare(NavMap navMap, NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z, bool isNotCheckMoving = false)
         {
             Debug.Assert(navMap != null && blockingObjectMap != null && agent != null);

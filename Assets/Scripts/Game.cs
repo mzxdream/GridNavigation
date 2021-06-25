@@ -3,11 +3,6 @@ using UnityEngine;
 using UnityEditor;
 using GridNav;
 
-class Wall
-{
-    public GameObject asset;
-}
-
 class Destination
 {
     public int x;
@@ -34,9 +29,7 @@ public class Game : MonoBehaviour
     [SerializeField, Range(0.1f, 5.0f)]
     float squareSize = 0.2f;
     [SerializeField]
-    Texture2D squareTexture = default;
-    [SerializeField]
-    Transform wallPrefab = default, redDestinationPrefab = default, blueDestinationPrefab = default;
+    Transform redDestinationPrefab = default, blueDestinationPrefab = default;
     [SerializeField]
     Transform redCharacterPrefab = default, blueCharacterPrefab = default;
     [SerializeField, Range(0, 3)]
@@ -52,7 +45,6 @@ public class Game : MonoBehaviour
 
     List<MeshObj> meshObjs;
     List<Mesh> gridMeshs = null;
-    Dictionary<int, Wall> walls;
     List<Character> redCharacters;
     List<Character> blueCharacters;
     Destination redDestination;
@@ -63,7 +55,6 @@ public class Game : MonoBehaviour
 
     void Awake()
     {
-        walls = new Dictionary<int, Wall>();
         redCharacters = new List<Character>();
         blueCharacters = new List<Character>();
         redDestination = new Destination
@@ -82,11 +73,6 @@ public class Game : MonoBehaviour
         var xsize = (int)(transform.localScale.x / squareSize);
         var zsize = (int)(transform.localScale.z / squareSize);
         navMap.Init(transform.position - new Vector3(xsize * squareSize * 0.5f, 0, zsize * squareSize * 0.5f), xsize, zsize, squareSize);
-
-        //transform.localScale = new Vector3(navMap.XSize * squareSize, 0.01f, navMap.ZSize * squareSize);
-        //var material = this.GetComponent<MeshRenderer>().material;
-        //material.mainTexture = squareTexture;
-        //material.SetTextureScale("_MainTex", new Vector2(navMap.XSize, navMap.ZSize));
 
         UpdateMap();
         navManager = new NavManager();
