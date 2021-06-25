@@ -174,12 +174,8 @@ namespace GridNav
         {
             Debug.Assert(blockingObjectMap != null && agent != null);
 
-            if (!blockingObjectMap.GetSquareAgents(x, z, out var agentList))
-            {
-                return NavBlockType.None;
-            }
             var blockTypes = NavBlockType.None;
-            foreach (var other in agentList)
+            foreach (var other in blockingObjectMap.GetSquareAgents(x, z))
             {
                 blockTypes |= TestBlockType(agent, other, isNotCheckMoving);
                 if ((blockTypes & NavBlockType.Structure) != 0)

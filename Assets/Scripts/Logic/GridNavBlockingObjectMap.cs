@@ -7,13 +7,22 @@ namespace GridNav
     {
         private int xsize;
         private int zsize;
-        private Dictionary<int, List<NavAgent>> agents;
+        private List<NavAgent>[] suqareAgents;
 
         public NavBlockingObjectMap(int xsize, int zsize)
         {
+            Debug.Assert(xsize > 0 && zsize > 0);
+
             this.xsize = xsize;
             this.zsize = zsize;
-            this.agents = new Dictionary<int, List<NavAgent>>();
+            this.suqareAgents = new List<NavAgent>[xsize * zsize];
+            for (int z = 0; z < zsize; z++)
+            {
+                for (int x = 0; x < xsize; x++)
+                {
+                    this.suqareAgents[x + z * xsize] = new List<NavAgent>();
+                }
+            }
         }
         public void AddAgent(NavAgent agent)
         {
@@ -26,13 +35,7 @@ namespace GridNav
             {
                 for (int x = xmin; x < xmax; x++)
                 {
-                    var index = x + z * xsize;
-                    if (!agents.TryGetValue(index, out var agentList))
-                    {
-                        agentList = new List<NavAgent>();
-                        agents.Add(index, agentList);
-                    }
-                    agentList.Add(agent);
+                    this.suqareAgents[x + z * xsize].Add(agent);
                 }
             }
         }
@@ -48,23 +51,14 @@ namespace GridNav
                 for (int x = xmin; x < xmax; x++)
                 {
                     var index = x + z * xsize;
-                    if (!agents.TryGetValue(index, out var agentList))
-                    {
-                        continue;
-                    }
-                    agentList.Remove(agent);
-                    if (agentList.Count == 0)
-                    {
-                        agents.Remove(index);
-                    }
+                    this.suqareAgents[x + z * xsize].Remove(agent);
                 }
             }
         }
-        public bool GetSquareAgents(int x, int z, out List<NavAgent> agentList)
+        public List<NavAgent> GetSquareAgents(int x, int z)
         {
             Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
-            var index = x + z * xsize;
-            return agents.TryGetValue(index, out agentList);
+            return this.suqareAgents[x + z * xsize];
         }
     }
 }

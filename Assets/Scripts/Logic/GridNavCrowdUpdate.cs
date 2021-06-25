@@ -180,26 +180,18 @@ namespace GridNav
             {
                 for (int x = sx; x <= ex; x++)
                 {
-                    var isBlocked = false;
-                    if (blockingObjectMap.GetSquareAgents(x, z, out var agentList))
+                    foreach (var other in blockingObjectMap.GetSquareAgents(x, z))
                     {
-                        foreach (var other in agentList)
+                        if (other == agent)
                         {
-                            if (other == agent)
-                            {
-                                continue;
-                            }
-                            if (!agent.agentNeighbors.Contains(other))
-                            {
-                                agent.agentNeighbors.Add(other);
-                            }
-                            //if ((NavUtils.TestBlockType(agent, other, true) & NavBlockType.Structure) != 0)
-                            //{
-                            //    isBlocked = true;
-                            //}
+                            continue;
+                        }
+                        if (!agent.agentNeighbors.Contains(other))
+                        {
+                            agent.agentNeighbors.Add(other);
                         }
                     }
-                    if (isBlocked || !NavUtils.TestMoveSquareCenter(navMap, agent, x, z))
+                    if (!NavUtils.TestMoveSquareCenter(navMap, agent, x, z))
                     {
                         List<Vector3> vertices = new List<Vector3>();
 
