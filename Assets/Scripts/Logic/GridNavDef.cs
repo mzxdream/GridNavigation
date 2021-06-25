@@ -5,8 +5,8 @@ namespace GridNav
 {
     public enum NavDirection { None = 0, Forward = 1, Back = 2, Left = 3, Right = 4, LeftForward = 5, RightForward = 6, LeftBack = 7, RightBack = 8 }
     public enum NavMoveState { Idle = 0, Requesting = 1, WaitForPath = 2, InProgress = 3 }
-    public enum NavBlockType { None = 0, Idle = 1, Busy = 2, Moving = 4, Structure = 8 };
-    public enum NavSpeedModMultType { Idle = 0, Busy = 1, Moving = 2, NumTypes = 3 };
+    public enum NavBlockType { None = 0, Idle = 1, Busy = 2, Moving = 4, Blocked = 8 };
+    public enum NavSpeedModMultType { Idle = 0, Busy = 1, Moving = 2, Blocked = 3, NumTypes = 4 };
 
     public class NavDef
     {
@@ -29,6 +29,7 @@ namespace GridNav
             speedModMults[(int)NavSpeedModMultType.Idle] = 0.35f;
             speedModMults[(int)NavSpeedModMultType.Busy] = 0.10f;
             speedModMults[(int)NavSpeedModMultType.Moving] = 0.65f;
+            speedModMults[(int)NavSpeedModMultType.Blocked] = 0.001f;
         }
         public void SetUnitSize(int unitSize)
         {

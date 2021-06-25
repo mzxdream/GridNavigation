@@ -31,7 +31,7 @@ namespace GridNav
                 {
                     var pos = agent.path[agent.path.Count - checkStartIndex];
                     navMap.GetSquareXZ(pos, out var tx, out var tz);
-                    if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, tx, tz))
+                    if (!NavUtils.TestMoveSquare(navMap, agent, tx, tz))
                     {
                         break;
                     }
@@ -47,7 +47,7 @@ namespace GridNav
                 {
                     var pos = agent.path[agent.path.Count - checkStartIndex];
                     navMap.GetSquareXZ(pos, out var tx, out var tz);
-                    if (!NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, tx, tz))
+                    if (NavUtils.TestMoveSquare(navMap, agent, tx, tz))
                     {
                         break;
                     }

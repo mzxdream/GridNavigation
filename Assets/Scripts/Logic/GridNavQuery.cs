@@ -104,19 +104,19 @@ namespace GridNav
                 var BackBlocked = TestNeighborBlocked(bestNode, NavDirection.Back);
                 var LeftBlocked = TestNeighborBlocked(bestNode, NavDirection.Left);
                 var RightBlocked = TestNeighborBlocked(bestNode, NavDirection.Right);
-                if (!LeftBlocked && !ForwardBlocked)
+                if (!LeftBlocked || !ForwardBlocked)
                 {
                     TestNeighborBlocked(bestNode, NavDirection.LeftForward);
                 }
-                if (!RightBlocked && !ForwardBlocked)
+                if (!RightBlocked || !ForwardBlocked)
                 {
                     TestNeighborBlocked(bestNode, NavDirection.RightForward);
                 }
-                if (!LeftBlocked && !ForwardBlocked)
+                if (!LeftBlocked || !ForwardBlocked)
                 {
                     TestNeighborBlocked(bestNode, NavDirection.LeftBack);
                 }
-                if (!LeftBlocked && !BackBlocked)
+                if (!LeftBlocked || !BackBlocked)
                 {
                     TestNeighborBlocked(bestNode, NavDirection.RightBack);
                 }
@@ -147,122 +147,6 @@ namespace GridNav
             } while (curNode != null);
             return queryData.status;
         }
-        public bool FindCorners(NavAgent agent, Vector3 startPos, Vector3 goalPos, int maxNodes, out List<Vector3> corners)
-        {
-            Debug.Assert(agent != null);
-
-            corners = new List<Vector3>();
-            //if (IsStraightWalkable(agent, startPos, goalPos, false))
-            //{
-            //    corners.Add(goalPos);
-            //    corners.Add(startPos);
-            //    return true;
-            //}
-            //InitSlicedFindPath(agent, startPos, goalPos, 0.0f);
-            //var status = UpdateSlicedFindPath(maxNodes, out _);
-            //if ((status & NavQueryStatus.Success) == 0 || (status & NavQueryStatus.Partial) != 0)
-            //{
-            //    return false;
-            //}
-            //var curNode = queryData.lastBestNode;
-            //Debug.Assert(curNode != null);
-            //var nodes = new List<NavQueryNode>();
-            //do
-            //{
-            //    nodes.Add(curNode);
-            //    curNode = curNode.parent;
-            //} while (curNode != null);
-            //Debug.Assert(nodes.Count >= 2);
-            ////去除多余的点
-            //corners.Add(goalPos);
-            //var oldDirX = nodes[1].x - nodes[0].x;
-            //var oldDirZ = nodes[1].z - nodes[0].z;
-            //for (int i = 2; i < nodes.Count; i++)
-            //{
-            //    var newDirX = nodes[i].x - nodes[i - 1].x;
-            //    var newDirZ = nodes[i].z - nodes[i - 1].z;
-            //    if (newDirX != oldDirX || newDirZ != oldDirZ)
-            //    {
-            //        oldDirX = newDirX;
-            //        oldDirZ = newDirZ;
-            //        corners.Add(navMap.GetSquarePos(nodes[i - 1].x, nodes[i - 1].z));
-            //    }
-            //}
-            //corners.Add(startPos);
-            //去除可以直达的拐点
-            //for (int i = corners.Count - 1; i > 1; i--)
-            //{
-            //    for (int j = 0; j < i - 1; j++)
-            //    {
-            //        if (IsStraightWalkable(agent, corners[j], corners[i], false))
-            //        {
-            //            for (int k = i - 1; k > j; k--)
-            //            {
-            //                corners.RemoveAt(k);
-            //            }
-            //            i = j + 1;
-            //            break;
-            //        }
-            //    }
-            //}
-            return true;
-        }
-        private bool IsStraightWalkable(NavAgent agent, Vector3 startPos, Vector3 endPos, bool isNotCheckMoving)
-        {
-            Debug.Assert(agent != null);
-
-            navMap.GetSquareXZ(startPos, out var sx, out var sz);
-            navMap.GetSquareXZ(endPos, out var ex, out var ez);
-            if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, sx, sz, isNotCheckMoving))
-            {
-                return false;
-            }
-            if (sx == ex && sz == ez)
-            {
-                return true;
-            }
-            int dx = ex - sx, dz = ez - sz;
-            int nx = Mathf.Abs(dx), nz = Mathf.Abs(dz);
-            int signX = (dx > 0 ? 1 : -1), signZ = (dz > 0 ? 1 : -1);
-            int x = sx, z = sz;
-            int ix = 0, iz = 0;
-            while (ix < nx || iz < nz)
-            {
-                int t1 = (2 * ix + 1) * nz, t2 = (2 * iz + 1) * nx;
-                if (t1 < t2) //Horizontal
-                {
-                    if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x + signX, z, isNotCheckMoving))
-                    {
-                        return false;
-                    }
-                    x += signX;
-                    ix++;
-                }
-                else if (t1 > t2) //Vertical
-                {
-                    if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x, z + signZ, isNotCheckMoving))
-                    {
-                        return false;
-                    }
-                    z += signZ;
-                    iz++;
-                }
-                else //Cross
-                {
-                    if (NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x + signX, z, isNotCheckMoving)
-                        || NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x, z + signZ, isNotCheckMoving)
-                        || NavUtils.IsBlockedSquare(navMap, blockingObjectMap, agent, x + signX, z + signZ, isNotCheckMoving))
-                    {
-                        return false;
-                    }
-                    x += signX;
-                    z += signZ;
-                    ix++;
-                    iz++;
-                }
-            }
-            return true;
-        }
         private bool TestNeighborBlocked(NavQueryNode node, NavDirection dir)
         {
             NavUtils.GetNeighborXZ(node.x, node.z, dir, out var nx, out var nz);
@@ -286,26 +170,26 @@ namespace GridNav
                 return true;
             }
             var blockTypes = NavUtils.TestBlockTypesSquare(blockingObjectMap, agent, neighborNode.x, neighborNode.z);
-            if ((blockTypes & NavBlockType.Structure) != 0)
+            var speedMult = 1.0f;
             {
-                neighborNode.flags |= (int)(NavNodeFlags.Closed | NavNodeFlags.Blocked);
-                return true;
-            }
-            var speed = NavUtils.GetSquareSpeed(navMap, agent, neighborNode.x, neighborNode.z, dir);
-            {
+                if ((blockTypes & NavBlockType.Idle) != 0)
+                {
+                    speedMult = Mathf.Min(speedMult, agent.moveDef.GetSpeedModMult(NavSpeedModMultType.Idle));
+                }
                 if ((blockTypes & NavBlockType.Busy) != 0)
                 {
-                    speed *= agent.moveDef.GetSpeedModMult(NavSpeedModMultType.Busy);
+                    speedMult = Mathf.Min(speedMult, agent.moveDef.GetSpeedModMult(NavSpeedModMultType.Busy));
                 }
-                else if ((blockTypes & NavBlockType.Idle) != 0)
+                if ((blockTypes & NavBlockType.Moving) != 0)
                 {
-                    speed *= agent.moveDef.GetSpeedModMult(NavSpeedModMultType.Idle);
+                    speedMult = Mathf.Min(speedMult, agent.moveDef.GetSpeedModMult(NavSpeedModMultType.Moving));
                 }
-                else if ((blockTypes & NavBlockType.Moving) != 0)
+                if ((blockTypes & NavBlockType.Blocked) != 0)
                 {
-                    speed *= agent.moveDef.GetSpeedModMult(NavSpeedModMultType.Moving);
+                    speedMult = Mathf.Min(speedMult, agent.moveDef.GetSpeedModMult(NavSpeedModMultType.Blocked));
                 }
             }
+            var speed = NavUtils.GetSquareSpeed(navMap, agent, neighborNode.x, neighborNode.z, dir) * speedMult;
             float nodeCost = NavUtils.DirDistanceApproximately(dir) * navMap.SquareSize / Mathf.Max(NavMathUtils.EPSILON, speed);
             float gCost = node.gCost + nodeCost;
             float hCost = NavUtils.DistanceApproximately(neighborNode.x, neighborNode.z, queryData.ex, queryData.ez) * navMap.SquareSize;
