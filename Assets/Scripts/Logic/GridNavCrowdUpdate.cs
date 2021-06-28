@@ -19,7 +19,10 @@ namespace GridNav
             var t5 = Time.realtimeSinceStartup;
             UpdatePos(navManager, navQueries, agents); // 单线程
             var t6 = Time.realtimeSinceStartup;
-            Debug.Log("Update use totalTime:" + (t6 - t1) + " updatePath:" + (t2 - t1) + " updateMoveRequest:" + (t3 - t2) + " updatePrefVelocity:" + (t4 - t3) + " updateNewVelocity:" + (t5 - t4) + " updatePos:" + (t6 - t5));
+            if (t6 - t1 > 0.001f)
+            {
+                Debug.Log("Update use totalTime:" + (t6 - t1) + " updatePath:" + (t2 - t1) + " updateMoveRequest:" + (t3 - t2) + " updatePrefVelocity:" + (t4 - t3) + " updateNewVelocity:" + (t5 - t4) + " updatePos:" + (t6 - t5));
+            }
         }
         private static void UpdatePath(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
         {
