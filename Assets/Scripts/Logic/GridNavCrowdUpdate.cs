@@ -8,11 +8,18 @@ namespace GridNav
 
         public static void Update(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
         {
+            var t1 = Time.realtimeSinceStartup;
             UpdatePath(navManager, navQueries, agents); //多线程
+            var t2 = Time.realtimeSinceStartup;
             UpdateMoveRequest(navManager, navQueries, agents); // 单线程
+            var t3 = Time.realtimeSinceStartup;
             UpdatePrefVelocity(navManager, navQueries, agents); // 多线程
+            var t4 = Time.realtimeSinceStartup;
             UpdateNewVelocity(navManager, navQueries, agents); // 多线程
+            var t5 = Time.realtimeSinceStartup;
             UpdatePos(navManager, navQueries, agents); // 单线程
+            var t6 = Time.realtimeSinceStartup;
+            Debug.Log("Update use totalTime:" + (t6 - t1) + " updatePath:" + (t2 - t1) + " updateMoveRequest:" + (t3 - t2) + " updatePrefVelocity:" + (t4 - t3) + " updateNewVelocity:" + (t5 - t4) + " updatePos:" + (t6 - t5));
         }
         private static void UpdatePath(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
         {
