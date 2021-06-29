@@ -12,6 +12,7 @@ namespace GridNav
             UpdatePath(navManager, navQueries, agents); //多线程
             var t2 = Time.realtimeSinceStartup;
             UpdateMoveRequest(navManager, navQueries, agents); // 单线程
+            UpdateTopologyOptimization(navManager, navQueries, agents); //多线程
             var t3 = Time.realtimeSinceStartup;
             UpdatePrefVelocity(navManager, navQueries, agents); // 多线程
             var t4 = Time.realtimeSinceStartup;
@@ -67,19 +68,16 @@ namespace GridNav
                     ReRequestPath(agent);
                     continue;
                 }
-                agent.path.RemoveRange(agent.path.Count - checkStartIndex + 1, checkStartIndex - 1);
-                var status = navQuery.InitSlicedFindPath(agent, agent.pos, agent.path[agent.path.Count - 1], navMap.SquareSize * 0.5f);
-                navQuery.UpdateSlicedFindPath(128, out _);
-                status = navQuery.FinalizeSlicedFindPath(out var path);
+                int index = agent.path.Count - checkStartIndex;
+                navQuery.InitSlicedFindPath(agent, agent.pos, agent.path[index], navMap.SquareSize * 0.5f);
+                var status = navQuery.UpdateSlicedFindPath(128, out _);
                 if ((status & NavQueryStatus.Success) == 0 || (status & NavQueryStatus.Partial) != 0)
                 {
                     ReRequestPath(agent);
                     continue;
                 }
-                for (int i = 1; i < path.Count; i++)
-                {
-                    agent.path.Add(path[i]);
-                }
+                navQuery.FinalizeSlicedFindPath(out var path);
+                ReplacePathStart(ref agent.path, index, path);
             }
         }
         private static void UpdateMoveRequest(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
@@ -93,6 +91,72 @@ namespace GridNav
                 }
             }
             navManager.UpdateMoveRequest();
+        }
+        private static void UpdateTopologyOptimization(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
+        {
+            float optTime = 15;
+            NavAgent optAgent = null;
+            foreach (var agent in agents)
+            {
+                if (agent.moveState != NavMoveState.InProgress)
+                {
+                    continue;
+                }
+                agent.topologyOptTime++;
+                if (agent.topologyOptTime > optTime)
+                {
+                    optTime = agent.topologyOptTime;
+                    optAgent = agent;
+                }
+            }
+            if (optAgent != null)
+            {
+                optAgent.topologyOptTime = 0;
+
+                var navMap = navManager.GetNavMap();
+                var navQuery = navQueries[0];
+                int index = 1;
+                float distanceMinSqr = NavMathUtils.Square(10.0f * navMap.SquareSize);
+                while (index < optAgent.path.Count && NavMathUtils.SqrDistance2D(optAgent.pos, optAgent.path[optAgent.path.Count - index]) < distanceMinSqr)
+                {
+                    index++;
+                }
+                float distanceMaxSqr = NavMathUtils.Square(15.0f * navMap.SquareSize);
+                while (index <= optAgent.path.Count)
+                {
+                    var pos = optAgent.path[optAgent.path.Count - index];
+                    if (NavMathUtils.SqrDistance2D(optAgent.pos, pos) > distanceMaxSqr)
+                    {
+                        index = optAgent.path.Count + 1;
+                        break;
+                    }
+                    navMap.GetSquareXZ(pos, out var x, out var z);
+                    if (NavUtils.TestMoveSquare(navMap, optAgent, x, z))
+                    {
+                        break;
+                    }
+                    index++;
+                }
+                if (index == optAgent.path.Count + 1)
+                {
+                    ReRequestPath(optAgent);
+                }
+                else
+                {
+                    index = optAgent.path.Count - index;
+                    navQuery.InitSlicedFindPath(optAgent, optAgent.pos, optAgent.path[index], 0.0f);
+                    var status = navQuery.UpdateSlicedFindPath(256, out _);
+                    if ((status & NavQueryStatus.Success) == 0 || (status & NavQueryStatus.Partial) != 0)
+                    {
+                        ReRequestPath(optAgent);
+                    }
+                    else
+                    {
+                        navQuery.FinalizeSlicedFindPath(out var path);
+                        ReplacePathStart(ref optAgent.path, index, path);
+                    }
+                }
+            }
         }
         private static void UpdatePrefVelocity(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
         {
@@ -255,6 +319,11 @@ namespace GridNav
         private static void ReRequestPath(NavAgent agent)
         {
             agent.isRepath = true;
+        }
+        private static void ReplacePathStart(ref List<Vector3> path, int index, List<Vector3> newStartPath)
+        {
+            path.RemoveRange(index, path.Count - index);
+            path.AddRange(newStartPath);
         }
     }
 }

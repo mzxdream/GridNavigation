@@ -105,6 +105,7 @@ namespace GridNav
         public Vector3 lastPos;
         public Vector3 goalPos;
         public float goalRadius;
+        public int topologyOptTime;
         public List<Vector3> path;
         public Vector3 velocity;
         public Vector3 prefVelocity;
