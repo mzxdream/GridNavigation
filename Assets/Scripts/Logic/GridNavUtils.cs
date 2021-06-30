@@ -158,8 +158,8 @@ namespace GridNav
         }
         public static float CalcPriorityRatio(NavAgent collider, NavAgent collidee)
         {
-            var pushCollider = IsPushResistant(collidee, collider);
-            var pushCollidee = IsPushResistant(collider, collidee);
+            var pushCollider = !IsPushResistant(collidee, collider);
+            var pushCollidee = !IsPushResistant(collider, collidee);
             if (pushCollider)
             {
                 return pushCollidee ? 0.5f : 0.0f;
