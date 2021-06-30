@@ -363,7 +363,7 @@ namespace GridNav
                 u = (combinedRadius * invTimeStep - wLength) * unitW;
             }
 
-            line.point = velocityOpt + priorityRatio * u;
+            line.point = velocityOpt + (1.0f - priorityRatio) * u;
             orcaLines.Add(line);
         }
         private static bool LinearProgram1(List<NavRVOLine> lines, int lineNo, float radius, Vector3 optVelocity, bool directionOpt, ref Vector3 result)
