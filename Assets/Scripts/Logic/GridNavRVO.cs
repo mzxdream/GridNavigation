@@ -25,27 +25,23 @@ namespace GridNav
         {
             var orcaLines = new List<NavRVOLine>();
 
-            float invTimeHorizonObst = 0.25f;
-
-            float radius = agent.radius;
-            var position = agent.pos;
-            var velocity = agent.velocity;
+            float invTimeHorizonObst = 1.0f;
             /* Create obstacle ORCA lines. */
             for (int i = 0; i < obstacles.Count; ++i)
             {
-                ComputeObstacleLine(position, radius, velocity, obstacles[i], invTimeHorizonObst, ref orcaLines);
+                ComputeObstacleLine(agent.pos, agent.radius, agent.velocity, obstacles[i], invTimeHorizonObst, ref orcaLines);
             }
 
             int numObstLines = orcaLines.Count;
 
-            float invTimeHorizon = 0.25f;
-
+            float invTimeHorizon = 1.0f;
             /* Create agent ORCA lines. */
             for (int i = 0; i < neighbors.Count; ++i)
             {
                 var other = neighbors[i];
-                ComputeAgentLine(agent.pos, radius, agent.velocity, agent.prefVelocity, agent.param.mass
-                    , other.pos, other.radius, other.velocity, other.prefVelocity, other.param.mass, -1, invTimeHorizon, 1.0f, ref orcaLines);
+                var priorityRatio = NavUtils.CalcPriorityRatio(agent, other);
+                ComputeAgentLine(agent.pos, agent.radius, agent.velocity, agent.prefVelocity
+                    , other.pos, other.radius, other.velocity, other.prefVelocity, priorityRatio, invTimeHorizon, 1.0f, ref orcaLines);
             }
 
             int lineFail = LinearProgram2(orcaLines, agent.param.maxSpeed, agent.prefVelocity, false, ref agent.newVelocity);
@@ -301,26 +297,12 @@ namespace GridNav
             line.point = rightCutOff + radius * invTimeHorizonObst * new Vector3(-line.direction.z, 0, line.direction.x);
             orcaLines.Add(line);
         }
-        private static void ComputeAgentLine(Vector3 pos, float radius, Vector3 velocity, Vector3 prefVelocity, float mass, Vector3 otherPos, float otherRadius, Vector3 otherVelocity, Vector3 otherPrefVelocity, float otherMass, int pushPriority, float invTimeHorizon, float deltaTime, ref List<NavRVOLine> orcaLines)
+        private static void ComputeAgentLine(Vector3 pos, float radius, Vector3 velocity, Vector3 prefVelocity, Vector3 otherPos, float otherRadius, Vector3 otherVelocity, Vector3 otherPrefVelocity, float priorityRatio, float invTimeHorizon, float deltaTime, ref List<NavRVOLine> orcaLines)
         {
             Vector3 velocityOpt = prefVelocity;
-            Vector3 neighborVelocityOpt = Vector3.zero;
-            float massRatio = 0.0f;
-            if (pushPriority < 0)
-            {
-                velocityOpt = velocity;
-                neighborVelocityOpt = otherVelocity;
-                massRatio = 0.5f;
-            }
-            else if (pushPriority == 0)
-            {
-                massRatio = otherMass / (mass + otherMass);
-                float neighborMassRatio = mass / (mass + otherMass);
-                velocityOpt = (massRatio >= 0.5f ? (velocity - massRatio * velocity) * 2 : prefVelocity + (velocity - prefVelocity) * massRatio * 2);
-                neighborVelocityOpt = (neighborMassRatio >= 0.5f ? 2 * otherVelocity * (1 - neighborMassRatio) : otherPrefVelocity + (otherVelocity - otherPrefVelocity) * neighborMassRatio * 2);
-            }
+            Vector3 neighborVelocityOpt = otherPrefVelocity;
             Vector3 relativePosition = otherPos - pos;
-            Vector3 relativeVelocity = velocityOpt - neighborVelocityOpt; // origin is  Vector3 relativeVelocity = velocity - other.velocity;
+            Vector3 relativeVelocity = velocityOpt - neighborVelocityOpt;
             float distSq = NavMathUtils.SqrMagnitude2D(relativePosition);
             float combinedRadius = radius + otherRadius;
             float combinedRadiusSq = combinedRadius * combinedRadius;
@@ -381,7 +363,7 @@ namespace GridNav
                 u = (combinedRadius * invTimeStep - wLength) * unitW;
             }
 
-            line.point = velocityOpt + massRatio * u; // origin is line.point = velocity + 0.5f * u;
+            line.point = velocityOpt + priorityRatio * u;
             orcaLines.Add(line);
         }
         private static bool LinearProgram1(List<NavRVOLine> lines, int lineNo, float radius, Vector3 optVelocity, bool directionOpt, ref Vector3 result)

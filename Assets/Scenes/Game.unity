@@ -166,8 +166,8 @@ MonoBehaviour:
   mass: 1
   maxSpeed: 2
   showGrid: 0
-  showCharacter: 1
-  showPath: 1
+  showCharacter: 0
+  showPath: 0
 --- !u!65 &705349665
 BoxCollider:
   m_ObjectHideFlags: 0

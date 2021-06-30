@@ -156,6 +156,28 @@ namespace GridNav
             }
             return collidee.param.isPushResistant;
         }
+        public static float CalcPriorityRatio(NavAgent collider, NavAgent collidee)
+        {
+            var pushCollider = IsPushResistant(collidee, collider);
+            var pushCollidee = IsPushResistant(collider, collidee);
+            if (pushCollider)
+            {
+                return pushCollidee ? 0.5f : 0.0f;
+            }
+            if (pushCollidee)
+            {
+                return pushCollider ? 0.5f : 1.0f;
+            }
+            if (collider.isMoving)
+            {
+                return collidee.isMoving ? 0.5f : 0.0f;
+            }
+            if (collidee.isMoving)
+            {
+                return collider.isMoving ? 0.5f : 1.0f;
+            }
+            return collider.id > collidee.id ? 1.0f : 0.0f;
+        }
         public static NavBlockType TestBlockType(NavAgent collider, NavAgent collidee)
         {
             Debug.Assert(collider != null && collidee != null);
