@@ -23,12 +23,8 @@ namespace GridNav
 
         public bool Init(Vector3 bmin, int xsize, int zsize, float squareSize)
         {
-            xsize &= ~1;
-            zsize &= ~1;
-            if (xsize < 1 || zsize < 1 || squareSize < NavMathUtils.EPSILON)
-            {
-                return false;
-            }
+            Debug.Assert(xsize > 1 && zsize > 1 && squareSize > NavMathUtils.EPSILON);
+            Debug.Assert((xsize & 1) == 0 && (zsize & 1) == 0);
             this.bmin = bmin;
             this.xsize = xsize;
             this.zsize = zsize;

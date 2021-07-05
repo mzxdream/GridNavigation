@@ -17,13 +17,6 @@ class Character
     public float radius;
 }
 
-class MeshObj
-{
-    public List<Vector3> verts;
-    public List<int> tris;
-    public int areaType;
-}
-
 public class Game : MonoBehaviour
 {
     [SerializeField, Range(0.1f, 5.0f)]
@@ -45,7 +38,6 @@ public class Game : MonoBehaviour
     [SerializeField]
     bool showPath = false;
 
-    List<MeshObj> meshObjs;
     List<Mesh> gridMeshs = null;
     List<Character> redCharacters;
     List<Character> blueCharacters;
@@ -61,7 +53,7 @@ public class Game : MonoBehaviour
         blueCharacters = new List<Character>();
         redDestination = new Destination
         {
-            x = 0, 
+            x = 0,
             z = 0,
             asset = GameObject.Instantiate(redDestinationPrefab).gameObject,
         };
@@ -71,102 +63,87 @@ public class Game : MonoBehaviour
             z = 1,
             asset = GameObject.Instantiate(blueDestinationPrefab).gameObject,
         };
-        navMap = new NavMap();
-        var xsize = (int)(transform.localScale.x / squareSize);
-        var zsize = (int)(transform.localScale.z / squareSize);
-        navMap.Init(transform.position - new Vector3(xsize * squareSize * 0.5f, 0, zsize * squareSize * 0.5f), xsize, zsize, squareSize);
-
-        UpdateMap();
-        navManager = new NavManager();
-        navManager.Init(navMap);
-        navManager.GetMoveDef(0).SetUnitSize(4);
-        navManager.GetMoveDef(1).SetUnitSize(6);
-        navManager.GetMoveDef(2).SetUnitSize(8);
-        navManager.GetMoveDef(3).SetUnitSize(10);
-        navManager.AfterInit();
-        redDestination.asset.transform.position = navMap.GetSquarePos(redDestination.x, redDestination.z);
-        blueDestination.asset.transform.position = navMap.GetSquarePos(blueDestination.x, blueDestination.z);
+        //navMap = new NavMap();
+        //var xsize = (int)(transform.localScale.x / squareSize);
+        //var zsize = (int)(transform.localScale.z / squareSize);
+        //navMap.Init(transform.position - new Vector3(xsize * squareSize * 0.5f, 0, zsize * squareSize * 0.5f), xsize, zsize, squareSize);
+        //UpdateMap();
+        //navManager = new NavManager();
+        //navManager.Init(navMap);
+        //navManager.GetMoveDef(0).SetUnitSize(4);
+        //navManager.GetMoveDef(1).SetUnitSize(6);
+        //navManager.GetMoveDef(2).SetUnitSize(8);
+        //navManager.GetMoveDef(3).SetUnitSize(10);
+        //navManager.AfterInit();
+        //redDestination.asset.transform.position = navMap.GetSquarePos(redDestination.x, redDestination.z);
+        //blueDestination.asset.transform.position = navMap.GetSquarePos(blueDestination.x, blueDestination.z);
         lastTime = Time.realtimeSinceStartup;
     }
     void UpdateMap()
     {
-        meshObjs = new List<MeshObj>();
-        CollectMeshs();
-        var bmin = navMap.BMin;
-        for (int z = 0; z <= navMap.ZSize; z++)
-        {
-            for (int x = 0; x <= navMap.XSize; x++)
-            {
-                var p = bmin + new Vector3(x * squareSize, 0, z * squareSize);
-                GetPositionHeightAndType(p, out var h, out var areaType);
-                navMap.SetCornerHeight(x, z, h);
-            }
-        }
-        for (int z = 0; z < navMap.ZSize; z++)
-        {
-            for (int x = 0; x < navMap.XSize; x++)
-            {
-                var p = bmin + new Vector3((x + 0.5f) * squareSize, 0, (z + 0.5f) * squareSize);
-                GetPositionHeightAndType(p, out var h, out var areaType);
-                navMap.SetSquareType(x, z, areaType);
-            }
-        }
-        navMap.UpdateHeightMap();
-        gridMeshs = new List<Mesh>();
-        var verts = new List<Vector3>();
-        var tris = new List<int>();
-        var maxSlope = 0.0f;
-        for (int z = 0; z < navMap.ZSize; z++)
-        {
-            for (int x = 0; x < navMap.XSize; x++)
-            {
-                var squareType = navMap.GetSquareType(x, z);
-                if (squareType == 1)
-                {
-                    continue;
-                }
-                var slope = navMap.GetSquareSlope(x, z);
-                if (slope >= 0.5f) //0.5f = 60*
-                {
-                    continue;
-                }
-                if (maxSlope < slope)
-                {
-                    maxSlope = slope;
-                }
-                if (verts.Count > 50000)
-                {
-                    var gridMesh = new Mesh { vertices = verts.ToArray(), triangles = tris.ToArray() };
-                    gridMesh.RecalculateNormals();
-                    gridMeshs.Add(gridMesh);
-                    verts.Clear();
-                    tris.Clear();
-                }
-                var pTL = navMap.GetSquareCornerPos(x, z) + new Vector3(0, 0.001f, 0);
-                var PTR = navMap.GetSquareCornerPos(x + 1, z) + new Vector3(0, 0.001f, 0);
-                var pBL = navMap.GetSquareCornerPos(x, z + 1) + new Vector3(0, 0.001f, 0);
-                var pBR = navMap.GetSquareCornerPos(x + 1, z + 1) + new Vector3(0, 0.001f, 0);
+        //meshObjs = new List<MeshObj>();
+        //CollectMeshs();
+        //var bmin = navMap.BMin;
+        //for (int z = 0; z <= navMap.ZSize; z++)
+        //{
+        //    for (int x = 0; x <= navMap.XSize; x++)
+        //    {
+        //        var p = bmin + new Vector3(x * squareSize, 0, z * squareSize);
+        //        GetPositionHeightAndType(p, out var h, out var areaType);
+        //        navMap.SetCornerHeight(x, z, h);
+        //    }
+        //}
+        //for (int z = 0; z < navMap.ZSize; z++)
+        //{
+        //    for (int x = 0; x < navMap.XSize; x++)
+        //    {
+        //        var p = bmin + new Vector3((x + 0.5f) * squareSize, 0, (z + 0.5f) * squareSize);
+        //        GetPositionHeightAndType(p, out var h, out var areaType);
+        //        navMap.SetSquareType(x, z, areaType);
+        //    }
+        //}
+        //navMap.UpdateHeightMap();
+        //gridMeshs = new List<Mesh>();
+        //var verts = new List<Vector3>();
+        //var tris = new List<int>();
+        //var maxSlope = 0.0f;
+        //for (int z = 0; z < navMap.ZSize; z++)
+        //{
+        //    for (int x = 0; x < navMap.XSize; x++)
+        //    {
+        //        if (verts.Count > 50000)
+        //        {
+        //            var gridMesh = new Mesh { vertices = verts.ToArray(), triangles = tris.ToArray() };
+        //            gridMesh.RecalculateNormals();
+        //            gridMeshs.Add(gridMesh);
+        //            verts.Clear();
+        //            tris.Clear();
+        //        }
+        //        var pTL = navMap.GetSquareCornerPos(x, z) + new Vector3(0, 0.001f, 0);
+        //        var PTR = navMap.GetSquareCornerPos(x + 1, z) + new Vector3(0, 0.001f, 0);
+        //        var pBL = navMap.GetSquareCornerPos(x, z + 1) + new Vector3(0, 0.001f, 0);
+        //        var pBR = navMap.GetSquareCornerPos(x + 1, z + 1) + new Vector3(0, 0.001f, 0);
 
-                var index = verts.Count;
-                verts.Add(pBL);
-                verts.Add(pTL);
-                verts.Add(PTR);
-                verts.Add(pBR);
-                tris.Add(index);
-                tris.Add(index + 1);
-                tris.Add(index + 2);
-                tris.Add(index + 2);
-                tris.Add(index + 3);
-                tris.Add(index);
-            }
-        }
-        if (tris.Count > 0)
-        {
-            var gridMesh = new Mesh { vertices = verts.ToArray(), triangles = tris.ToArray() };
-            gridMesh.RecalculateNormals();
-            gridMeshs.Add(gridMesh);
-        }
-        Debug.Log("max slope is " + maxSlope);
+        //        var index = verts.Count;
+        //        verts.Add(pBL);
+        //        verts.Add(pTL);
+        //        verts.Add(PTR);
+        //        verts.Add(pBR);
+        //        tris.Add(index);
+        //        tris.Add(index + 1);
+        //        tris.Add(index + 2);
+        //        tris.Add(index + 2);
+        //        tris.Add(index + 3);
+        //        tris.Add(index);
+        //    }
+        //}
+        //if (tris.Count > 0)
+        //{
+        //    var gridMesh = new Mesh { vertices = verts.ToArray(), triangles = tris.ToArray() };
+        //    gridMesh.RecalculateNormals();
+        //    gridMeshs.Add(gridMesh);
+        //}
+        //Debug.Log("max slope is " + maxSlope);
     }
     void Update()
     {
@@ -417,128 +394,6 @@ public class Game : MonoBehaviour
                 blueCharacters.Remove(c);
                 break;
             }
-        }
-    }
-    bool GetPositionHeightAndType(Vector3 p, out float height, out int areaType)
-    {
-        height = float.NegativeInfinity;
-        areaType = 1;
-        bool isFound = false;
-        foreach (var m in meshObjs)
-        {
-            for (int i = 0; i < m.tris.Count; i += 3)
-            {
-                var a = m.verts[m.tris[i]];
-                var b = m.verts[m.tris[i + 1]];
-                var c = m.verts[m.tris[i + 2]];
-                if (NavMathUtils.ClosestHeightPointTriangle(p, a, b, c, out var h) && h > height)
-                {
-                    isFound = true;
-                    height = h;
-                    areaType = m.areaType;
-                }
-            }
-        }
-        if (!isFound)
-        {
-            height = p.y;
-        }
-        return isFound;
-    }
-    void CollectMeshs()
-    {
-        MeshFilter[] mfs = FindObjectsOfType<MeshFilter>();
-        for (int i = 0; i < mfs.Length; ++i)
-        {
-            var mf = mfs[i];
-            var o = mf.gameObject;
-            if ((GameObjectUtility.GetStaticEditorFlags(o) & StaticEditorFlags.NavigationStatic) == 0)
-            {
-                continue;
-            }
-            var meshObj = new MeshObj
-            {
-                verts = new List<Vector3>(),
-                tris = new List<int>(),
-                areaType = GameObjectUtility.GetNavMeshArea(o),
-            };
-            Mesh m = mf.sharedMesh;
-            for (int j = 0; j < m.vertices.Length; j++)
-            {
-                meshObj.verts.Add(mf.transform.TransformPoint(m.vertices[j]));
-            }
-            for (int material = 0; material < m.subMeshCount; material++)
-            {
-                int[] triangles = m.GetTriangles(material);
-                for (int j = 0; j < triangles.Length; j++)
-                {
-                    meshObj.tris.Add(triangles[j]);
-                }
-            }
-            meshObjs.Add(meshObj);
-        }
-        //terrain
-        Terrain terrainObj = FindObjectOfType<Terrain>();
-        if (terrainObj)
-        {
-            var o = terrainObj.gameObject;
-            if ((GameObjectUtility.GetStaticEditorFlags(o) & StaticEditorFlags.NavigationStatic) == 0)
-            {
-                return;
-            }
-            var meshObj = new MeshObj
-            {
-                verts = new List<Vector3>(),
-                tris = new List<int>(),
-                areaType = GameObjectUtility.GetNavMeshArea(o),
-            };
-            var terrain = terrainObj.terrainData;
-            var terrainPos = terrainObj.GetPosition();
-            int w = terrain.heightmapResolution;
-            int h = terrain.heightmapResolution;
-            Vector3 meshScale = terrain.size;
-            int tRes = 1;
-            meshScale = new Vector3(meshScale.x / (w - 1) * tRes, meshScale.y, meshScale.z / (h - 1) * tRes);
-            float[,] tData = terrain.GetHeights(0, 0, w, h);
-
-            w = (w - 1) / tRes + 1;
-            h = (h - 1) / tRes + 1;
-            Vector3[] tVertices = new Vector3[w * h];
-            int[] tPolys = new int[(w - 1) * (h - 1) * 6];
-            // Build vertices and UVs
-            for (int y = 0; y < h; y++)
-            {
-                for (int x = 0; x < w; x++)
-                {
-                    tVertices[y * w + x] = Vector3.Scale(meshScale, new Vector3(y, tData[x * tRes, y * tRes], x)) + terrainPos;
-                }
-            }
-            int index = 0;
-            // Build triangle indices: 3 indices into vertex array for each triangle
-            for (int y = 0; y < h - 1; y++)
-            {
-                for (int x = 0; x < w - 1; x++)
-                {
-                    // For each grid cell output two triangles
-                    tPolys[index++] = (y * w) + x + 1;
-                    tPolys[index++] = ((y + 1) * w) + x;
-                    tPolys[index++] = (y * w) + x;
-
-                    tPolys[index++] = (y * w) + x + 1;
-                    tPolys[index++] = ((y + 1) * w) + x + 1;
-                    tPolys[index++] = ((y + 1) * w) + x;
-                }
-            }
-            for (int i = 0; i < tVertices.Length; i++)
-            {
-                meshObj.verts.Add(tVertices[i]);
-            }
-            // Write triangles
-            for (int i = 0; i < tPolys.Length; i++)
-            {
-                meshObj.tris.Add(tPolys[i]);
-            }
-            meshObjs.Add(meshObj);
         }
     }
 }
