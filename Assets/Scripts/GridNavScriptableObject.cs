@@ -17,7 +17,7 @@ public class GridNavScriptableObject : ScriptableObject
     public int xsize;
     public int zsize;
     public float squareSize;
-    public float[] squareTypeMap;
+    public int[] squareTypeMap;
     public float[] cornerHeightMap;
     public GridNavMoveDefData[] moveDefDatas;
 }

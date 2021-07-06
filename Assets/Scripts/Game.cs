@@ -32,13 +32,10 @@ public class Game : MonoBehaviour
     [SerializeField]
     float maxSpeed = 2.0f;
     [SerializeField]
-    bool showGrid = false;
-    [SerializeField]
     bool showCharacter = true;
     [SerializeField]
     bool showPath = false;
 
-    List<Mesh> gridMeshs = null;
     List<Character> redCharacters;
     List<Character> blueCharacters;
     Destination redDestination;
@@ -103,46 +100,7 @@ public class Game : MonoBehaviour
         //    }
         //}
         //navMap.UpdateHeightMap();
-        //gridMeshs = new List<Mesh>();
-        //var verts = new List<Vector3>();
-        //var tris = new List<int>();
-        //var maxSlope = 0.0f;
-        //for (int z = 0; z < navMap.ZSize; z++)
-        //{
-        //    for (int x = 0; x < navMap.XSize; x++)
-        //    {
-        //        if (verts.Count > 50000)
-        //        {
-        //            var gridMesh = new Mesh { vertices = verts.ToArray(), triangles = tris.ToArray() };
-        //            gridMesh.RecalculateNormals();
-        //            gridMeshs.Add(gridMesh);
-        //            verts.Clear();
-        //            tris.Clear();
-        //        }
-        //        var pTL = navMap.GetSquareCornerPos(x, z) + new Vector3(0, 0.001f, 0);
-        //        var PTR = navMap.GetSquareCornerPos(x + 1, z) + new Vector3(0, 0.001f, 0);
-        //        var pBL = navMap.GetSquareCornerPos(x, z + 1) + new Vector3(0, 0.001f, 0);
-        //        var pBR = navMap.GetSquareCornerPos(x + 1, z + 1) + new Vector3(0, 0.001f, 0);
-
-        //        var index = verts.Count;
-        //        verts.Add(pBL);
-        //        verts.Add(pTL);
-        //        verts.Add(PTR);
-        //        verts.Add(pBR);
-        //        tris.Add(index);
-        //        tris.Add(index + 1);
-        //        tris.Add(index + 2);
-        //        tris.Add(index + 2);
-        //        tris.Add(index + 3);
-        //        tris.Add(index);
-        //    }
-        //}
-        //if (tris.Count > 0)
-        //{
-        //    var gridMesh = new Mesh { vertices = verts.ToArray(), triangles = tris.ToArray() };
-        //    gridMesh.RecalculateNormals();
-        //    gridMeshs.Add(gridMesh);
-        //}
+        
         //Debug.Log("max slope is " + maxSlope);
     }
     void Update()
@@ -216,14 +174,6 @@ public class Game : MonoBehaviour
             foreach (var c in blueCharacters)
             {
                 DrawCharacterDetail(c, Color.blue);
-            }
-        }
-        if (showGrid && gridMeshs != null)
-        {
-            Gizmos.color = Color.green;
-            foreach (var mesh in gridMeshs)
-            {
-                Gizmos.DrawWireMesh(mesh);
             }
         }
     }
