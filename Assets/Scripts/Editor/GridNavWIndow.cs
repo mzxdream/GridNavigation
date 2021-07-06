@@ -5,7 +5,7 @@ using GridNav;
 public class GridNavWindow : EditorWindow
 {
     private static readonly string navDataPath = "Assets/Config/navData.asset";
-    //private NavMap navMap;
+    private NavMap navMap;
     private float squareSize;
 
     [MenuItem("Tools/GridNavigation")]
@@ -58,29 +58,23 @@ public class GridNavWindow : EditorWindow
             }
         }
         var cornerHeightMap = new float[(xsize + 1) * (zsize + 1)];
-        for (int z = 0; z <= navMap.ZSize; z++)
+        for (int z = 0; z <= zsize; z++)
         {
-            for (int x = 0; x <= navMap.XSize; x++)
+            for (int x = 0; x <= xsize; x++)
             {
                 var p = bmin + new Vector3(x * squareSize, 0, z * squareSize);
                 meshObjManager.GetPositionHeightAndType(p, out var h, out var areaType);
-                navMap.SetCornerHeight(x, z, h);
+                cornerHeightMap[x + z * (xsize + 1)] = h;
             }
         }
-
     }
     private void LoadNavData()
     {
         var navData = AssetDatabase.LoadAssetAtPath<GridNavScriptableObject>(navDataPath);
         if (navData != null)
         {
-            var navMap = new NavMap();
-            if (!navMap.Init(navData.bmin, navData.xsize, navData.zsize, navData.squareSize, navData.squareTypeMap, navData.cornerHeightMap))
-            {
-                Debug.LogError("init nav map failed");
-                return;
-            }
-            this.navMap = navMap;
+            navMap = new NavMap();
+            navMap.Init(navData.bmin, navData.xsize, navData.zsize, navData.squareSize, navData.squareTypeMap, navData.cornerHeightMap);
         }
     }
     private void SaveNavData()
