@@ -6,9 +6,9 @@ using GridNav;
 public class GridNavWindow : EditorWindow
 {
     private static readonly string navDataPath = "Assets/Config/navData.asset";
+    private GridNavShow navShow;
     private float squareSize = 0.2f;
-    private float showAngle = 90;
-    private List<Mesh> gridMeshs = null;
+    private float maxAngle = 45;
 
     [MenuItem("Tools/GridNavigation")]
     public static void OpenWindow()
@@ -18,10 +18,19 @@ public class GridNavWindow : EditorWindow
     }
     private void OnEnable()
     {
+        navShow = FindObjectOfType<GridNavShow>();
         ReloadNavData();
+        if (navShow)
+        {
+            navShow.Show(true);
+        }
     }
     private void OnDisable()
     {
+        if (navShow)
+        {
+            navShow.Show(false);
+        }
     }
     private void OnGUI()
     {
@@ -31,7 +40,7 @@ public class GridNavWindow : EditorWindow
         GUILayout.EndHorizontal();
         GUILayout.BeginHorizontal();
         GUILayout.Label("ShowAngle:", GUILayout.Width(100));
-        showAngle = EditorGUILayout.Slider(showAngle, 1.0f, 90.0f);
+        maxAngle = EditorGUILayout.Slider(maxAngle, 1.0f, 90.0f);
         GUILayout.EndHorizontal();
         GUILayout.BeginHorizontal();
         GUILayout.FlexibleSpace();
@@ -89,6 +98,7 @@ public class GridNavWindow : EditorWindow
         AssetDatabase.SaveAssets();
         //reload nav data
         ReloadNavData();
+        Debug.Log("Bake Finished!");
     }
 
     private void ReloadNavData()
@@ -98,72 +108,9 @@ public class GridNavWindow : EditorWindow
         {
             var navMap = new NavMap();
             navMap.Init(navData.bmin, navData.xsize, navData.zsize, navData.squareSize, navData.squareTypeMap, navData.cornerHeightMap);
-            GenerateMesh(navMap);
-        }
-    }
-
-    private void GenerateMesh(NavMap navMap)
-    {
-        var maxSlope = NavUtils.DegreesToSlope(showAngle);
-        gridMeshs = new List<Mesh>();
-        var verts = new List<Vector3>();
-        var tris = new List<int>();
-        for (int z = 0; z < navMap.ZSize; z++)
-        {
-            for (int x = 0; x < navMap.XSize; x++)
+            if (navShow != null)
             {
-                var squareType = navMap.GetSquareType(x, z);
-                if (squareType == 1)
-                {
-                    continue;
-                }
-                var slope = navMap.GetSquareSlope(x, z);
-                if (slope >= maxSlope)
-                {
-                    continue;
-                }
-                if (verts.Count > 50000)
-                {
-                    var gridMesh = new Mesh { vertices = verts.ToArray(), triangles = tris.ToArray() };
-                    gridMesh.RecalculateNormals();
-                    gridMeshs.Add(gridMesh);
-                    verts.Clear();
-                    tris.Clear();
-                }
-                var pTL = navMap.GetSquareCornerPos(x, z) + new Vector3(0, 0.001f, 0);
-                var PTR = navMap.GetSquareCornerPos(x + 1, z) + new Vector3(0, 0.001f, 0);
-                var pBL = navMap.GetSquareCornerPos(x, z + 1) + new Vector3(0, 0.001f, 0);
-                var pBR = navMap.GetSquareCornerPos(x + 1, z + 1) + new Vector3(0, 0.001f, 0);
-
-                var index = verts.Count;
-                verts.Add(pBL);
-                verts.Add(pTL);
-                verts.Add(PTR);
-                verts.Add(pBR);
-                tris.Add(index);
-                tris.Add(index + 1);
-                tris.Add(index + 2);
-                tris.Add(index + 2);
-                tris.Add(index + 3);
-                tris.Add(index);
-            }
-        }
-        if (tris.Count > 0)
-        {
-            var gridMesh = new Mesh { vertices = verts.ToArray(), triangles = tris.ToArray() };
-            gridMesh.RecalculateNormals();
-            gridMeshs.Add(gridMesh);
-        }
-    }
-
-    private void OnDrawGizmos()
-    {
-        if (gridMeshs != null)
-        {
-            Gizmos.color = Color.green;
-            foreach (var mesh in gridMeshs)
-            {
-                Gizmos.DrawMesh(mesh);
+                navShow.GenerateMesh(navMap, maxAngle);
             }
         }
     }
