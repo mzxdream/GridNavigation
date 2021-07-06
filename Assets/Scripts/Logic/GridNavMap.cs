@@ -25,17 +25,22 @@ namespace GridNav
         {
             Debug.Assert(xsize > 1 && zsize > 1 && squareSize > NavMathUtils.EPSILON);
             Debug.Assert((xsize & 1) == 0 && (zsize & 1) == 0);
+            Debug.Assert(squareTypeMap != null && squareTypeMap.Length == xsize * zsize);
+            Debug.Assert(cornerHeightMap != null && cornerHeightMap.Length == (xsize + 1) * (zsize + 1));
             this.bmin = bmin;
             this.xsize = xsize;
             this.zsize = zsize;
             this.squareSize = squareSize;
-            this.squareTypeMap = new int[xsize * zsize];
-            this.cornerHeightMap = new float[(xsize + 1) * (zsize + 1)];
+            //this.squareTypeMap = new int[xsize * zsize];
+            //this.cornerHeightMap = new float[(xsize + 1) * (zsize + 1)];
+            this.squareTypeMap = squareTypeMap;
+            this.cornerHeightMap = cornerHeightMap;
             this.centerHeightMap = new float[xsize * zsize];
             this.faceNormals = new Vector3[xsize * zsize * 2];
             this.centerNormals = new Vector3[xsize * zsize];
             this.centerNormals2D = new Vector3[xsize * zsize];
             this.slopeMap = new float[(xsize / 2) * (zsize / 2)];
+            UpdateHeightMap(0, xsize - 1, 0, zsize - 1);
             return true;
         }
         public void Clear()
