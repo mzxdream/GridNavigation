@@ -98,7 +98,7 @@ public class GridNavWindow : EditorWindow
         AssetDatabase.SaveAssets();
         //reload nav data
         ReloadNavData();
-        Debug.Log("Bake Finished!");
+        Debug.Log("Bake Finished! squareSize:" + squareSize + " xsize:" + xsize + " zsize:" + zsize);
     }
 
     private void ReloadNavData()

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
 using GridNav;
 
 class Destination
@@ -14,13 +13,10 @@ class Character
 {
     public GameObject asset;
     public int navAgentID;
-    public float radius;
 }
 
 public class Game : MonoBehaviour
 {
-    [SerializeField, Range(0.1f, 5.0f)]
-    float squareSize = 0.2f;
     [SerializeField]
     Transform redDestinationPrefab = default, blueDestinationPrefab = default;
     [SerializeField]
@@ -40,7 +36,6 @@ public class Game : MonoBehaviour
     List<Character> blueCharacters;
     Destination redDestination;
     Destination blueDestination;
-    NavMap navMap;
     NavManager navManager;
     float lastTime;
 
@@ -75,33 +70,6 @@ public class Game : MonoBehaviour
         //redDestination.asset.transform.position = navMap.GetSquarePos(redDestination.x, redDestination.z);
         //blueDestination.asset.transform.position = navMap.GetSquarePos(blueDestination.x, blueDestination.z);
         lastTime = Time.realtimeSinceStartup;
-    }
-    void UpdateMap()
-    {
-        //meshObjs = new List<MeshObj>();
-        //CollectMeshs();
-        //var bmin = navMap.BMin;
-        //for (int z = 0; z <= navMap.ZSize; z++)
-        //{
-        //    for (int x = 0; x <= navMap.XSize; x++)
-        //    {
-        //        var p = bmin + new Vector3(x * squareSize, 0, z * squareSize);
-        //        GetPositionHeightAndType(p, out var h, out var areaType);
-        //        navMap.SetCornerHeight(x, z, h);
-        //    }
-        //}
-        //for (int z = 0; z < navMap.ZSize; z++)
-        //{
-        //    for (int x = 0; x < navMap.XSize; x++)
-        //    {
-        //        var p = bmin + new Vector3((x + 0.5f) * squareSize, 0, (z + 0.5f) * squareSize);
-        //        GetPositionHeightAndType(p, out var h, out var areaType);
-        //        navMap.SetSquareType(x, z, areaType);
-        //    }
-        //}
-        //navMap.UpdateHeightMap();
-        
-        //Debug.Log("max slope is " + maxSlope);
     }
     void Update()
     {
@@ -260,25 +228,6 @@ public class Game : MonoBehaviour
             blueCharacters.Add(c);
         }
     }
-    void AddWall()
-    {
-        //var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        //if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
-        //{
-        //    return;
-        //}
-        //var index = navMap.GetSquareIndex(hit.point);
-        //if (walls.ContainsKey(index))
-        //{
-        //    return;
-        //}
-        //var asset = GameObject.Instantiate(wallPrefab).gameObject;
-        //asset.transform.position = navMap.GetSquarePos(index);
-        //asset.transform.localScale = new Vector3(navMap.SquareSize, 0.2f, navMap.SquareSize);
-        //var wall = new Wall { asset = asset };
-        //walls.Add(index, wall);
-        // todo
-    }
     void SetRedDesitination()
     {
         var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -318,13 +267,6 @@ public class Game : MonoBehaviour
         {
             return;
         }
-        //var index = navMap.GetSquareIndex(hit.point);
-        //if (walls.TryGetValue(index, out var wall))
-        //{
-        //    Destroy(wall.asset);
-        //    walls.Remove(index);
-        //    // todo
-        //}
         foreach (var c in redCharacters)
         {
             if ((c.asset.transform.position - hit.point).sqrMagnitude <= c.radius * c.radius)
