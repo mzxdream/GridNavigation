@@ -26,15 +26,20 @@ public class GridNavWindow : EditorWindow
     private void OnGUI()
     {
         GUILayout.BeginHorizontal();
-        GUILayout.Label("", GUILayout.Width(60));
-        squareSize = EditorGUILayout.Slider(squareSize, 0.1f, 2.0f, GUILayout.Width(100));
-        GUILayout.Space(10);
-        showAngle = EditorGUILayout.Slider(showAngle, 1.0f, 90.0f, GUILayout.Width(100));
-        GUILayout.Space(10);
+        GUILayout.Label("SquareSize:", GUILayout.Width(100));
+        squareSize = EditorGUILayout.Slider(squareSize, 0.1f, 2.0f);
+        GUILayout.EndHorizontal();
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("ShowAngle:", GUILayout.Width(100));
+        showAngle = EditorGUILayout.Slider(showAngle, 1.0f, 90.0f);
+        GUILayout.EndHorizontal();
+        GUILayout.BeginHorizontal();
+        GUILayout.FlexibleSpace();
         if (GUILayout.Button("烘焙", GUILayout.Width(60)))
         {
             RebuildNavMap();
         }
+        GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
     }
     private void RebuildNavMap()
