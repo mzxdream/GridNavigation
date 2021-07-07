@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using GridNav;
@@ -11,15 +12,27 @@ class Destination
 class Character
 {
     public GameObject asset;
+    public NavAgentParam navParam;
     public int navAgentID;
+}
+
+[Serializable]
+public class Team
+{
+    public int id;
+    public Color color;
 }
 
 public class Game : MonoBehaviour
 {
     [SerializeField]
-    Transform redDestinationPrefab = default, blueDestinationPrefab = default;
+    Transform destinationPrefab = default;
     [SerializeField]
-    Transform redCharacterPrefab = default, blueCharacterPrefab = default;
+    Transform characterPrefab = default;
+    [SerializeField]
+    Team[] teams = default;
+    [SerializeField]
+    int teamID = 0;
     [SerializeField]
     int moveType = 0;
     [SerializeField]
@@ -27,23 +40,20 @@ public class Game : MonoBehaviour
     [SerializeField]
     float maxSpeed = 2.0f;
     [SerializeField]
-    bool showCharacter = true;
+    bool showSquares = true;
     [SerializeField]
     bool showPath = false;
 
-    List<Character> redCharacters;
-    List<Character> blueCharacters;
-    Destination redDestination;
-    Destination blueDestination;
+    Dictionary<int, Destination> destinations;
+    List<Character> characters;
     NavManager navManager;
     float lastTime;
 
     void Awake()
     {
-        redCharacters = new List<Character>();
-        blueCharacters = new List<Character>();
-        redDestination = new Destination { asset = GameObject.Instantiate(redDestinationPrefab).gameObject, };
-        blueDestination = new Destination { asset = GameObject.Instantiate(blueDestinationPrefab).gameObject, };
+        destinations = new Dictionary<int, Destination>();
+        characters = new List<Character>();
+
         var navDataPath = "Assets/Config/navData.asset";
         var navData = AssetDatabase.LoadAssetAtPath<GridNavScriptableObject>(navDataPath);
         if (navData == null)
@@ -86,41 +96,17 @@ public class Game : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            AddRedCharacter();
-        }
-        if (Input.GetKeyDown(KeyCode.Alpha2))
-        {
-            AddBlueCharacter();
+            AddCharacter();
         }
         if (Input.GetKeyDown(KeyCode.Alpha3))
         {
-            SetRedDesitination();
+            SetDesitination();
         }
-        if (Input.GetKeyDown(KeyCode.Alpha4))
-        {
-            SetBlueDestination();
-        }
-        if (Input.GetKeyDown(KeyCode.Alpha5))
-        {
-            AddWall();
-        }
-        if (Input.GetKeyDown(KeyCode.Alpha6))
+        if (Input.GetKeyDown(KeyCode.Delete))
         {
             RemoveObject();
         }
-        foreach (var c in redCharacters)
-        {
-            if (!navManager.GetLocation(c.navAgentID, out var pos, out var forward))
-            {
-                continue;
-            }
-            c.asset.transform.position = pos;
-            if (forward != Vector3.zero)
-            {
-                c.asset.transform.forward = forward;
-            }
-        }
-        foreach (var c in blueCharacters)
+        foreach (var c in characters)
         {
             if (!navManager.GetLocation(c.navAgentID, out var pos, out var forward))
             {
@@ -141,36 +127,13 @@ public class Game : MonoBehaviour
     }
     void OnDrawGizmos()
     {
-        if (redCharacters != null)
+        foreach (var c in characters)
         {
-            foreach (var c in redCharacters)
+            var navAgent = navManager.GetAgent(c.navAgentID);
+            if (navAgent == null)
             {
-                DrawCharacterDetail(c, Color.red);
+                continue;
             }
-        }
-        if (blueCharacters != null)
-        {
-            foreach (var c in blueCharacters)
-            {
-                DrawCharacterDetail(c, Color.blue);
-            }
-        }
-    }
-    void DrawCharacterDetail(Character c, Color color)
-    {
-        var agent = navManager.GetAgent(c.navAgentID);
-        if (agent == null)
-        {
-            return;
-        }
-        if (showCharacter)
-        {
-            int unitSize = agent.moveDef.GetUnitSize();
-            var pos = navMap.GetSquareCornerPos(agent.mapPos.x, agent.mapPos.y);
-            pos.x += unitSize * navMap.SquareSize * 0.5f;
-            pos.z += unitSize * navMap.SquareSize * 0.5f;
-            Gizmos.color = color;
-            Gizmos.DrawCube(pos, new Vector3(unitSize * navMap.SquareSize, 0.1f, unitSize * navMap.SquareSize));
             {
                 var p1 = c.asset.transform.position + Vector3.up;
                 var prefVelocity = agent.prefVelocity;
@@ -186,17 +149,33 @@ public class Game : MonoBehaviour
                     UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.white, null, 5);
                 }
             }
-        }
-        if (showPath && agent.path != null && agent.path.Count > 0)
-        {
-            var p1 = agent.path[agent.path.Count - 1] + Vector3.up;
-            for (int i = agent.path.Count - 2, j = 0; i >= 0 && j <= 10; i--, j++)
+            if (showSquares)
             {
-                var p2 = agent.path[i] + Vector3.up;
-                UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.yellow, null, 5);
-                p1 = p2;
+                var navMap = navManager.GetNavMap();
+                var squareSize = navMap.SquareSize;
+                int unitSize = navAgent.moveDef.GetUnitSize();
+                var pos = navMap.GetSquareCornerPos(navAgent.mapPos.x, navAgent.mapPos.y);
+                pos += new Vector3(unitSize * squareSize * 0.5f, 0, unitSize * squareSize * 0.5f);
+                Gizmos.color = Color.grey;
+                Gizmos.DrawCube(pos, new Vector3(unitSize * navMap.SquareSize, 0.1f, unitSize * navMap.SquareSize));
+
+            }
+            if (showPath && agent.path != null && agent.path.Count > 0)
+            {
+                var p1 = agent.path[agent.path.Count - 1] + Vector3.up;
+                for (int i = agent.path.Count - 2, j = 0; i >= 0 && j <= 10; i--, j++)
+                {
+                    var p2 = agent.path[i] + Vector3.up;
+                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.yellow, null, 5);
+                    p1 = p2;
+                }
             }
         }
+    }
+    void DrawCharacterDetail(Character c, Color color)
+    {
+
+
     }
     Character CreateCharacter(Transform prefab)
     {
