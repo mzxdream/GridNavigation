@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEditor;
 using GridNav;
 
 class Destination
@@ -55,6 +56,14 @@ public class Game : MonoBehaviour
             z = 1,
             asset = GameObject.Instantiate(blueDestinationPrefab).gameObject,
         };
+        var navDataPath = "Assets/Config/navData.asset";
+        var navData = AssetDatabase.LoadAssetAtPath<GridNavScriptableObject>(navDataPath);
+        if (navData == null)
+        {
+            Debug.LogError("nav data not exists");
+            return;
+        }
+
         //navMap = new NavMap();
         //var xsize = (int)(transform.localScale.x / squareSize);
         //var zsize = (int)(transform.localScale.z / squareSize);
