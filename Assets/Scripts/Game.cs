@@ -5,8 +5,6 @@ using GridNav;
 
 class Destination
 {
-    public int x;
-    public int z;
     public GameObject asset;
 }
 
@@ -22,7 +20,7 @@ public class Game : MonoBehaviour
     Transform redDestinationPrefab = default, blueDestinationPrefab = default;
     [SerializeField]
     Transform redCharacterPrefab = default, blueCharacterPrefab = default;
-    [SerializeField, Range(0, 3)]
+    [SerializeField]
     int moveType = 0;
     [SerializeField]
     float mass = 1.0f;
@@ -44,18 +42,8 @@ public class Game : MonoBehaviour
     {
         redCharacters = new List<Character>();
         blueCharacters = new List<Character>();
-        redDestination = new Destination
-        {
-            x = 0,
-            z = 0,
-            asset = GameObject.Instantiate(redDestinationPrefab).gameObject,
-        };
-        blueDestination = new Destination
-        {
-            x = 1,
-            z = 1,
-            asset = GameObject.Instantiate(blueDestinationPrefab).gameObject,
-        };
+        redDestination = new Destination { asset = GameObject.Instantiate(redDestinationPrefab).gameObject, };
+        blueDestination = new Destination { asset = GameObject.Instantiate(blueDestinationPrefab).gameObject, };
         var navDataPath = "Assets/Config/navData.asset";
         var navData = AssetDatabase.LoadAssetAtPath<GridNavScriptableObject>(navDataPath);
         if (navData == null)
@@ -63,21 +51,35 @@ public class Game : MonoBehaviour
             Debug.LogError("nav data not exists");
             return;
         }
-
-        //navMap = new NavMap();
-        //var xsize = (int)(transform.localScale.x / squareSize);
-        //var zsize = (int)(transform.localScale.z / squareSize);
-        //navMap.Init(transform.position - new Vector3(xsize * squareSize * 0.5f, 0, zsize * squareSize * 0.5f), xsize, zsize, squareSize);
-        //UpdateMap();
-        //navManager = new NavManager();
-        //navManager.Init(navMap);
-        //navManager.GetMoveDef(0).SetUnitSize(4);
-        //navManager.GetMoveDef(1).SetUnitSize(6);
-        //navManager.GetMoveDef(2).SetUnitSize(8);
-        //navManager.GetMoveDef(3).SetUnitSize(10);
-        //navManager.AfterInit();
-        //redDestination.asset.transform.position = navMap.GetSquarePos(redDestination.x, redDestination.z);
-        //blueDestination.asset.transform.position = navMap.GetSquarePos(blueDestination.x, blueDestination.z);
+        var navMap = new NavMap();
+        if (!navMap.Init(navData.bmin, navData.xsize, navData.zsize, navData.squareSize, navData.squareTypeMap, navData.cornerHeightMap))
+        {
+            Debug.LogError("Init map failed");
+            return;
+        }
+        var moveDefs = new NavMoveDef[navData.moveDefDatas.Length];
+        for (int i = 0; i < navData.moveDefDatas.Length; i++)
+        {
+            var moveData = navData.moveDefDatas[i];
+            var moveDef = new NavMoveDef();
+            moveDef.SetUnitSize(moveData.unitSize);
+            moveDef.SetMaxSlope(moveData.maxSlope);
+            moveDef.SetSlopeMod(moveData.slopeMod);
+            for (int j = 0; j < moveData.speedMods.Length; j++)
+            {
+                moveDef.SetSpeedMod(j, moveData.speedMods[j]);
+            }
+            for (int j = 0; j < moveData.speedModMults.Length; j++)
+            {
+                moveDef.SetSpeedModMult((NavSpeedModMultType)j, moveData.speedModMults[j]);
+            }
+        }
+        navManager = new NavManager();
+        if (!navManager.Init(navMap, moveDefs))
+        {
+            Debug.LogError("init nav manager failed");
+            return;
+        }
         lastTime = Time.realtimeSinceStartup;
     }
     void Update()

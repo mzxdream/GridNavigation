@@ -31,10 +31,10 @@ namespace GridNav
             this.xsize = xsize;
             this.zsize = zsize;
             this.squareSize = squareSize;
-            //this.squareTypeMap = new int[xsize * zsize];
-            //this.cornerHeightMap = new float[(xsize + 1) * (zsize + 1)];
-            this.squareTypeMap = squareTypeMap;
-            this.cornerHeightMap = cornerHeightMap;
+            this.squareTypeMap = new int[xsize * zsize];
+            squareTypeMap.CopyTo(this.squareTypeMap, 0);
+            this.cornerHeightMap = new float[(xsize + 1) * (zsize + 1)];
+            cornerHeightMap.CopyTo(this.cornerHeightMap, 0);
             this.centerHeightMap = new float[xsize * zsize];
             this.faceNormals = new Vector3[xsize * zsize * 2];
             this.centerNormals = new Vector3[xsize * zsize];

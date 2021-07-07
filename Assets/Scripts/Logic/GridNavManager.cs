@@ -22,9 +22,9 @@ namespace GridNav
         public int FramesPerSecond { get => framesPerSecond; }
         public float FrameTime { get => frameTime; }
 
-        public bool Init(NavMap navMap, int maxAgents = 1024, int maxMoveDefs = 16, int maxWorkers = 4, int framesPerSecond = 30)
+        public bool Init(NavMap navMap, NavMoveDef[] moveDefs, int maxAgents = 1024, int maxWorkers = 4, int framesPerSecond = 30)
         {
-            Debug.Assert(navMap != null && maxAgents > 0 && maxMoveDefs > 0 && maxWorkers > 0 && framesPerSecond > 0);
+            Debug.Assert(navMap != null && moveDefs != null && maxAgents > 0 && maxWorkers > 0 && framesPerSecond > 0);
 
             this.frameNum = 0;
             this.framesPerSecond = framesPerSecond;
@@ -54,16 +54,7 @@ namespace GridNav
             this.moveRequestQueue = new List<int>();
             this.agents = new Dictionary<int, NavAgent>();
             this.lastAgentID = 0;
-            this.moveDefs = new NavMoveDef[maxMoveDefs];
-            for (int i = 0; i < this.moveDefs.Length; i++)
-            {
-                this.moveDefs[i] = new NavMoveDef();
-            }
-            return true;
-        }
-        public bool AfterInit()
-        {
-            // TODO
+            this.moveDefs = moveDefs;
             return true;
         }
         public void Clear()
