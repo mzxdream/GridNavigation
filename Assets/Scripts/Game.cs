@@ -82,10 +82,10 @@ public class Game : MonoBehaviour
             {
                 moveDef.SetSpeedMod(j, moveData.speedMods[j]);
             }
-            for (int j = 0; j < moveData.speedModMults.Length; j++)
-            {
-                moveDef.SetSpeedModMult((NavSpeedModMultType)j, moveData.speedModMults[j]);
-            }
+            moveDef.SetSpeedModMult(NavSpeedModMultType.Idle, moveData.speedModMultIdle);
+            moveDef.SetSpeedModMult(NavSpeedModMultType.Busy, moveData.speedModMultBusy);
+            moveDef.SetSpeedModMult(NavSpeedModMultType.Moving, moveData.speedModMultMoving);
+            moveDef.SetSpeedModMult(NavSpeedModMultType.Blocked, moveData.speedModMultBlocked);
         }
         navManager = new NavManager();
         if (!navManager.Init(navMap, moveDefs))

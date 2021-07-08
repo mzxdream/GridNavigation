@@ -8,7 +8,10 @@ public class GridNavMoveDefData
     public float maxSlope;
     public float slopeMod;
     public float[] speedMods;
-    public float[] speedModMults;
+    public float speedModMultIdle;
+    public float speedModMultBusy;
+    public float speedModMultMoving;
+    public float speedModMultBlocked;
 }
 
 public class GridNavScriptableObject : ScriptableObject
