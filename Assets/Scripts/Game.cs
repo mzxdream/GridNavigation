@@ -136,17 +136,17 @@ public class Game : MonoBehaviour
             }
             {
                 var p1 = c.asset.transform.position + Vector3.up;
-                var prefVelocity = agent.prefVelocity;
+                var velocity = navAgent.velocity;
+                if (velocity.sqrMagnitude >= 1e-5f)
+                {
+                    var p2 = p1 + velocity.normalized * 2.0f;
+                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.black, null, 5);
+                }
+                var prefVelocity = navAgent.prefVelocity;
                 if (prefVelocity.sqrMagnitude >= 1e-5f)
                 {
                     var p2 = p1 + prefVelocity.normalized * 2.0f;
                     UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 5);
-                }
-                var velocity = agent.velocity;
-                if (velocity.sqrMagnitude >= 1e-5f)
-                {
-                    var p2 = p1 + velocity.normalized * 2.0f;
-                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.white, null, 5);
                 }
             }
             if (showSquares)
@@ -158,24 +158,21 @@ public class Game : MonoBehaviour
                 pos += new Vector3(unitSize * squareSize * 0.5f, 0, unitSize * squareSize * 0.5f);
                 Gizmos.color = Color.grey;
                 Gizmos.DrawCube(pos, new Vector3(unitSize * navMap.SquareSize, 0.1f, unitSize * navMap.SquareSize));
-
             }
-            if (showPath && agent.path != null && agent.path.Count > 0)
+            if (showPath && navAgent.path != null && navAgent.path.Count > 0)
             {
-                var p1 = agent.path[agent.path.Count - 1] + Vector3.up;
-                for (int i = agent.path.Count - 2, j = 0; i >= 0 && j <= 10; i--, j++)
+                var p1 = navAgent.path[navAgent.path.Count - 1] + Vector3.up;
+                var start = navAgent.path.Count - 2;
+                var end = Mathf.Max(0, start - 10);
+                while (start != end)
                 {
-                    var p2 = agent.path[i] + Vector3.up;
+                    var p2 = navAgent.path[start] + Vector3.up;
                     UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.yellow, null, 5);
                     p1 = p2;
+                    start--;
                 }
             }
         }
-    }
-    void DrawCharacterDetail(Character c, Color color)
-    {
-
-
     }
     Character CreateCharacter(Transform prefab)
     {
