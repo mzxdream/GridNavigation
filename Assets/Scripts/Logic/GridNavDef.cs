@@ -88,6 +88,7 @@ namespace GridNav
     public struct NavAgentParam
     {
         public int moveType;
+        public int teamID;
         public float mass;
         public float maxSpeed;
         public bool isPushResistant;

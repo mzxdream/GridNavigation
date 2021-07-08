@@ -6,13 +6,14 @@ using GridNav;
 
 class Destination
 {
+    public int teamID;
     public GameObject asset;
 }
 
 class Character
 {
+    public int teamID;
     public GameObject asset;
-    public NavAgentParam navParam;
     public int navAgentID;
 }
 
@@ -32,13 +33,15 @@ public class Game : MonoBehaviour
     [SerializeField]
     Team[] teams = default;
     [SerializeField]
-    int teamID = 0;
-    [SerializeField]
     int moveType = 0;
+    [SerializeField]
+    int teamID = 0;
     [SerializeField]
     float mass = 1.0f;
     [SerializeField]
     float maxSpeed = 2.0f;
+    [SerializeField]
+    bool isPushResistant = true;
     [SerializeField]
     bool showSquares = true;
     [SerializeField]
@@ -88,6 +91,7 @@ public class Game : MonoBehaviour
         if (!navManager.Init(navMap, moveDefs))
         {
             Debug.LogError("init nav manager failed");
+            navManager = null;
             return;
         }
         lastTime = Time.realtimeSinceStartup;
@@ -174,76 +178,98 @@ public class Game : MonoBehaviour
             }
         }
     }
-    Character CreateCharacter(Transform prefab)
+    bool TryGetTeamColor(int teamID, out Color color)
     {
+        color = Color.white;
+        if (teams == null)
+        {
+            return false;
+        }
+        foreach (var team in teams)
+        {
+            if (team.id == teamID)
+            {
+                color = team.color;
+                return true;
+            }
+        }
+        return false;
+    }
+    void AddCharacter()
+    {
+        if (navManager == null)
+        {
+            Debug.LogError("nav manager is null");
+            return;
+        }
         var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
         {
-            return null;
+            Debug.LogError("get position failed");
+            return;
         }
-        var param = new NavAgentParam
+        if (!TryGetTeamColor(teamID, out var teamColor))
+        {
+            Debug.LogError("get team color failed");
+            return;
+        }
+        var moveDef = navManager.GetMoveDef(moveType);
+        if (moveDef == null)
+        {
+            Debug.LogError("moveType:" + moveType + " not exists");
+            return;
+        }
+        var navParam = new NavAgentParam
         {
             moveType = moveType,
+            teamID = teamID,
             mass = mass,
             maxSpeed = maxSpeed,
-            isPushResistant = true,
+            isPushResistant = isPushResistant,
         };
-        var navAgentID = navManager.AddAgent(hit.point, param);
-        var agent = navManager.GetAgent(navAgentID);
-        var radius = agent.radius;
-
-        var asset = GameObject.Instantiate(prefab).gameObject;
+        var navAgentID = navManager.AddAgent(hit.point, navParam);
+        if (navAgentID == 0)
+        {
+            Debug.LogError("add agent failed");
+            return;
+        }
+        var asset = GameObject.Instantiate(characterPrefab).gameObject;
+        //
+        var radius = navManager.GetAgent(navAgentID).radius;
         asset.transform.position = hit.point;
         asset.transform.forward = Vector3.forward;
         asset.transform.localScale = new Vector3(radius * 2.0f, 0.5f, radius * 2.0f);
-        var c = new Character { asset = asset, navAgentID = navAgentID, radius = radius };
-        return c;
+        var c = new Character { teamID = teamID, asset = asset, navAgentID = navAgentID };
+        characters.Add(c);
     }
-    void AddRedCharacter()
+    void SetDesitination()
     {
-        var c = CreateCharacter(redCharacterPrefab);
-        if (c != null)
+        if (navManager == null)
         {
-            redCharacters.Add(c);
+            Debug.LogError("nav manager is null");
+            return;
         }
-    }
-    void AddBlueCharacter()
-    {
-        var c = CreateCharacter(blueCharacterPrefab);
-        if (c != null)
-        {
-            blueCharacters.Add(c);
-        }
-    }
-    void SetRedDesitination()
-    {
         var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
         {
+            Debug.LogError("get position failed");
             return;
         }
-        navMap.ClampInBounds(hit.point, out var x, out var z, out var pos);
-        redDestination.x = x;
-        redDestination.z = z;
-        redDestination.asset.transform.position = pos;
-        foreach (var c in redCharacters)
+        if (!TryGetTeamColor(teamID, out var teamColor))
         {
-            navManager.StartMoving(c.navAgentID, pos);
-        }
-    }
-    void SetBlueDestination()
-    {
-        var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
-        {
+            Debug.LogError("team not exists:" + teamID);
             return;
         }
-        navMap.ClampInBounds(hit.point, out var x, out var z, out var pos);
-        blueDestination.x = x;
-        blueDestination.z = z;
-        blueDestination.asset.transform.position = pos;
-        foreach (var c in blueCharacters)
+        var navMap = navManager.GetNavMap();
+        navMap.ClampInBounds(hit.point, out _, out _, out var pos);
+
+        //redDestination.asset.transform.position = pos;
+        foreach (var c in characters)
         {
+            if (c.teamID != teamID)
+            {
+                continue;
+            }
             navManager.StartMoving(c.navAgentID, pos);
         }
     }
@@ -254,23 +280,15 @@ public class Game : MonoBehaviour
         {
             return;
         }
-        foreach (var c in redCharacters)
+        foreach (var c in characters)
         {
-            if ((c.asset.transform.position - hit.point).sqrMagnitude <= c.radius * c.radius)
+            var navAgent = navManager.GetAgent(c.navAgentID);
+            var radius = navAgent.radius;
+            if ((c.asset.transform.position - hit.point).sqrMagnitude <= radius * radius)
             {
                 navManager.RemoveAgent(c.navAgentID);
                 Destroy(c.asset);
-                redCharacters.Remove(c);
-                break;
-            }
-        }
-        foreach (var c in blueCharacters)
-        {
-            if ((c.asset.transform.position - hit.point).sqrMagnitude <= c.radius * c.radius)
-            {
-                navManager.RemoveAgent(c.navAgentID);
-                Destroy(c.asset);
-                blueCharacters.Remove(c);
+                characters.Remove(c);
                 break;
             }
         }
