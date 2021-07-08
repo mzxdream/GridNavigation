@@ -241,6 +241,8 @@ public class Game : MonoBehaviour
         asset.transform.position = navAgent.pos;
         asset.transform.forward = Vector3.forward;
         asset.transform.localScale = new Vector3(navAgent.radius * 2.0f, 0.5f, navAgent.radius * 2.0f);
+        var body = asset.transform.Find("Model").Find("Body").gameObject;
+        body.GetComponent<Renderer>().material.SetColor("_Color", teamColor);
         var c = new Character { teamID = teamID, asset = asset, navAgentID = navAgentID };
         characters.Add(c);
     }
