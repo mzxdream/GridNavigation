@@ -96,7 +96,10 @@ namespace GridNav
         }
         public NavMoveDef GetMoveDef(int type)
         {
-            Debug.Assert(type >= 0 && type < moveDefs.Length);
+            if (type < 0 || type >= moveDefs.Length)
+            {
+                return null;
+            }
             return moveDefs[type];
         }
         public int AddAgent(Vector3 pos, NavAgentParam param)

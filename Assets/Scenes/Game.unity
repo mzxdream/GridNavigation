@@ -132,9 +132,9 @@ GameObject:
   - component: {fileID: 705349668}
   - component: {fileID: 705349667}
   - component: {fileID: 705349666}
+  - component: {fileID: 705349669}
   - component: {fileID: 705349665}
   - component: {fileID: 705349664}
-  - component: {fileID: 705349669}
   m_Layer: 0
   m_Name: game
   m_TagString: Untagged
@@ -154,20 +154,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 228bace5d1114154d868745b603bd07a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  squareSize: 0.5
-  redDestinationPrefab: {fileID: 5138878698154016187, guid: cc8a88cb3d1756443bcce37349e39ae7,
+  destinationPrefab: {fileID: 5138878698154016187, guid: 4e02893ed76155c4199ff3f48f5c274e,
     type: 3}
-  blueDestinationPrefab: {fileID: 5138878698154016187, guid: 4e02893ed76155c4199ff3f48f5c274e,
+  characterPrefab: {fileID: 4430799067832463752, guid: 27afe6d2f6d618942b6d5f6b3b84bf2a,
     type: 3}
-  redCharacterPrefab: {fileID: 4430799067832463752, guid: 3a3fd16e941f311448dcaa7f9297e3f5,
-    type: 3}
-  blueCharacterPrefab: {fileID: 4430799067832463752, guid: 27afe6d2f6d618942b6d5f6b3b84bf2a,
-    type: 3}
+  teams:
+  - id: 0
+    color: {r: 1, g: 0, b: 0, a: 0}
+  - id: 1
+    color: {r: 0.11405134, g: 0, b: 1, a: 0}
   moveType: 0
+  teamID: 0
   mass: 1
   maxSpeed: 2
-  showCharacter: 0
-  showPath: 0
+  isPushResistant: 1
+  showSquares: 1
+  showPath: 1
 --- !u!65 &705349665
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -199,7 +201,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 5a817d0a5f6b7b54eb923b30e6f23d84, type: 2}
+  - {fileID: 2100000, guid: 92a0a5c54d561064eb776ad817147f86, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

@@ -47,14 +47,14 @@ public class Game : MonoBehaviour
     [SerializeField]
     bool showPath = false;
 
-    Dictionary<int, Destination> destinations;
+    List<Destination> destinations;
     List<Character> characters;
     NavManager navManager;
     float lastTime;
 
     void Awake()
     {
-        destinations = new Dictionary<int, Destination>();
+        destinations = new List<Destination>();
         characters = new List<Character>();
 
         var navDataPath = "Assets/Config/navData.asset";
@@ -131,49 +131,52 @@ public class Game : MonoBehaviour
     }
     void OnDrawGizmos()
     {
-        foreach (var c in characters)
+        if (characters != null)
         {
-            var navAgent = navManager.GetAgent(c.navAgentID);
-            if (navAgent == null)
+            foreach (var c in characters)
             {
-                continue;
-            }
-            {
-                var p1 = c.asset.transform.position + Vector3.up;
-                var velocity = navAgent.velocity;
-                if (velocity.sqrMagnitude >= 1e-5f)
+                var navAgent = navManager.GetAgent(c.navAgentID);
+                if (navAgent == null)
                 {
-                    var p2 = p1 + velocity.normalized * 2.0f;
-                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.black, null, 5);
+                    continue;
                 }
-                var prefVelocity = navAgent.prefVelocity;
-                if (prefVelocity.sqrMagnitude >= 1e-5f)
                 {
-                    var p2 = p1 + prefVelocity.normalized * 2.0f;
-                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 5);
+                    var p1 = c.asset.transform.position + Vector3.up;
+                    var velocity = navAgent.velocity;
+                    if (velocity.sqrMagnitude >= 1e-5f)
+                    {
+                        var p2 = p1 + velocity.normalized * 2.0f;
+                        UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.black, null, 5);
+                    }
+                    var prefVelocity = navAgent.prefVelocity;
+                    if (prefVelocity.sqrMagnitude >= 1e-5f)
+                    {
+                        var p2 = p1 + prefVelocity.normalized * 2.0f;
+                        UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 5);
+                    }
                 }
-            }
-            if (showSquares)
-            {
-                var navMap = navManager.GetNavMap();
-                var squareSize = navMap.SquareSize;
-                int unitSize = navAgent.moveDef.GetUnitSize();
-                var pos = navMap.GetSquareCornerPos(navAgent.mapPos.x, navAgent.mapPos.y);
-                pos += new Vector3(unitSize * squareSize * 0.5f, 0, unitSize * squareSize * 0.5f);
-                Gizmos.color = Color.grey;
-                Gizmos.DrawCube(pos, new Vector3(unitSize * navMap.SquareSize, 0.1f, unitSize * navMap.SquareSize));
-            }
-            if (showPath && navAgent.path != null && navAgent.path.Count > 0)
-            {
-                var p1 = navAgent.path[navAgent.path.Count - 1] + Vector3.up;
-                var start = navAgent.path.Count - 2;
-                var end = Mathf.Max(0, start - 10);
-                while (start != end)
+                if (showSquares)
                 {
-                    var p2 = navAgent.path[start] + Vector3.up;
-                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.yellow, null, 5);
-                    p1 = p2;
-                    start--;
+                    var navMap = navManager.GetNavMap();
+                    var squareSize = navMap.SquareSize;
+                    int unitSize = navAgent.moveDef.GetUnitSize();
+                    var pos = navMap.GetSquareCornerPos(navAgent.mapPos.x, navAgent.mapPos.y);
+                    pos += new Vector3(unitSize * squareSize * 0.5f, 0, unitSize * squareSize * 0.5f);
+                    Gizmos.color = Color.grey;
+                    Gizmos.DrawCube(pos, new Vector3(unitSize * navMap.SquareSize, 0.1f, unitSize * navMap.SquareSize));
+                }
+                if (showPath && navAgent.path != null && navAgent.path.Count > 0)
+                {
+                    var p1 = navAgent.path[navAgent.path.Count - 1] + Vector3.up;
+                    var start = navAgent.path.Count - 2;
+                    var end = Mathf.Max(0, start - 10);
+                    while (start != end)
+                    {
+                        var p2 = navAgent.path[start] + Vector3.up;
+                        UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.yellow, null, 5);
+                        p1 = p2;
+                        start--;
+                    }
                 }
             }
         }
@@ -233,12 +236,11 @@ public class Game : MonoBehaviour
             Debug.LogError("add agent failed");
             return;
         }
+        var navAgent = navManager.GetAgent(navAgentID);
         var asset = GameObject.Instantiate(characterPrefab).gameObject;
-        //
-        var radius = navManager.GetAgent(navAgentID).radius;
-        asset.transform.position = hit.point;
+        asset.transform.position = navAgent.pos;
         asset.transform.forward = Vector3.forward;
-        asset.transform.localScale = new Vector3(radius * 2.0f, 0.5f, radius * 2.0f);
+        asset.transform.localScale = new Vector3(navAgent.radius * 2.0f, 0.5f, navAgent.radius * 2.0f);
         var c = new Character { teamID = teamID, asset = asset, navAgentID = navAgentID };
         characters.Add(c);
     }
@@ -263,7 +265,20 @@ public class Game : MonoBehaviour
         var navMap = navManager.GetNavMap();
         navMap.ClampInBounds(hit.point, out _, out _, out var pos);
 
-        //redDestination.asset.transform.position = pos;
+        var destination = destinations.Find((d) => { return d.teamID == teamID; });
+        if (destination == null)
+        {
+            var asset = GameObject.Instantiate(destinationPrefab).gameObject;
+            var body = asset.transform.Find("Model").Find("Body").gameObject;
+            body.GetComponent<Renderer>().material.SetColor("_Color", teamColor);
+            destination = new Destination
+            {
+                teamID = teamID,
+                asset = asset,
+            };
+            destinations.Add(destination);
+        }
+        destination.asset.transform.position = pos;
         foreach (var c in characters)
         {
             if (c.teamID != teamID)
