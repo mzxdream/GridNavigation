@@ -1,18 +1,4 @@
-using System;
 using UnityEngine;
-
-[Serializable]
-public class GridNavMoveDefData
-{
-    public int unitSize;
-    public float maxSlope;
-    public float slopeMod;
-    public float[] speedMods;
-    public float speedModMultIdle;
-    public float speedModMultBusy;
-    public float speedModMultMoving;
-    public float speedModMultBlocked;
-}
 
 public class GridNavScriptableObject : ScriptableObject
 {
@@ -22,5 +8,4 @@ public class GridNavScriptableObject : ScriptableObject
     public float squareSize;
     public int[] squareTypeMap;
     public float[] cornerHeightMap;
-    public GridNavMoveDefData[] moveDefDatas;
 }

@@ -18,10 +18,23 @@ class Character
 }
 
 [Serializable]
-public class Team
+public class TeamData
 {
     public int id;
     public Color color;
+}
+
+[Serializable]
+public class MoveDefData
+{
+    public int unitSize;
+    public float maxSlope;
+    public float slopeMod;
+    public float[] speedMods;
+    public float speedModMultIdle;
+    public float speedModMultBusy;
+    public float speedModMultMoving;
+    public float speedModMultBlocked;
 }
 
 public class Game : MonoBehaviour
@@ -31,11 +44,14 @@ public class Game : MonoBehaviour
     [SerializeField]
     Transform characterPrefab = default;
     [SerializeField]
-    Team[] teams = default;
+    TeamData[] teamDatas = default;
     [SerializeField]
-    int moveType = 0;
+    MoveDefData[] moveDefDatas = default;
+    //
     [SerializeField]
     int teamID = 0;
+    [SerializeField]
+    int moveType = 0;
     [SerializeField]
     float mass = 1.0f;
     [SerializeField]
@@ -70,11 +86,17 @@ public class Game : MonoBehaviour
             Debug.LogError("Init map failed");
             return;
         }
-        var moveDefs = new NavMoveDef[navData.moveDefDatas.Length];
-        for (int i = 0; i < navData.moveDefDatas.Length; i++)
+        navManager = new NavManager();
+        if (!navManager.Init(navMap, 1024, moveDefDatas.Length))
         {
-            var moveData = navData.moveDefDatas[i];
-            var moveDef = new NavMoveDef();
+            Debug.LogError("init nav manager failed");
+            navManager = null;
+            return;
+        }
+        for (int i = 0; i < moveDefDatas.Length; i++)
+        {
+            var moveData = moveDefDatas[i];
+            var moveDef = navManager.GetMoveDef(i);
             moveDef.SetUnitSize(moveData.unitSize);
             moveDef.SetMaxSlope(moveData.maxSlope);
             moveDef.SetSlopeMod(moveData.slopeMod);
@@ -86,13 +108,6 @@ public class Game : MonoBehaviour
             moveDef.SetSpeedModMult(NavSpeedModMultType.Busy, moveData.speedModMultBusy);
             moveDef.SetSpeedModMult(NavSpeedModMultType.Moving, moveData.speedModMultMoving);
             moveDef.SetSpeedModMult(NavSpeedModMultType.Blocked, moveData.speedModMultBlocked);
-        }
-        navManager = new NavManager();
-        if (!navManager.Init(navMap, moveDefs))
-        {
-            Debug.LogError("init nav manager failed");
-            navManager = null;
-            return;
         }
         lastTime = Time.realtimeSinceStartup;
     }
@@ -165,7 +180,7 @@ public class Game : MonoBehaviour
                     Gizmos.color = Color.grey;
                     Gizmos.DrawCube(pos, new Vector3(unitSize * navMap.SquareSize, 0.1f, unitSize * navMap.SquareSize));
                 }
-                if (showPath && navAgent.path != null && navAgent.path.Count > 0)
+                if (showPath && navAgent.path != null && navAgent.path.Count >= 2)
                 {
                     var p1 = navAgent.path[navAgent.path.Count - 1] + Vector3.up;
                     var start = navAgent.path.Count - 2;
@@ -184,11 +199,11 @@ public class Game : MonoBehaviour
     bool TryGetTeamColor(int teamID, out Color color)
     {
         color = Color.white;
-        if (teams == null)
+        if (teamDatas == null)
         {
             return false;
         }
-        foreach (var team in teams)
+        foreach (var team in teamDatas)
         {
             if (team.id == teamID)
             {

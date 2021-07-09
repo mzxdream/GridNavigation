@@ -33,7 +33,7 @@ public class GridNavWindow : EditorWindow
         GUILayout.EndHorizontal();
         GUILayout.BeginHorizontal();
         GUILayout.FlexibleSpace();
-        if (GUILayout.Button("烘焙", GUILayout.Width(60)))
+        if (GUILayout.Button("Bake", GUILayout.Width(60)))
         {
             RebuildNavMap();
         }
@@ -53,6 +53,7 @@ public class GridNavWindow : EditorWindow
             Debug.LogError("xsize or zsize is too less");
             return;
         }
+        // xsize zsize must be even number
         xsize &= ~1;
         zsize &= ~1;
         var squareTypeMap = new int[xsize * zsize];
