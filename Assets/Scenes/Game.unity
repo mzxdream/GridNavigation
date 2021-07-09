@@ -132,8 +132,8 @@ GameObject:
   - component: {fileID: 705349668}
   - component: {fileID: 705349667}
   - component: {fileID: 705349666}
-  - component: {fileID: 705349669}
   - component: {fileID: 705349665}
+  - component: {fileID: 705349669}
   - component: {fileID: 705349664}
   m_Layer: 0
   m_Name: game
@@ -167,7 +167,7 @@ MonoBehaviour:
   teamID: 0
   mass: 1
   maxSpeed: 2
-  isPushResistant: 1
+  pushResistant: 1
   showSquares: 1
   showPath: 1
 --- !u!65 &705349665
@@ -256,6 +256,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 52549ab659ee67f46bd2c0b16af7c256, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  showGrid: 1
+  showAngle: 45
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0

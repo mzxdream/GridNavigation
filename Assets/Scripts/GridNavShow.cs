@@ -5,17 +5,22 @@ using GridNav;
 [ExecuteInEditMode]
 public class GridNavShow : MonoBehaviour
 {
-    private List<Mesh> gridMeshs = null;
-    private bool isShow = false;
+    [SerializeField]
+    private bool showGrid = true;
+    [SerializeField, Range(1, 90)]
+    private float showAngle = 45;
 
-    public void GenerateMesh(NavMap navMap, float maxAngle)
+    private List<Mesh> gridMeshs = null;
+
+    public void GenerateMeshs(NavMap navMap)
     {
-        gridMeshs = new List<Mesh>();
         if (navMap == null)
         {
             return;
         }
-        var maxSlope = NavUtils.DegreesToSlope(maxAngle);
+        gridMeshs = new List<Mesh>();
+
+        var maxSlope = NavUtils.DegreesToSlope(showAngle);
         var verts = new List<Vector3>();
         var tris = new List<int>();
         for (int z = 0; z < navMap.ZSize; z++)
@@ -37,25 +42,25 @@ public class GridNavShow : MonoBehaviour
                     var gridMesh = new Mesh { vertices = verts.ToArray(), triangles = tris.ToArray() };
                     gridMesh.RecalculateNormals();
                     gridMeshs.Add(gridMesh);
-                    verts.Clear();
-                    tris.Clear();
+                    verts = new List<Vector3>();
+                    tris = new List<int>();
                 }
-                var pTL = navMap.GetSquareCornerPos(x, z) + new Vector3(0, 0.001f, 0);
-                var PTR = navMap.GetSquareCornerPos(x + 1, z) + new Vector3(0, 0.001f, 0);
-                var pBL = navMap.GetSquareCornerPos(x, z + 1) + new Vector3(0, 0.001f, 0);
-                var pBR = navMap.GetSquareCornerPos(x + 1, z + 1) + new Vector3(0, 0.001f, 0);
+                var pTL = navMap.GetSquareCornerPos(x, z) + new Vector3(0, 0.01f, 0);
+                var PTR = navMap.GetSquareCornerPos(x + 1, z) + new Vector3(0, 0.01f, 0);
+                var pBL = navMap.GetSquareCornerPos(x, z + 1) + new Vector3(0, 0.01f, 0);
+                var pBR = navMap.GetSquareCornerPos(x + 1, z + 1) + new Vector3(0, 0.01f, 0);
 
                 var index = verts.Count;
-                verts.Add(pBL);
                 verts.Add(pTL);
                 verts.Add(PTR);
+                verts.Add(pBL);
                 verts.Add(pBR);
                 tris.Add(index);
-                tris.Add(index + 1);
-                tris.Add(index + 2);
                 tris.Add(index + 2);
                 tris.Add(index + 3);
                 tris.Add(index);
+                tris.Add(index + 3);
+                tris.Add(index + 1);
             }
         }
         if (tris.Count > 0)
@@ -65,13 +70,13 @@ public class GridNavShow : MonoBehaviour
             gridMeshs.Add(gridMesh);
         }
     }
-    public void Show(bool isShow)
+    public void ClearMeshs()
     {
-        this.isShow = isShow;
+        gridMeshs = null;
     }
     private void OnDrawGizmos()
     {
-        if (gridMeshs == null || !isShow)
+        if (gridMeshs == null || !showGrid)
         {
             return;
         }

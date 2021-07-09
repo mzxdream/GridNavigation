@@ -41,7 +41,7 @@ public class Game : MonoBehaviour
     [SerializeField]
     float maxSpeed = 2.0f;
     [SerializeField]
-    bool isPushResistant = true;
+    bool pushResistant = true;
     [SerializeField]
     bool showSquares = true;
     [SerializeField]
@@ -228,7 +228,7 @@ public class Game : MonoBehaviour
             teamID = teamID,
             mass = mass,
             maxSpeed = maxSpeed,
-            isPushResistant = isPushResistant,
+            isPushResistant = pushResistant,
         };
         var navAgentID = navManager.AddAgent(hit.point, navParam);
         if (navAgentID == 0)

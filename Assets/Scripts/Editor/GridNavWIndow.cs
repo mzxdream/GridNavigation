@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using GridNav;
@@ -6,9 +5,7 @@ using GridNav;
 public class GridNavWindow : EditorWindow
 {
     private static readonly string navDataPath = "Assets/Config/navData.asset";
-    private GridNavShow navShow;
     private float squareSize = 0.2f;
-    private float maxAngle = 45;
 
     [MenuItem("Tools/GridNavigation")]
     public static void OpenWindow()
@@ -18,18 +15,14 @@ public class GridNavWindow : EditorWindow
     }
     private void OnEnable()
     {
-        navShow = FindObjectOfType<GridNavShow>();
         ReloadNavData();
-        if (navShow)
-        {
-            navShow.Show(true);
-        }
     }
     private void OnDisable()
     {
+        var navShow = FindObjectOfType<GridNavShow>();
         if (navShow)
         {
-            navShow.Show(false);
+            navShow.ClearMeshs();
         }
     }
     private void OnGUI()
@@ -37,10 +30,6 @@ public class GridNavWindow : EditorWindow
         GUILayout.BeginHorizontal();
         GUILayout.Label("SquareSize:", GUILayout.Width(100));
         squareSize = EditorGUILayout.Slider(squareSize, 0.1f, 2.0f);
-        GUILayout.EndHorizontal();
-        GUILayout.BeginHorizontal();
-        GUILayout.Label("ShowAngle:", GUILayout.Width(100));
-        maxAngle = EditorGUILayout.Slider(maxAngle, 1.0f, 90.0f);
         GUILayout.EndHorizontal();
         GUILayout.BeginHorizontal();
         GUILayout.FlexibleSpace();
@@ -108,9 +97,10 @@ public class GridNavWindow : EditorWindow
         {
             var navMap = new NavMap();
             navMap.Init(navData.bmin, navData.xsize, navData.zsize, navData.squareSize, navData.squareTypeMap, navData.cornerHeightMap);
-            if (navShow != null)
+            var navShow = FindObjectOfType<GridNavShow>();
+            if (navShow)
             {
-                navShow.GenerateMesh(navMap, maxAngle);
+                navShow.GenerateMeshs(navMap);
             }
         }
     }
