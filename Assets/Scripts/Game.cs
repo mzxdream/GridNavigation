@@ -37,6 +37,7 @@ public class MoveDefData
     public float speedModMultBlocked;
 }
 
+
 public class Game : MonoBehaviour
 {
     [SerializeField]
@@ -146,52 +147,73 @@ public class Game : MonoBehaviour
     }
     void OnDrawGizmos()
     {
-        if (characters != null)
+        DrawNavMap();
+        DrawCharacters();
+    }
+    void DrawNavMap()
+    {
+        var gridMeshs = GridNavMapShow.Instance.Meshs;
+        if (gridMeshs == null)
         {
-            foreach (var c in characters)
+            return;
+        }
+        foreach (var mesh in gridMeshs)
+        {
+            Gizmos.color = new Color(0x0, 0xFF, 0xFF);
+            Gizmos.DrawMesh(mesh);
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireMesh(mesh);
+        }
+    }
+    void DrawCharacters()
+    {
+        if (characters == null)
+        {
+            return;
+        }
+        foreach (var c in characters)
+        {
+            var navAgent = navManager.GetAgent(c.navAgentID);
+            if (navAgent == null)
             {
-                var navAgent = navManager.GetAgent(c.navAgentID);
-                if (navAgent == null)
+                continue;
+            }
+            {
+                var p1 = c.asset.transform.position + Vector3.up;
+                var velocity = navAgent.velocity;
+                if (velocity.sqrMagnitude >= 1e-5f)
                 {
-                    continue;
+                    var p2 = p1 + velocity.normalized * 2.0f;
+                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.black, null, 5);
                 }
+                var prefVelocity = navAgent.prefVelocity;
+                if (prefVelocity.sqrMagnitude >= 1e-5f)
                 {
-                    var p1 = c.asset.transform.position + Vector3.up;
-                    var velocity = navAgent.velocity;
-                    if (velocity.sqrMagnitude >= 1e-5f)
-                    {
-                        var p2 = p1 + velocity.normalized * 2.0f;
-                        UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.black, null, 5);
-                    }
-                    var prefVelocity = navAgent.prefVelocity;
-                    if (prefVelocity.sqrMagnitude >= 1e-5f)
-                    {
-                        var p2 = p1 + prefVelocity.normalized * 2.0f;
-                        UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 5);
-                    }
+                    var p2 = p1 + prefVelocity.normalized * 2.0f;
+                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 5);
                 }
-                if (showSquares)
+            }
+            if (showSquares)
+            {
+                var navMap = navManager.GetNavMap();
+                var squareSize = navMap.SquareSize;
+                int unitSize = navAgent.moveDef.GetUnitSize();
+                var pos = navMap.GetSquareCornerPos(navAgent.mapPos.x, navAgent.mapPos.y);
+                pos += new Vector3(unitSize * squareSize * 0.5f, 0, unitSize * squareSize * 0.5f);
+                Gizmos.color = Color.grey;
+                Gizmos.DrawCube(pos, new Vector3(unitSize * navMap.SquareSize, 0.1f, unitSize * navMap.SquareSize));
+            }
+            if (showPath && navAgent.path != null && navAgent.path.Count >= 2)
+            {
+                var p1 = navAgent.path[navAgent.path.Count - 1] + Vector3.up;
+                var start = navAgent.path.Count - 2;
+                var end = Mathf.Max(0, start - 10);
+                while (start != end)
                 {
-                    var navMap = navManager.GetNavMap();
-                    var squareSize = navMap.SquareSize;
-                    int unitSize = navAgent.moveDef.GetUnitSize();
-                    var pos = navMap.GetSquareCornerPos(navAgent.mapPos.x, navAgent.mapPos.y);
-                    pos += new Vector3(unitSize * squareSize * 0.5f, 0, unitSize * squareSize * 0.5f);
-                    Gizmos.color = Color.grey;
-                    Gizmos.DrawCube(pos, new Vector3(unitSize * navMap.SquareSize, 0.1f, unitSize * navMap.SquareSize));
-                }
-                if (showPath && navAgent.path != null && navAgent.path.Count >= 2)
-                {
-                    var p1 = navAgent.path[navAgent.path.Count - 1] + Vector3.up;
-                    var start = navAgent.path.Count - 2;
-                    var end = Mathf.Max(0, start - 10);
-                    while (start != end)
-                    {
-                        var p2 = navAgent.path[start] + Vector3.up;
-                        UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.yellow, null, 5);
-                        p1 = p2;
-                        start--;
-                    }
+                    var p2 = navAgent.path[start] + Vector3.up;
+                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.yellow, null, 5);
+                    p1 = p2;
+                    start--;
                 }
             }
         }

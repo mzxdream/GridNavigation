@@ -2,11 +2,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using GridNav;
 
-[ExecuteInEditMode]
-public class GridNavShow : Singleton<GridNavShow>
+public class GridNavMapShow
 {
-    [SerializeField]
+    private static GridNavMapShow instance = null;
+    public static GridNavMapShow Instance => instance ?? (instance = new GridNavMapShow());
     private List<Mesh> gridMeshs = null;
+    public List<Mesh> Meshs => gridMeshs;
 
     public void GenerateMeshs(NavMap navMap, float showAngle)
     {
@@ -63,18 +64,8 @@ public class GridNavShow : Singleton<GridNavShow>
             gridMeshs.Add(gridMesh);
         }
     }
-    private void OnDrawGizmos()
+    public void ClearMeshs()
     {
-        if (gridMeshs == null)
-        {
-            return;
-        }
-        foreach (var mesh in gridMeshs)
-        {
-            Gizmos.color = new Color(0x0, 0xFF, 0xFF);
-            Gizmos.DrawMesh(mesh);
-            Gizmos.color = Color.green;
-            Gizmos.DrawWireMesh(mesh);
-        }
+        gridMeshs = null;
     }
 }

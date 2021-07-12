@@ -5,7 +5,9 @@ using GridNav;
 public class GridNavWindow : EditorWindow
 {
     private static readonly string navDataPath = "Assets/Config/navData.asset";
+    [SerializeField]
     private float squareSize = 0.2f;
+    [SerializeField]
     private float showAngle = 45.0f;
 
     [MenuItem("Tools/GridNavigation")]
@@ -21,7 +23,7 @@ public class GridNavWindow : EditorWindow
     }
     private void OnDisable()
     {
-        GridNavShow.Destory();
+        GridNavMapShow.Instance.ClearMeshs();
     }
     private void OnGUI()
     {
@@ -100,7 +102,7 @@ public class GridNavWindow : EditorWindow
         {
             var navMap = new NavMap();
             navMap.Init(navData.bmin, navData.xsize, navData.zsize, navData.squareSize, navData.squareTypeMap, navData.cornerHeightMap);
-            GridNavShow.Instance.GenerateMeshs(navMap, showAngle);
+            GridNavMapShow.Instance.GenerateMeshs(navMap, showAngle);
         }
     }
 }
