@@ -5,16 +5,14 @@ using GridNav;
 public class GridNavWindow : EditorWindow
 {
     private static readonly string navDataPath = "Assets/Config/navData.asset";
-    [SerializeField]
     private float squareSize = 0.2f;
-    [SerializeField]
     private float showAngle = 45.0f;
 
     [MenuItem("Tools/GridNavigation")]
     public static void OpenWindow()
     {
         var window = GetWindow<GridNavWindow>();
-        window.minSize = new Vector2(300, 360);
+        window.minSize = new Vector2(300, 50);
         window.Show();
     }
     private void OnEnable()
@@ -100,6 +98,7 @@ public class GridNavWindow : EditorWindow
         var navData = AssetDatabase.LoadAssetAtPath<GridNavScriptableObject>(navDataPath);
         if (navData != null)
         {
+            squareSize = navData.squareSize;
             var navMap = new NavMap();
             navMap.Init(navData.bmin, navData.xsize, navData.zsize, navData.squareSize, navData.squareTypeMap, navData.cornerHeightMap);
             GridNavMapShow.Instance.GenerateMeshs(navMap, showAngle);
