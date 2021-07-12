@@ -33,7 +33,14 @@ public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
     {
         if (instance != null)
         {
-            Destroy(instance.gameObject);
+            if (Application.isEditor)
+            {
+                DestroyImmediate(instance.gameObject);
+            }
+            else
+            {
+                Destroy(instance.gameObject);
+            }
             instance = null;
         }
     }

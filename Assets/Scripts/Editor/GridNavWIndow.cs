@@ -6,6 +6,7 @@ public class GridNavWindow : EditorWindow
 {
     private static readonly string navDataPath = "Assets/Config/navData.asset";
     private float squareSize = 0.2f;
+    private float showAngle = 45.0f;
 
     [MenuItem("Tools/GridNavigation")]
     public static void OpenWindow()
@@ -20,13 +21,17 @@ public class GridNavWindow : EditorWindow
     }
     private void OnDisable()
     {
-        GridNavShow.Instance.ClearMeshs();
+        GridNavShow.Destory();
     }
     private void OnGUI()
     {
         GUILayout.BeginHorizontal();
         GUILayout.Label("SquareSize:", GUILayout.Width(100));
-        squareSize = EditorGUILayout.Slider(squareSize, 0.1f, 2.0f);
+        squareSize = EditorGUILayout.Slider(squareSize, 0.1f, 5.0f);
+        GUILayout.EndHorizontal();
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("ShowAngle:", GUILayout.Width(100));
+        showAngle = EditorGUILayout.Slider(showAngle, 1.0f, 90.0f);
         GUILayout.EndHorizontal();
         GUILayout.BeginHorizontal();
         GUILayout.FlexibleSpace();
@@ -95,7 +100,7 @@ public class GridNavWindow : EditorWindow
         {
             var navMap = new NavMap();
             navMap.Init(navData.bmin, navData.xsize, navData.zsize, navData.squareSize, navData.squareTypeMap, navData.cornerHeightMap);
-            GridNavShow.Instance.GenerateMeshs(navMap);
+            GridNavShow.Instance.GenerateMeshs(navMap, showAngle);
         }
     }
 }

@@ -2,23 +2,17 @@ using System.Collections.Generic;
 using UnityEngine;
 using GridNav;
 
+[ExecuteInEditMode]
 public class GridNavShow : Singleton<GridNavShow>
 {
     [SerializeField]
-    private bool showGrid = true;
-    [SerializeField, Range(1, 90)]
-    private float showAngle = 45;
-    [SerializeField]
     private List<Mesh> gridMeshs = null;
 
-    public void GenerateMeshs(NavMap navMap)
+    public void GenerateMeshs(NavMap navMap, float showAngle)
     {
-        if (navMap == null)
-        {
-            return;
-        }
-        gridMeshs = new List<Mesh>();
+        Debug.Assert(navMap != null);
 
+        gridMeshs = new List<Mesh>();
         var maxSlope = NavUtils.DegreesToSlope(showAngle);
         var verts = new List<Vector3>();
         var tris = new List<int>();
@@ -69,13 +63,9 @@ public class GridNavShow : Singleton<GridNavShow>
             gridMeshs.Add(gridMesh);
         }
     }
-    public void ClearMeshs()
-    {
-        gridMeshs = null;
-    }
     private void OnDrawGizmos()
     {
-        if (gridMeshs == null || !showGrid)
+        if (gridMeshs == null)
         {
             return;
         }
