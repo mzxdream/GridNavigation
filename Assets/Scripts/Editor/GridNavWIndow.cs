@@ -10,7 +10,8 @@ public class GridNavWindow : EditorWindow
     [MenuItem("Tools/GridNavigation")]
     public static void OpenWindow()
     {
-        var window = EditorWindow.GetWindow<GridNavWindow>();
+        var window = GetWindow<GridNavWindow>();
+        window.minSize = new Vector2(300, 360);
         window.Show();
     }
     private void OnEnable()
@@ -19,11 +20,7 @@ public class GridNavWindow : EditorWindow
     }
     private void OnDisable()
     {
-        var navShow = FindObjectOfType<GridNavShow>();
-        if (navShow)
-        {
-            navShow.ClearMeshs();
-        }
+        GridNavShow.Instance.ClearMeshs();
     }
     private void OnGUI()
     {
@@ -98,11 +95,7 @@ public class GridNavWindow : EditorWindow
         {
             var navMap = new NavMap();
             navMap.Init(navData.bmin, navData.xsize, navData.zsize, navData.squareSize, navData.squareTypeMap, navData.cornerHeightMap);
-            var navShow = FindObjectOfType<GridNavShow>();
-            if (navShow)
-            {
-                navShow.GenerateMeshs(navMap);
-            }
+            GridNavShow.Instance.GenerateMeshs(navMap);
         }
     }
 }

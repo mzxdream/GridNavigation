@@ -2,14 +2,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using GridNav;
 
-[ExecuteInEditMode]
-public class GridNavShow : MonoBehaviour
+public class GridNavShow : Singleton<GridNavShow>
 {
     [SerializeField]
     private bool showGrid = true;
     [SerializeField, Range(1, 90)]
     private float showAngle = 45;
-
+    [SerializeField]
     private List<Mesh> gridMeshs = null;
 
     public void GenerateMeshs(NavMap navMap)
