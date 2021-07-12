@@ -27,14 +27,17 @@ public class TeamData
 [Serializable]
 public class MoveDefData
 {
-    public int unitSize;
-    public float maxSlope;
-    public float slopeMod;
-    public float[] speedMods;
-    public float speedModMultIdle;
-    public float speedModMultBusy;
-    public float speedModMultMoving;
-    public float speedModMultBlocked;
+    public int unitSize = 4;
+    public float maxAngle = 60.0f;
+    public float slopeMod = 0.0f;
+    public float speedModWalkable = 1.0f;
+    [ReadOnly]
+    public float speedModUnwalkable = 0.0f;
+    public float speedModJump = 2.0f;
+    public float speedModMultIdle = 0.35f;
+    public float speedModMultBusy = 0.10f;
+    public float speedModMultMoving = 0.65f;
+    public float speedModMultBlocked = 0.01f;
 }
 
 
@@ -99,12 +102,11 @@ public class Game : MonoBehaviour
             var moveData = moveDefDatas[i];
             var moveDef = navManager.GetMoveDef(i);
             moveDef.SetUnitSize(moveData.unitSize);
-            moveDef.SetMaxSlope(moveData.maxSlope);
+            moveDef.SetMaxSlope(NavUtils.DegreesToSlope(moveData.maxAngle));
             moveDef.SetSlopeMod(moveData.slopeMod);
-            for (int j = 0; j < moveData.speedMods.Length; j++)
-            {
-                moveDef.SetSpeedMod(j, moveData.speedMods[j]);
-            }
+            moveDef.SetSpeedMod(0, moveData.speedModWalkable);
+            moveDef.SetSpeedMod(1, moveData.speedModUnwalkable);
+            moveDef.SetSpeedMod(2, moveData.speedModJump);
             moveDef.SetSpeedModMult(NavSpeedModMultType.Idle, moveData.speedModMultIdle);
             moveDef.SetSpeedModMult(NavSpeedModMultType.Busy, moveData.speedModMultBusy);
             moveDef.SetSpeedModMult(NavSpeedModMultType.Moving, moveData.speedModMultMoving);

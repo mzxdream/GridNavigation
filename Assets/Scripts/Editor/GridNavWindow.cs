@@ -6,7 +6,7 @@ public class GridNavWindow : EditorWindow
 {
     private static readonly string navDataPath = "Assets/Config/navData.asset";
     private float squareSize = 0.2f;
-    private float showAngle = 45.0f;
+    private float showAngle = 60.0f;
 
     [MenuItem("Tools/GridNavigation")]
     public static void OpenWindow()
