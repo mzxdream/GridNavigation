@@ -40,7 +40,6 @@ public class MoveDefData
     public float speedModMultBlocked = 0.01f;
 }
 
-
 public class Game : MonoBehaviour
 {
     [SerializeField]
@@ -65,7 +64,7 @@ public class Game : MonoBehaviour
     [SerializeField]
     bool showSquares = true;
     [SerializeField]
-    bool showPath = false;
+    int showPathCount = 10;
 
     List<Destination> destinations;
     List<Character> characters;
@@ -205,17 +204,14 @@ public class Game : MonoBehaviour
                 Gizmos.color = Color.grey;
                 Gizmos.DrawCube(pos, new Vector3(unitSize * navMap.SquareSize, 0.1f, unitSize * navMap.SquareSize));
             }
-            if (showPath && navAgent.path != null && navAgent.path.Count >= 2)
+            if (showPathCount > 0 && navAgent.path != null && navAgent.path.Count >= 2)
             {
                 var p1 = navAgent.path[navAgent.path.Count - 1] + Vector3.up;
-                var start = navAgent.path.Count - 2;
-                var end = Mathf.Max(0, start - 10);
-                while (start != end)
+                for (int i = navAgent.path.Count - 2, j = 0; i >= 0 && j < showPathCount; i--, j++)
                 {
-                    var p2 = navAgent.path[start] + Vector3.up;
+                    var p2 = navAgent.path[i] + Vector3.up;
                     UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.yellow, null, 5);
                     p1 = p2;
-                    start--;
                 }
             }
         }
