@@ -15,13 +15,22 @@ public class GridNavWindow : EditorWindow
         window.minSize = new Vector2(300, 50);
         window.Show();
     }
-    private void OnEnable()
+    private void Awake()
     {
         ReloadNavData();
     }
-    private void OnDisable()
+    private void OnDestroy()
     {
         GridNavMapShow.Instance.ClearMeshs();
+    }
+    private void OnEnable()
+    {
+        EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+        EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+    }
+    private void OnDisable()
+    {
+        EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
     }
     private void OnGUI()
     {
@@ -102,6 +111,17 @@ public class GridNavWindow : EditorWindow
             var navMap = new NavMap();
             navMap.Init(navData.bmin, navData.xsize, navData.zsize, navData.squareSize, navData.squareTypeMap, navData.cornerHeightMap);
             GridNavMapShow.Instance.GenerateMeshs(navMap, showAngle);
+        }
+    }
+    private void OnPlayModeStateChanged(PlayModeStateChange state)
+    {
+        if (state == PlayModeStateChange.ExitingEditMode || state == PlayModeStateChange.ExitingPlayMode)
+        {
+            GridNavMapShow.Instance.ClearMeshs();
+        }
+        else if (state == PlayModeStateChange.EnteredEditMode || state == PlayModeStateChange.EnteredPlayMode)
+        {
+            ReloadNavData();
         }
     }
 }
