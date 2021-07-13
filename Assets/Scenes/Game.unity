@@ -164,21 +164,21 @@ MonoBehaviour:
     color: {r: 0.21975517, g: 0, b: 1, a: 0}
   moveDefDatas:
   - unitSize: 4
-    maxSlope: 0.475
+    maxAngle: 60
     slopeMod: 0
-    speedMods:
-    - 1
-    - 0
+    speedModWalkable: 1
+    speedModUnwalkable: 0
+    speedModJump: 2
     speedModMultIdle: 0.35
     speedModMultBusy: 0.1
     speedModMultMoving: 0.65
     speedModMultBlocked: 0.01
   - unitSize: 6
-    maxSlope: 0.475
+    maxAngle: 60
     slopeMod: 0
-    speedMods:
-    - 1
-    - 0
+    speedModWalkable: 1
+    speedModUnwalkable: 0
+    speedModJump: 2
     speedModMultIdle: 0.35
     speedModMultBusy: 0.1
     speedModMultMoving: 0.65
@@ -189,7 +189,7 @@ MonoBehaviour:
   maxSpeed: 2
   pushResistant: 1
   showSquares: 1
-  showPath: 1
+  showPathCount: 10
 --- !u!65 &705349665
 BoxCollider:
   m_ObjectHideFlags: 0
