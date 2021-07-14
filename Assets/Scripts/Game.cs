@@ -18,13 +18,6 @@ class Character
 }
 
 [Serializable]
-public class TeamData
-{
-    public int id;
-    public Color color;
-}
-
-[Serializable]
 public class MoveDefData
 {
     public int unitSize = 4;
@@ -46,8 +39,6 @@ public class Game : MonoBehaviour
     Transform destinationPrefab = default;
     [SerializeField]
     Transform characterPrefab = default;
-    [SerializeField]
-    TeamData[] teamDatas = default;
     [SerializeField]
     MoveDefData[] moveDefDatas = default;
     //
@@ -153,17 +144,21 @@ public class Game : MonoBehaviour
     }
     void DrawNavMap()
     {
-        var gridMeshs = GridNavMapShow.Instance.Meshs;
-        if (gridMeshs == null)
+        var areaMeshs = GridNavMapShow.Instance.AreaMeshes;
+        if (areaMeshs == null)
         {
             return;
         }
-        foreach (var mesh in gridMeshs)
+        foreach (var v in areaMeshs)
         {
-            Gizmos.color = new Color(0x0, 0xFF, 0xFF);
-            Gizmos.DrawMesh(mesh);
-            Gizmos.color = Color.green;
-            Gizmos.DrawWireMesh(mesh);
+            var areaColor = GetAreaColor(v.Key);
+            foreach (var mesh in v.Value)
+            {
+                Gizmos.color = areaColor;
+                Gizmos.DrawMesh(mesh);
+                Gizmos.color = Color.black;
+                Gizmos.DrawWireMesh(mesh);
+            }
         }
     }
     void DrawCharacters()
@@ -216,23 +211,6 @@ public class Game : MonoBehaviour
             }
         }
     }
-    bool TryGetTeamColor(int teamID, out Color color)
-    {
-        color = Color.white;
-        if (teamDatas == null)
-        {
-            return false;
-        }
-        foreach (var team in teamDatas)
-        {
-            if (team.id == teamID)
-            {
-                color = team.color;
-                return true;
-            }
-        }
-        return false;
-    }
     void AddCharacter()
     {
         if (navManager == null)
@@ -243,14 +221,10 @@ public class Game : MonoBehaviour
         var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
         {
-            Debug.LogError("get position failed");
+            //Debug.LogError("get position failed");
             return;
         }
-        if (!TryGetTeamColor(teamID, out var teamColor))
-        {
-            Debug.LogError("get team color failed");
-            return;
-        }
+        var teamColor = GetTeamColor(teamID);
         var moveDef = navManager.GetMoveDef(moveType);
         if (moveDef == null)
         {
@@ -291,14 +265,10 @@ public class Game : MonoBehaviour
         var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         if (!Physics.Raycast(ray, out RaycastHit hit, float.MaxValue))
         {
-            Debug.LogError("get position failed");
+            //Debug.LogError("get position failed");
             return;
         }
-        if (!TryGetTeamColor(teamID, out var teamColor))
-        {
-            Debug.LogError("team not exists:" + teamID);
-            return;
-        }
+        var teamColor = GetTeamColor(teamID);
         var navMap = navManager.GetNavMap();
         navMap.ClampInBounds(hit.point, out _, out _, out var pos);
 
@@ -344,5 +314,13 @@ public class Game : MonoBehaviour
                 break;
             }
         }
+    }
+    Color GetAreaColor(int areaType)
+    {
+        return new Color(0f, 0.75f, 1f, 0.5f);
+    }
+    Color GetTeamColor(int teamID)
+    {
+        return Color.red;
     }
 }

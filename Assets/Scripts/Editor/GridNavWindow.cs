@@ -110,7 +110,7 @@ public class GridNavWindow : EditorWindow
             squareSize = navData.squareSize;
             var navMap = new NavMap();
             navMap.Init(navData.bmin, navData.xsize, navData.zsize, navData.squareSize, navData.squareTypeMap, navData.cornerHeightMap);
-            GridNavMapShow.Instance.GenerateMeshs(navMap, showAngle);
+            GridNavMapShow.Instance.GenerateMeshes(navMap, showAngle);
         }
     }
     private void OnPlayModeStateChanged(PlayModeStateChange state)
