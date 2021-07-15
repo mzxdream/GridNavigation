@@ -106,8 +106,7 @@ public class Game : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.Q) && createToggles.Count > 0)
         {
-            createType = (createType + 1) % createToggles.Count;
-            createToggles[createType].isOn = true;
+            createToggles[(createType + 1) % createToggles.Count].isOn = true;
         }
         int teamID = -1;
         if (Input.GetKeyDown(KeyCode.Alpha1))
@@ -348,16 +347,26 @@ public class Game : MonoBehaviour
         createToggles = new List<Toggle>();
         createToggles.Add(transform.Find("Canvas/GridNavigation/CharacterToggle").GetComponent<Toggle>());
         createToggles.Add(transform.Find("Canvas/GridNavigation/DestinationToggle").GetComponent<Toggle>());
+        Action<Toggle, int> onToggleValueChange = (Toggle t, int index) =>
+        {
+            if (t.isOn)
+            {
+                createType = index;
+            }
+        };
         for (int i = 0; i < createToggles.Count; i++)
         {
-            if (createToggles[i].isOn)
+            var toggle = createToggles[i];
+            if (toggle.isOn)
             {
                 createType = i;
             }
+            int j = i;
+            toggle.onValueChanged.AddListener(delegate { onToggleValueChange(toggle, j); });
         }
         moveTypeInputField = transform.Find("Canvas/GridNavigation/MoveTypeInputField").GetComponent<InputField>();
-        moveTypeInputField = transform.Find("Canvas/GridNavigation/MassInputField").GetComponent<InputField>();
-        moveTypeInputField = transform.Find("Canvas/GridNavigation/MaxSpeedInputField").GetComponent<InputField>();
+        massInputField = transform.Find("Canvas/GridNavigation/MassInputField").GetComponent<InputField>();
+        maxSpeedInputField = transform.Find("Canvas/GridNavigation/MaxSpeedInputField").GetComponent<InputField>();
         pushResistantToggle = transform.Find("Canvas/GridNavigation/PushResistantToggle").GetComponent<Toggle>();
     }
     private static int Bit(int a, int b)
