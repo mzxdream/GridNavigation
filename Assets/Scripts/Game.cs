@@ -186,7 +186,8 @@ public class Game : MonoBehaviour
             return;
         }
         var showSquares = showSquaresToggle.isOn;
-        var showPathCount = int.Parse(showPathCountInputField.text);
+        int showPathCount = 0;
+        int.TryParse(showPathCountInputField.text, out showPathCount);
         foreach (var c in characters)
         {
             var navAgent = navManager.GetAgent(c.navAgentID);
@@ -244,9 +245,26 @@ public class Game : MonoBehaviour
             //Debug.LogError("get position failed");
             return;
         }
-        var moveType = int.Parse(moveTypeInputField.text);
-        var mass = float.Parse(massInputField.text);
-        var maxSpeed = float.Parse(maxSpeedInputField.text);
+        if (!int.TryParse(moveTypeInputField.text, out var moveType))
+        {
+            Debug.LogError("parse moveType failed");
+            return;
+        }
+        if (!float.TryParse(massInputField.text, out var mass))
+        {
+            Debug.LogError("parse mass failed");
+            return;
+        }
+        if (mass < 1e-4f)
+        {
+            Debug.LogError("mass is less then 1e-4f");
+            return;
+        }
+        if (!float.TryParse(maxSpeedInputField.text, out var maxSpeed))
+        {
+            Debug.LogError("parse max speed failed");
+            return;
+        }
         var pushResistant = pushResistantToggle.isOn;
 
         var teamColor = GetTeamColor(teamID);
