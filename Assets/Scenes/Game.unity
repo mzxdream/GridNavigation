@@ -120,7 +120,7 @@ NavMeshSettings:
     accuratePlacement: 0
     debug:
       m_Flags: 0
-  m_NavMeshData: {fileID: 23800000, guid: 94c04c7127e4ab144be10a932a2826db, type: 2}
+  m_NavMeshData: {fileID: 23800000, guid: f3e694887266a6b4dad22ff6830d9e61, type: 2}
 --- !u!1 &69519579
 GameObject:
   m_ObjectHideFlags: 0
@@ -1381,11 +1381,6 @@ MonoBehaviour:
     type: 3}
   characterPrefab: {fileID: 4430799067832463752, guid: 27afe6d2f6d618942b6d5f6b3b84bf2a,
     type: 3}
-  teamDatas:
-  - id: 1
-    color: {r: 1, g: 0, b: 0, a: 0}
-  - id: 2
-    color: {r: 0.21975517, g: 0, b: 1, a: 0}
   moveDefDatas:
   - unitSize: 4
     maxAngle: 60

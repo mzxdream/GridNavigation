@@ -315,9 +315,20 @@ public class Game : MonoBehaviour
             }
         }
     }
-    Color GetAreaColor(int areaType)
+    private static int Bit(int a, int b)
     {
-        return new Color(0f, 0.75f, 1f, 0.5f);
+        return (a & (1 << b)) >> b;
+    }
+    Color GetAreaColor(int i)
+    {
+        if (i == 0)
+        {
+            return new Color(0f, 0.75f, 1f, 0.5f);
+        }
+        int r = (Bit(i, 4) + Bit(i, 1) * 2 + 1) * 63;
+        int g = (Bit(i, 3) + Bit(i, 2) * 2 + 1) * 63;
+        int b = (Bit(i, 5) + Bit(i, 0) * 2 + 1) * 63;
+        return new Color((float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f, 0.5f);
     }
     Color GetTeamColor(int teamID)
     {
