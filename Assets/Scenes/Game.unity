@@ -212,8 +212,8 @@ RectTransform:
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_Children:
   - {fileID: 1962212024}
-  m_Father: {fileID: 0}
-  m_RootOrder: 5
+  m_Father: {fileID: 705349668}
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -387,7 +387,7 @@ GameObject:
   - component: {fileID: 237269855}
   - component: {fileID: 237269856}
   m_Layer: 5
-  m_Name: Toggle (1)
+  m_Name: DestinationToggle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -784,7 +784,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 390887623}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
   m_Name: 
@@ -1140,7 +1140,7 @@ GameObject:
   - component: {fileID: 668307209}
   - component: {fileID: 668307208}
   m_Layer: 5
-  m_Name: InputField (5)
+  m_Name: ShowPathCountInputField
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1402,13 +1402,6 @@ MonoBehaviour:
     speedModMultBusy: 0.1
     speedModMultMoving: 0.65
     speedModMultBlocked: 0.01
-  teamID: 1
-  moveType: 0
-  mass: 1
-  maxSpeed: 2
-  pushResistant: 1
-  showSquares: 1
-  showPathCount: 10
 --- !u!65 &705349665
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1479,7 +1472,8 @@ Transform:
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 50, y: 0.01, z: 50}
-  m_Children: []
+  m_Children:
+  - {fileID: 69519583}
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2073,7 +2067,7 @@ GameObject:
   - component: {fileID: 1040728417}
   - component: {fileID: 1040728416}
   m_Layer: 5
-  m_Name: InputField (2)
+  m_Name: MassInputField
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2142,13 +2136,13 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1040728417}
   m_TextComponent: {fileID: 1614036363}
   m_Placeholder: {fileID: 390887625}
-  m_ContentType: 0
+  m_ContentType: 3
   m_InputType: 0
   m_AsteriskChar: 42
-  m_KeyboardType: 0
+  m_KeyboardType: 2
   m_LineType: 0
   m_HideMobileInput: 0
-  m_CharacterValidation: 0
+  m_CharacterValidation: 2
   m_CharacterLimit: 0
   m_OnEndEdit:
     m_PersistentCalls:
@@ -2159,7 +2153,7 @@ MonoBehaviour:
   m_CaretColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
   m_CustomCaretColor: 0
   m_SelectionColor: {r: 0.65882355, g: 0.80784315, b: 1, a: 0.7529412}
-  m_Text: 
+  m_Text: 1.0
   m_CaretBlinkRate: 0.85
   m_CaretWidth: 1
   m_ReadOnly: 0
@@ -2264,7 +2258,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 6
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1238395763
 GameObject:
@@ -2353,7 +2347,7 @@ GameObject:
   - component: {fileID: 1287597359}
   - component: {fileID: 1287597358}
   m_Layer: 5
-  m_Name: InputField (3)
+  m_Name: MaxSpeedInputField
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2647,7 +2641,7 @@ GameObject:
   - component: {fileID: 1343182063}
   - component: {fileID: 1343182064}
   m_Layer: 5
-  m_Name: Toggle
+  m_Name: PushResistantToggle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2732,7 +2726,7 @@ GameObject:
   - component: {fileID: 1414705041}
   - component: {fileID: 1414705042}
   m_Layer: 5
-  m_Name: Toggle
+  m_Name: ShowSquaresToggle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3200,7 +3194,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 
+  m_Text: 1.0
 --- !u!222 &1614036364
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -3449,7 +3443,7 @@ GameObject:
   - component: {fileID: 1863671113}
   - component: {fileID: 1863671114}
   m_Layer: 5
-  m_Name: Toggle (2)
+  m_Name: CharacterToggle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3473,7 +3467,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -33.1, y: -45.4}
+  m_AnchoredPosition: {x: -43.1, y: -45.4}
   m_SizeDelta: {x: 101.70665, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1863671114
@@ -3536,7 +3530,7 @@ GameObject:
   - component: {fileID: 1892761011}
   - component: {fileID: 1892761010}
   m_Layer: 5
-  m_Name: InputField (1)
+  m_Name: MoveTypeInputField
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3605,13 +3599,13 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1892761011}
   m_TextComponent: {fileID: 2073415258}
   m_Placeholder: {fileID: 2034135964}
-  m_ContentType: 0
+  m_ContentType: 2
   m_InputType: 0
   m_AsteriskChar: 42
-  m_KeyboardType: 0
+  m_KeyboardType: 4
   m_LineType: 0
   m_HideMobileInput: 0
-  m_CharacterValidation: 0
+  m_CharacterValidation: 1
   m_CharacterLimit: 0
   m_OnEndEdit:
     m_PersistentCalls:
@@ -3622,7 +3616,7 @@ MonoBehaviour:
   m_CaretColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
   m_CustomCaretColor: 0
   m_SelectionColor: {r: 0.65882355, g: 0.80784315, b: 1, a: 0.7529412}
-  m_Text: 
+  m_Text: 0
   m_CaretBlinkRate: 0.85
   m_CaretWidth: 1
   m_ReadOnly: 0
@@ -3750,7 +3744,7 @@ GameObject:
   - component: {fileID: 1962212026}
   - component: {fileID: 1962212025}
   m_Layer: 5
-  m_Name: RawImage
+  m_Name: GridNavigation
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3951,7 +3945,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2034135962}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
   m_Name: 
@@ -4210,7 +4204,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 
+  m_Text: 0
 --- !u!222 &2073415259
 CanvasRenderer:
   m_ObjectHideFlags: 0

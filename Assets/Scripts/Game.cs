@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEditor;
 using GridNav;
 
@@ -41,22 +42,14 @@ public class Game : MonoBehaviour
     Transform characterPrefab = default;
     [SerializeField]
     MoveDefData[] moveDefDatas = default;
+    //UI
+    Toggle showSquaresToggle;
+    InputField showPathCountInputField;
+    int createType = 0;
+    List<Toggle> createToggles;
+    InputField moveTypeInputField, massInputField, maxSpeedInputField;
+    Toggle pushResistantToggle;
     //
-    [SerializeField]
-    int teamID = 0;
-    [SerializeField]
-    int moveType = 0;
-    [SerializeField]
-    float mass = 1.0f;
-    [SerializeField]
-    float maxSpeed = 2.0f;
-    [SerializeField]
-    bool pushResistant = true;
-    [SerializeField]
-    bool showSquares = true;
-    [SerializeField]
-    int showPathCount = 10;
-
     List<Destination> destinations;
     List<Character> characters;
     NavManager navManager;
@@ -103,21 +96,47 @@ public class Game : MonoBehaviour
             moveDef.SetSpeedModMult(NavSpeedModMultType.Blocked, moveData.speedModMultBlocked);
         }
         lastTime = Time.realtimeSinceStartup;
+        InitUI();
     }
-    void Update()
+    void CheckInput()
     {
-        if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            AddCharacter();
-        }
-        if (Input.GetKeyDown(KeyCode.Alpha3))
-        {
-            SetDesitination();
-        }
         if (Input.GetKeyDown(KeyCode.Delete))
         {
             RemoveObject();
         }
+        if (Input.GetKeyDown(KeyCode.Q) && createToggles.Count > 0)
+        {
+            createType = (createType + 1) % createToggles.Count;
+            createToggles[createType].isOn = true;
+        }
+        int teamID = -1;
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            teamID = 1;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            teamID = 2;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            teamID = 3;
+        }
+        if (teamID != -1)
+        {
+            if (createType == 0)
+            {
+                AddCharacter(teamID);
+            }
+            else if (createType == 1) 
+            {
+                SetDesitination(teamID);
+            }
+        }
+    }
+    void Update()
+    {
+        CheckInput();
         foreach (var c in characters)
         {
             if (!navManager.GetLocation(c.navAgentID, out var pos, out var forward))
@@ -167,6 +186,8 @@ public class Game : MonoBehaviour
         {
             return;
         }
+        var showSquares = showSquaresToggle.isOn;
+        var showPathCount = int.Parse(showPathCountInputField.text);
         foreach (var c in characters)
         {
             var navAgent = navManager.GetAgent(c.navAgentID);
@@ -211,7 +232,7 @@ public class Game : MonoBehaviour
             }
         }
     }
-    void AddCharacter()
+    void AddCharacter(int teamID)
     {
         if (navManager == null)
         {
@@ -224,6 +245,11 @@ public class Game : MonoBehaviour
             //Debug.LogError("get position failed");
             return;
         }
+        var moveType = int.Parse(moveTypeInputField.text);
+        var mass = float.Parse(massInputField.text);
+        var maxSpeed = float.Parse(maxSpeedInputField.text);
+        var pushResistant = pushResistantToggle.isOn;
+
         var teamColor = GetTeamColor(teamID);
         var moveDef = navManager.GetMoveDef(moveType);
         if (moveDef == null)
@@ -255,7 +281,7 @@ public class Game : MonoBehaviour
         var c = new Character { teamID = teamID, asset = asset, navAgentID = navAgentID };
         characters.Add(c);
     }
-    void SetDesitination()
+    void SetDesitination(int teamID)
     {
         if (navManager == null)
         {
@@ -315,11 +341,30 @@ public class Game : MonoBehaviour
             }
         }
     }
+    private void InitUI()
+    {
+        showSquaresToggle = transform.Find("Canvas/GridNavigation/ShowSquaresToggle").GetComponent<Toggle>();
+        showPathCountInputField = transform.Find("Canvas/GridNavigation/ShowPathCountInputField").GetComponent<InputField>();
+        createToggles = new List<Toggle>();
+        createToggles.Add(transform.Find("Canvas/GridNavigation/CharacterToggle").GetComponent<Toggle>());
+        createToggles.Add(transform.Find("Canvas/GridNavigation/DestinationToggle").GetComponent<Toggle>());
+        for (int i = 0; i < createToggles.Count; i++)
+        {
+            if (createToggles[i].isOn)
+            {
+                createType = i;
+            }
+        }
+        moveTypeInputField = transform.Find("Canvas/GridNavigation/MoveTypeInputField").GetComponent<InputField>();
+        moveTypeInputField = transform.Find("Canvas/GridNavigation/MassInputField").GetComponent<InputField>();
+        moveTypeInputField = transform.Find("Canvas/GridNavigation/MaxSpeedInputField").GetComponent<InputField>();
+        pushResistantToggle = transform.Find("Canvas/GridNavigation/PushResistantToggle").GetComponent<Toggle>();
+    }
     private static int Bit(int a, int b)
     {
         return (a & (1 << b)) >> b;
     }
-    Color GetAreaColor(int i)
+    private static Color GetAreaColor(int i)
     {
         if (i == 0)
         {
@@ -330,8 +375,16 @@ public class Game : MonoBehaviour
         int b = (Bit(i, 5) + Bit(i, 0) * 2 + 1) * 63;
         return new Color((float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f, 0.5f);
     }
-    Color GetTeamColor(int teamID)
+    private static Color GetTeamColor(int teamID)
     {
+        if (teamID == 2)
+        {
+            return Color.blue;
+        }
+        else if (teamID == 3)
+        {
+            return Color.yellow;
+        }
         return Color.red;
     }
 }
