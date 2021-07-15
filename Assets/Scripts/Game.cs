@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEditor;
 using GridNav;
@@ -100,6 +101,10 @@ public class Game : MonoBehaviour
     }
     void CheckInput()
     {
+        if (EventSystem.current.IsPointerOverGameObject())
+        {
+            return;
+        }
         if (Input.GetKeyDown(KeyCode.Delete))
         {
             RemoveObject();
