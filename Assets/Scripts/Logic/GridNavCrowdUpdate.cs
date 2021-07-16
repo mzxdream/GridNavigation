@@ -5,7 +5,6 @@ namespace GridNav
 {
     public static class NavCrowdUpdate
     {
-
         public static void Update(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
         {
             var t1 = Time.realtimeSinceStartup;

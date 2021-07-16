@@ -39,9 +39,9 @@ namespace GridNav
             for (int i = 0; i < neighbors.Count; ++i)
             {
                 var other = neighbors[i];
-                var priorityRatio = NavUtils.CalcPriorityRatio(agent, other);
-                ComputeAgentLine(agent.pos, agent.radius, agent.velocity, agent.prefVelocity
-                    , other.pos, other.radius, other.velocity, other.prefVelocity, priorityRatio, invTimeHorizon, 1.0f, ref orcaLines);
+                var weight = NavUtils.CalcAvoidanceWeight(agent, other);
+                ComputeAgentLine(agent.pos, agent.radius, agent.prefVelocity
+                    , other.pos, other.radius, other.prefVelocity, weight, invTimeHorizon, 1.0f, ref orcaLines);
             }
 
             int lineFail = LinearProgram2(orcaLines, agent.param.maxSpeed, agent.prefVelocity, false, ref agent.newVelocity);
@@ -297,7 +297,7 @@ namespace GridNav
             line.point = rightCutOff + radius * invTimeHorizonObst * new Vector3(-line.direction.z, 0, line.direction.x);
             orcaLines.Add(line);
         }
-        private static void ComputeAgentLine(Vector3 pos, float radius, Vector3 velocity, Vector3 prefVelocity, Vector3 otherPos, float otherRadius, Vector3 otherVelocity, Vector3 otherPrefVelocity, float priorityRatio, float invTimeHorizon, float deltaTime, ref List<NavRVOLine> orcaLines)
+        private static void ComputeAgentLine(Vector3 pos, float radius, Vector3 prefVelocity, Vector3 otherPos, float otherRadius, Vector3 otherPrefVelocity, float weight, float invTimeHorizon, float deltaTime, ref List<NavRVOLine> orcaLines)
         {
             Vector3 velocityOpt = prefVelocity;
             Vector3 neighborVelocityOpt = otherPrefVelocity;
@@ -363,7 +363,7 @@ namespace GridNav
                 u = (combinedRadius * invTimeStep - wLength) * unitW;
             }
 
-            line.point = velocityOpt + (1.0f - priorityRatio) * u;
+            line.point = velocityOpt + (1.0f - weight) * u;
             orcaLines.Add(line);
         }
         private static bool LinearProgram1(List<NavRVOLine> lines, int lineNo, float radius, Vector3 optVelocity, bool directionOpt, ref Vector3 result)

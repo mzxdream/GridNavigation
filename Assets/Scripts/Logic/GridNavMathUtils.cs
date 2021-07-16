@@ -81,7 +81,7 @@ namespace GridNav
             d = x1 * x2 + z1 * z2;
             return Mathf.Rad2Deg * Mathf.Acos(Mathf.Clamp(d, -1, 1));
         }
-        public static float Angle2DSigned(Vector3 from, Vector3 to)
+        public static float AngleSigned2D(Vector3 from, Vector3 to)
         {
             var angle = Angle2D(from, to);
             return from.x * to.z - from.z * to.x > 0 ? -angle : angle;
