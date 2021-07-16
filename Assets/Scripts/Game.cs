@@ -143,11 +143,13 @@ public class Game : MonoBehaviour
         CheckInput();
         foreach (var c in characters)
         {
-            if (!navManager.GetLocation(c.navAgentID, out var pos, out var forward))
+            var navAgent = navManager.GetAgent(c.navAgentID);
+            if (navAgent == null)
             {
                 continue;
             }
-            c.asset.transform.position = pos;
+            c.asset.transform.position = navAgent.pos;
+            var forward = NavMathUtils.Normalized2D(navAgent.velocity);
             if (forward != Vector3.zero)
             {
                 c.asset.transform.forward = forward;

@@ -8,13 +8,14 @@ namespace GridNav
         private int frameNum;
         private int framesPerSecond;
         private float frameTime;
+
         private NavMap navMap;
-        private NavBlockingObjectMap blockingObjectMap;
         private NavQuery navQuery;
         private NavQuery[] workNavQuerys;
         private NavQuery moveRequestNavQuery;
         private List<int> moveRequestQueue;
         private Dictionary<int, NavAgent> agents; // TODO 后续做成缓冲池
+        private List<NavAgent>[] suqareAgents;
         private int lastAgentID;
         private NavMoveDef[] moveDefs;
 
@@ -30,9 +31,8 @@ namespace GridNav
             this.framesPerSecond = framesPerSecond;
             this.frameTime = 1.0f / framesPerSecond;
             this.navMap = navMap;
-            this.blockingObjectMap = new NavBlockingObjectMap(navMap.XSize, navMap.ZSize);
             this.navQuery = new NavQuery();
-            if (!navQuery.Init(navMap, blockingObjectMap))
+            if (!navQuery.Init(this))
             {
                 return false;
             }
@@ -40,19 +40,24 @@ namespace GridNav
             for (int i = 0; i < maxWorkers; i++)
             {
                 var query = new NavQuery();
-                if (!query.Init(navMap, blockingObjectMap))
+                if (!query.Init(this))
                 {
                     return false;
                 }
                 this.workNavQuerys[i] = query;
             }
             this.moveRequestNavQuery = new NavQuery();
-            if (!this.moveRequestNavQuery.Init(navMap, blockingObjectMap))
+            if (!this.moveRequestNavQuery.Init(this))
             {
                 return false;
             }
             this.moveRequestQueue = new List<int>();
             this.agents = new Dictionary<int, NavAgent>();
+            this.suqareAgents = new List<NavAgent>[navMap.XSize * navMap.ZSize];
+            for (int i = 0; i < this.suqareAgents.Length; i++)
+            {
+                this.suqareAgents[i] = new List<NavAgent>();
+            }
             this.lastAgentID = 0;
             this.moveDefs = new NavMoveDef[maxMoveDefs];
             for (int i = 0; i < maxMoveDefs; i++)
@@ -60,25 +65,6 @@ namespace GridNav
                 this.moveDefs[i] = new NavMoveDef();
             }
             return true;
-        }
-        public void Clear()
-        {
-            if (navQuery != null)
-            {
-                navQuery.Clear();
-            }
-            for (int i = 0; i < workNavQuerys.Length; ++i)
-            {
-                var query = workNavQuerys[i];
-                if (query != null)
-                {
-                    query.Clear();
-                }
-            }
-            if (moveRequestNavQuery != null)
-            {
-                moveRequestNavQuery.Clear();
-            }
         }
         public void Update()
         {
@@ -89,14 +75,6 @@ namespace GridNav
         public NavMap GetNavMap()
         {
             return navMap;
-        }
-        public NavBlockingObjectMap GetBlockingObjectMap()
-        {
-            return blockingObjectMap;
-        }
-        public NavQuery GetNavQuery()
-        {
-            return navQuery;
         }
         public NavMoveDef GetMoveDef(int type)
         {
@@ -134,7 +112,7 @@ namespace GridNav
             };
             agent.param.maxSpeed /= framesPerSecond;
             navMap.ClampInBounds(agent.pos, out var x, out var z, out agent.pos);
-            if (!NavUtils.TestMoveSquare(navMap, agent, x, z) || !NavUtils.IsNoneBlockTypeSquare(blockingObjectMap, agent, x, z))
+            if (!NavUtils.TestMoveSquare(navMap, agent, x, z) || !NavUtils.IsNoneBlockTypeSquare(this, agent, x, z))
             {
                 NavUtils.ForeachNearestSquare(x, z, 20, (int tx, int tz) =>
                 {
@@ -142,7 +120,7 @@ namespace GridNav
                     {
                         return true;
                     }
-                    if (!NavUtils.TestMoveSquare(navMap, agent, tx, tz) || !NavUtils.IsNoneBlockTypeSquare(blockingObjectMap, agent, tx, tz))
+                    if (!NavUtils.TestMoveSquare(navMap, agent, tx, tz) || !NavUtils.IsNoneBlockTypeSquare(this, agent, tx, tz))
                     {
                         return true;
                     }
@@ -152,7 +130,7 @@ namespace GridNav
             }
             agents.Add(agent.id, agent);
             agent.mapPos = NavUtils.CalcMapPos(navMap, moveDef.GetUnitSize(), agent.pos);
-            blockingObjectMap.AddAgent(agent);
+            AddSquareAgent(agent);
             return agent.id;
         }
         public void RemoveAgent(int agentID)
@@ -171,7 +149,7 @@ namespace GridNav
                 moveRequestQueue.RemoveAt(0);
             }
             agent.moveState = NavMoveState.Idle;
-            blockingObjectMap.RemoveAgent(agent);
+            RemoveSquareAgent(agent);
             agents.Remove(agentID);
         }
         public NavAgent GetAgent(int agentID)
@@ -229,34 +207,6 @@ namespace GridNav
             }
             agent.moveState = NavMoveState.Idle;
         }
-        public bool GetLocation(int agentID, out Vector3 pos, out Vector3 forward)
-        {
-            pos = Vector3.zero;
-            forward = Vector3.zero;
-            if (!agents.TryGetValue(agentID, out var agent))
-            {
-                return false;
-            }
-            pos = agent.pos;
-            forward = NavMathUtils.Normalized2D(agent.velocity);
-            return true;
-        }
-        public Vector3 GetPrefVelocity(int agentID)
-        {
-            if (!agents.TryGetValue(agentID, out var agent))
-            {
-                return Vector3.zero;
-            }
-            return agent.prefVelocity;
-        }
-        public Vector3 GetVelocity(int agentID)
-        {
-            if (!agents.TryGetValue(agentID, out var agent))
-            {
-                return Vector3.zero;
-            }
-            return agent.velocity;
-        }
         public void UpdateMoveRequest(int maxNodes = 1024)
         {
             while (moveRequestQueue.Count > 0 && maxNodes > 0) //寻路
@@ -291,6 +241,41 @@ namespace GridNav
                     }
                 }
             }
+        }
+        public void AddSquareAgent(NavAgent agent)
+        {
+            int unitSize = agent.moveDef.GetUnitSize();
+            int xmin = agent.mapPos.x;
+            int zmin = agent.mapPos.y;
+            int xmax = Mathf.Min(navMap.XSize - 1, xmin + unitSize);
+            int zmax = Mathf.Min(navMap.ZSize - 1, zmin + unitSize);
+            for (int z = zmin; z < zmax; z++)
+            {
+                for (int x = xmin; x < xmax; x++)
+                {
+                    this.suqareAgents[x + z * navMap.XSize].Add(agent);
+                }
+            }
+        }
+        public void RemoveSquareAgent(NavAgent agent)
+        {
+            int unitSize = agent.moveDef.GetUnitSize();
+            int xmin = agent.mapPos.x;
+            int zmin = agent.mapPos.y;
+            int xmax = Mathf.Min(navMap.XSize - 1, xmin + unitSize);
+            int zmax = Mathf.Min(navMap.ZSize - 1, zmin + unitSize);
+            for (int z = zmin; z < zmax; z++)
+            {
+                for (int x = xmin; x < xmax; x++)
+                {
+                    this.suqareAgents[x + z * navMap.XSize].Remove(agent);
+                }
+            }
+        }
+        public List<NavAgent> GetSquareAgents(int x, int z)
+        {
+            Debug.Assert(x >= 0 && x < navMap.XSize && z >= 0 && z < navMap.ZSize);
+            return this.suqareAgents[x + z * navMap.XSize];
         }
     }
 }

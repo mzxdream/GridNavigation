@@ -7,22 +7,22 @@ namespace GridNav
     {
         public static void Update(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
         {
-            var t1 = Time.realtimeSinceStartup;
+            //var t1 = Time.realtimeSinceStartup;
             UpdatePath(navManager, navQueries, agents); //多线程
-            var t2 = Time.realtimeSinceStartup;
+            //var t2 = Time.realtimeSinceStartup;
             UpdateMoveRequest(navManager, navQueries, agents); // 单线程
             UpdateTopologyOptimization(navManager, navQueries, agents); //多线程
-            var t3 = Time.realtimeSinceStartup;
+            //var t3 = Time.realtimeSinceStartup;
             UpdatePrefVelocity(navManager, navQueries, agents); // 多线程
-            var t4 = Time.realtimeSinceStartup;
+            //var t4 = Time.realtimeSinceStartup;
             UpdateNewVelocity(navManager, navQueries, agents); // 多线程
-            var t5 = Time.realtimeSinceStartup;
+            //var t5 = Time.realtimeSinceStartup;
             UpdatePos(navManager, navQueries, agents); // 单线程
-            var t6 = Time.realtimeSinceStartup;
-            if (t6 - t1 > 0.001f)
-            {
-                Debug.Log("Update use totalTime:" + (t6 - t1) + " updatePath:" + (t2 - t1) + " updateMoveRequest:" + (t3 - t2) + " updatePrefVelocity:" + (t4 - t3) + " updateNewVelocity:" + (t5 - t4) + " updatePos:" + (t6 - t5));
-            }
+            //var t6 = Time.realtimeSinceStartup;
+            //if (t6 - t1 > 0.001f)
+            //{
+            //    Debug.Log("Update use totalTime:" + (t6 - t1) + " updatePath:" + (t2 - t1) + " updateMoveRequest:" + (t3 - t2) + " updatePrefVelocity:" + (t4 - t3) + " updateNewVelocity:" + (t5 - t4) + " updatePos:" + (t6 - t5));
+            //}
         }
         private static void UpdatePath(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
         {
@@ -192,10 +192,42 @@ namespace GridNav
         private static void UpdateNewVelocity(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
         {
             var navMap = navManager.GetNavMap();
-            var blockingObjectMap = navManager.GetBlockingObjectMap();
             foreach (var agent in agents)
             {
-                CollectNeighbors(navMap, blockingObjectMap, agent);
+                agent.agentNeighbors.Clear();
+                agent.obstacleNeighbors.Clear();
+
+                float queryRadius = agent.radius + Mathf.Max(navMap.SquareSize, agent.param.maxSpeed) * 2.0f;
+                navMap.GetSquareXZ(new Vector3(agent.pos.x - queryRadius, 0, agent.pos.z - queryRadius), out var sx, out var sz);
+                navMap.GetSquareXZ(new Vector3(agent.pos.x + queryRadius, 0, agent.pos.z + queryRadius), out var ex, out var ez);
+                for (int z = sz; z <= ez; z++)
+                {
+                    for (int x = sx; x <= ex; x++)
+                    {
+                        foreach (var other in navManager.GetSquareAgents(x, z))
+                        {
+                            if (other == agent)
+                            {
+                                continue;
+                            }
+                            if (!agent.agentNeighbors.Contains(other))
+                            {
+                                agent.agentNeighbors.Add(other);
+                            }
+                        }
+                        if (!NavUtils.TestMoveSquareCenter(navMap, agent, x, z))
+                        {
+                            List<Vector3> vertices = new List<Vector3>();
+
+                            var point = navMap.GetSquarePos(x, z);
+                            vertices.Add(new Vector3(point.x + navMap.SquareSize * 0.5f, 0, point.z + navMap.SquareSize * 0.5f));
+                            vertices.Add(new Vector3(point.x - navMap.SquareSize * 0.5f, 0, point.z + navMap.SquareSize * 0.5f));
+                            vertices.Add(new Vector3(point.x - navMap.SquareSize * 0.5f, 0, point.z - navMap.SquareSize * 0.5f));
+                            vertices.Add(new Vector3(point.x + navMap.SquareSize * 0.5f, 0, point.z - navMap.SquareSize * 0.5f));
+                            AddObstacle(vertices, ref agent.obstacleNeighbors);
+                        }
+                    }
+                }
                 NavRVO.ComputeNewVelocity(agent, agent.obstacleNeighbors, agent.agentNeighbors);
             }
         }
@@ -203,7 +235,6 @@ namespace GridNav
         {
             var navQuery = navQueries[0];
             var navMap = navManager.GetNavMap();
-            var blockingObjectMap = navManager.GetBlockingObjectMap();
             foreach (var agent in agents)
             {
                 var newPos = agent.pos + agent.newVelocity;
@@ -234,46 +265,9 @@ namespace GridNav
                 var mapPos = NavUtils.CalcMapPos(navMap, agent.moveDef.GetUnitSize(), agent.pos);
                 if (mapPos != agent.mapPos)
                 {
-                    blockingObjectMap.RemoveAgent(agent);
+                    navManager.RemoveSquareAgent(agent);
                     agent.mapPos = mapPos;
-                    blockingObjectMap.AddAgent(agent);
-                }
-            }
-        }
-        private static void CollectNeighbors(NavMap navMap, NavBlockingObjectMap blockingObjectMap, NavAgent agent)
-        {
-            agent.agentNeighbors.Clear();
-            agent.obstacleNeighbors.Clear();
-
-            float queryRadius = agent.radius + Mathf.Max(navMap.SquareSize, agent.param.maxSpeed) * 2.0f;
-            navMap.GetSquareXZ(new Vector3(agent.pos.x - queryRadius, 0, agent.pos.z - queryRadius), out var sx, out var sz);
-            navMap.GetSquareXZ(new Vector3(agent.pos.x + queryRadius, 0, agent.pos.z + queryRadius), out var ex, out var ez);
-            for (int z = sz; z <= ez; z++)
-            {
-                for (int x = sx; x <= ex; x++)
-                {
-                    foreach (var other in blockingObjectMap.GetSquareAgents(x, z))
-                    {
-                        if (other == agent)
-                        {
-                            continue;
-                        }
-                        if (!agent.agentNeighbors.Contains(other))
-                        {
-                            agent.agentNeighbors.Add(other);
-                        }
-                    }
-                    if (!NavUtils.TestMoveSquareCenter(navMap, agent, x, z))
-                    {
-                        List<Vector3> vertices = new List<Vector3>();
-
-                        var point = navMap.GetSquarePos(x, z);
-                        vertices.Add(new Vector3(point.x + navMap.SquareSize * 0.5f, 0, point.z + navMap.SquareSize * 0.5f));
-                        vertices.Add(new Vector3(point.x - navMap.SquareSize * 0.5f, 0, point.z + navMap.SquareSize * 0.5f));
-                        vertices.Add(new Vector3(point.x - navMap.SquareSize * 0.5f, 0, point.z - navMap.SquareSize * 0.5f));
-                        vertices.Add(new Vector3(point.x + navMap.SquareSize * 0.5f, 0, point.z - navMap.SquareSize * 0.5f));
-                        AddObstacle(vertices, ref agent.obstacleNeighbors);
-                    }
+                    navManager.AddSquareAgent(agent);
                 }
             }
         }

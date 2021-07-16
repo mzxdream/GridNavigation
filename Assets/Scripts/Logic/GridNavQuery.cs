@@ -22,37 +22,25 @@ namespace GridNav
             public float lastBestNodeCost;
         }
 
-        private NavMap navMap;
-        private NavBlockingObjectMap blockingObjectMap;
+        private NavManager navManager;
         private NavQueryNodePool nodePool;
         private NavQueryPriorityQueue openQueue;
         private QueryData queryData;
 
-        public bool Init(NavMap navMap, NavBlockingObjectMap blockingObjectMap, int maxNodes = 8192)
+        public bool Init(NavManager navManager, int maxNodes = 8192)
         {
-            Debug.Assert(navMap != null && blockingObjectMap != null && maxNodes > 0);
-            this.navMap = navMap;
-            this.blockingObjectMap = blockingObjectMap;
+            Debug.Assert(navManager != null && maxNodes > 0);
+            this.navManager = navManager;
             this.nodePool = new NavQueryNodePool(maxNodes);
             this.openQueue = new NavQueryPriorityQueue(maxNodes);
             this.queryData = new QueryData();
             return true;
         }
-        public void Clear()
-        {
-        }
-        public NavMap GetNavMap()
-        {
-            return navMap;
-        }
-        public NavBlockingObjectMap GetBlockingObjectMap()
-        {
-            return blockingObjectMap;
-        }
         public NavQueryStatus InitSlicedFindPath(NavAgent agent, Vector3 startPos, Vector3 goalPos, float goalRadius)
         {
-            Debug.Assert(agent != null && goalRadius >= 0.0f);
+            Debug.Assert(navManager != null && agent != null && goalRadius >= 0.0f);
 
+            var navMap = navManager.GetNavMap();
             queryData.status = NavQueryStatus.Failed;
             queryData.agent = agent;
             navMap.ClampInBounds(startPos, out queryData.sx, out queryData.sz, out queryData.startPos);
@@ -82,6 +70,8 @@ namespace GridNav
         }
         public NavQueryStatus UpdateSlicedFindPath(int maxNodes, out int doneNodes)
         {
+            Debug.Assert(navManager != null);
+
             doneNodes = 0;
             if ((queryData.status & NavQueryStatus.InProgress) == 0)
             {
@@ -104,19 +94,19 @@ namespace GridNav
                 var BackBlocked = TestNeighborBlocked(bestNode, NavDirection.Back);
                 var LeftBlocked = TestNeighborBlocked(bestNode, NavDirection.Left);
                 var RightBlocked = TestNeighborBlocked(bestNode, NavDirection.Right);
-                if (!LeftBlocked || !ForwardBlocked)
+                if (!LeftBlocked && !ForwardBlocked)
                 {
                     TestNeighborBlocked(bestNode, NavDirection.LeftForward);
                 }
-                if (!RightBlocked || !ForwardBlocked)
+                if (!RightBlocked && !ForwardBlocked)
                 {
                     TestNeighborBlocked(bestNode, NavDirection.RightForward);
                 }
-                if (!LeftBlocked || !ForwardBlocked)
+                if (!LeftBlocked && !ForwardBlocked)
                 {
                     TestNeighborBlocked(bestNode, NavDirection.LeftBack);
                 }
-                if (!LeftBlocked || !BackBlocked)
+                if (!LeftBlocked && !BackBlocked)
                 {
                     TestNeighborBlocked(bestNode, NavDirection.RightBack);
                 }
@@ -129,6 +119,8 @@ namespace GridNav
         }
         public NavQueryStatus FinalizeSlicedFindPath(out List<Vector3> path)
         {
+            Debug.Assert(navManager != null);
+
             path = new List<Vector3>();
             if ((queryData.status & NavQueryStatus.Failed) != 0)
             {
@@ -140,6 +132,7 @@ namespace GridNav
                 queryData.status = NavQueryStatus.Failed;
                 return queryData.status;
             }
+            var navMap = navManager.GetNavMap();
             do
             {
                 path.Add(navMap.GetSquarePos(curNode.x, curNode.z));
@@ -149,6 +142,7 @@ namespace GridNav
         }
         private bool TestNeighborBlocked(NavQueryNode node, NavDirection dir)
         {
+            var navMap = navManager.GetNavMap();
             NavUtils.GetNeighborXZ(node.x, node.z, dir, out var nx, out var nz);
             if (nx < 0 || nx >= navMap.XSize || nz < 0 || nz >= navMap.ZSize)
             {
@@ -169,7 +163,7 @@ namespace GridNav
                 neighborNode.flags |= (int)(NavNodeFlags.Closed | NavNodeFlags.Blocked);
                 return true;
             }
-            var blockTypes = NavUtils.TestBlockTypesSquare(blockingObjectMap, agent, neighborNode.x, neighborNode.z);
+            var blockTypes = NavUtils.TestBlockTypesSquare(navManager, agent, neighborNode.x, neighborNode.z);
             var speedMult = 1.0f;
             {
                 if ((blockTypes & NavBlockType.Idle) != 0)

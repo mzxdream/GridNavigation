@@ -224,49 +224,6 @@ namespace GridNav
             //var slopeMod = agent.moveDef.GetSlopeMod();
             //return speedMod / (1.0f + Mathf.Max(0.0f, slope * dirSlopeMod) * slopeMod);
         }
-        public static bool TestMoveSquareCenter(NavMap navMap, NavAgent agent, int x, int z)
-        {
-            Debug.Assert(x >= 0 && x < navMap.XSize && z >= 0 && z < navMap.ZSize);
-
-            var squareType = navMap.GetSquareType(x, z);
-            var speedMod = agent.moveDef.GetSpeedMod(squareType);
-            if (speedMod <= 0.0f)
-            {
-                return false;
-            }
-            var slope = navMap.GetSquareSlope(x, z);
-            var maxSlope = agent.moveDef.GetMaxSlope();
-            if (slope > maxSlope)
-            {
-                return false;
-            }
-            return true;
-        }
-        public static bool TestMoveSquare(NavMap navMap, NavAgent agent, int x, int z)
-        {
-            Debug.Assert(x >= 0 && x < navMap.XSize && z >= 0 && z < navMap.ZSize);
-
-            var halfUnitSize = (agent.moveDef.GetUnitSize() - 1) >> 1;
-            int xmin = x - halfUnitSize;
-            int xmax = x + halfUnitSize;
-            int zmin = z - halfUnitSize;
-            int zmax = z + halfUnitSize;
-            if (xmin < 0 || xmax >= navMap.XSize || zmin < 0 || zmax >= navMap.ZSize)
-            {
-                return false;
-            }
-            for (int tz = zmin; tz <= zmax; tz++)
-            {
-                for (int tx = xmin; tx <= xmax; tx++)
-                {
-                    if (!TestMoveSquareCenter(navMap, agent, tx, tz))
-                    {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
         public static bool IsPushResistant(NavAgent collider, NavAgent collidee)
         {
             if (collider == collidee)
@@ -327,12 +284,55 @@ namespace GridNav
             }
             return NavBlockType.Idle;
         }
-        public static NavBlockType TestBlockTypesSquareCenter(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
+        public static bool TestMoveSquareCenter(NavMap navMap, NavAgent agent, int x, int z)
         {
-            Debug.Assert(blockingObjectMap != null && agent != null);
+            Debug.Assert(x >= 0 && x < navMap.XSize && z >= 0 && z < navMap.ZSize);
+
+            var squareType = navMap.GetSquareType(x, z);
+            var speedMod = agent.moveDef.GetSpeedMod(squareType);
+            if (speedMod <= 0.0f)
+            {
+                return false;
+            }
+            var slope = navMap.GetSquareSlope(x, z);
+            var maxSlope = agent.moveDef.GetMaxSlope();
+            if (slope > maxSlope)
+            {
+                return false;
+            }
+            return true;
+        }
+        public static bool TestMoveSquare(NavMap navMap, NavAgent agent, int x, int z)
+        {
+            Debug.Assert(x >= 0 && x < navMap.XSize && z >= 0 && z < navMap.ZSize);
+
+            var halfUnitSize = (agent.moveDef.GetUnitSize() - 1) >> 1;
+            int xmin = x - halfUnitSize;
+            int xmax = x + halfUnitSize;
+            int zmin = z - halfUnitSize;
+            int zmax = z + halfUnitSize;
+            if (xmin < 0 || xmax >= navMap.XSize || zmin < 0 || zmax >= navMap.ZSize)
+            {
+                return false;
+            }
+            for (int tz = zmin; tz <= zmax; tz++)
+            {
+                for (int tx = xmin; tx <= xmax; tx++)
+                {
+                    if (!TestMoveSquareCenter(navMap, agent, tx, tz))
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+        public static NavBlockType TestBlockTypesSquareCenter(NavManager navManager, NavAgent agent, int x, int z)
+        {
+            Debug.Assert(navManager != null && agent != null);
 
             var blockTypes = NavBlockType.None;
-            foreach (var other in blockingObjectMap.GetSquareAgents(x, z))
+            foreach (var other in navManager.GetSquareAgents(x, z))
             {
                 blockTypes |= TestBlockType(agent, other);
                 if ((blockTypes & NavBlockType.Blocked) != 0)
@@ -342,9 +342,9 @@ namespace GridNav
             }
             return blockTypes;
         }
-        public static NavBlockType TestBlockTypesSquare(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
+        public static NavBlockType TestBlockTypesSquare(NavManager navManager, NavAgent agent, int x, int z)
         {
-            Debug.Assert(blockingObjectMap != null && agent != null);
+            Debug.Assert(navManager != null && agent != null);
 
             var halfUnitSize = (agent.moveDef.GetUnitSize() - 1) >> 1;
             int xmin = x - halfUnitSize;
@@ -357,7 +357,7 @@ namespace GridNav
             {
                 for (int tx = xmin; tx <= xmax; tx += 2)
                 {
-                    blockTypes |= TestBlockTypesSquareCenter(blockingObjectMap, agent, tx, tz);
+                    blockTypes |= TestBlockTypesSquareCenter(navManager, agent, tx, tz);
                     if ((blockTypes & NavBlockType.Blocked) != 0)
                     {
                         return blockTypes;
@@ -366,9 +366,9 @@ namespace GridNav
             }
             return blockTypes;
         }
-        public static bool IsNoneBlockTypeSquare(NavBlockingObjectMap blockingObjectMap, NavAgent agent, int x, int z)
+        public static bool IsNoneBlockTypeSquare(NavManager navManager, NavAgent agent, int x, int z)
         {
-            Debug.Assert(blockingObjectMap != null && agent != null);
+            Debug.Assert(navManager != null && agent != null);
 
             var halfUnitSize = (agent.moveDef.GetUnitSize() - 1) >> 1;
             int xmin = x - halfUnitSize;
@@ -380,7 +380,7 @@ namespace GridNav
             {
                 for (int tx = xmin; tx <= xmax; tx += 2)
                 {
-                    foreach (var other in blockingObjectMap.GetSquareAgents(tx, tz))
+                    foreach (var other in navManager.GetSquareAgents(tx, tz))
                     {
                         if (other != agent)
                         {
