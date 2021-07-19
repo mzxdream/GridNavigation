@@ -4,9 +4,9 @@ namespace GridNav
 {
     public static class NavMathUtils
     {
-        public static readonly float EPSILON = 1e-6f;
-        public static readonly float SQRT2 = 1.41421356237f;
-        public static readonly float HALF_SQRT2 = 0.70710678118f;
+        public const float EPSILON = 1e-6f;
+        public const float SQRT2 = 1.41421356237f;
+        public const float HALF_SQRT2 = 0.70710678118f;
 
         public static int Square(int a)
         {
@@ -15,6 +15,18 @@ namespace GridNav
         public static float Square(float a)
         {
             return a * a;
+        }
+        public static float OctileDistance(int sx, int sz, int ex, int ez)
+        {
+            const float D = 1.0f;
+            const float D2 = NavMathUtils.SQRT2;
+            int dx = Mathf.Abs(ex - sx);
+            int dz = Mathf.Abs(ez - sz);
+            return D * (dx + dz) + (D2 - 2.0f * D) * Mathf.Min(dx, dz);
+        }
+        public static int SqrDistance(int sx, int sz, int ex, int ez)
+        {
+            return (ex - sx) * (ex - sx) + (ez - sz) * (ez - sz);
         }
         public static float SqrDistance2D(Vector3 a, Vector3 b)
         {

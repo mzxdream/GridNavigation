@@ -45,7 +45,7 @@ namespace GridNav
             queryData.agent = agent;
             navMap.ClampInBounds(startPos, out queryData.sx, out queryData.sz, out queryData.startPos);
             navMap.ClampInBounds(goalPos, out queryData.ex, out queryData.ez, out queryData.goalPos);
-            queryData.goalRadiusSqr = (int)NavMathUtils.Square(goalRadius / navMap.SquareSize);
+            queryData.goalRadiusSqr = NavMathUtils.Square(Mathf.Max(2, (int)(goalRadius / navMap.SquareSize)));
             queryData.lastBestNode = null;
             queryData.lastBestNodeCost = 0.0f;
 
@@ -58,7 +58,7 @@ namespace GridNav
                 return queryData.status;
             }
             snode.gCost = 0;
-            snode.fCost = NavUtils.DistanceApproximately(queryData.sx, queryData.sz, queryData.ex, queryData.ez) * navMap.SquareSize;
+            snode.fCost = NavMathUtils.OctileDistance(queryData.sx, queryData.sz, queryData.ex, queryData.ez) * navMap.SquareSize;
             snode.parent = null;
             snode.flags |= (int)NavNodeFlags.Open;
             openQueue.Push(snode);
@@ -84,7 +84,7 @@ namespace GridNav
                 bestNode.flags &= ~(int)NavNodeFlags.Open;
                 bestNode.flags |= (int)NavNodeFlags.Closed;
 
-                if (NavMathUtils.Square(bestNode.x - queryData.ex) + NavMathUtils.Square(bestNode.z - queryData.ez) <= queryData.goalRadiusSqr)
+                if (NavMathUtils.SqrDistance(bestNode.x, bestNode.z, queryData.ex, queryData.ez) <= queryData.goalRadiusSqr)
                 {
                     queryData.lastBestNode = bestNode;
                     queryData.status = NavQueryStatus.Success;
@@ -143,7 +143,7 @@ namespace GridNav
         private bool TestNeighborBlocked(NavQueryNode node, NavDirection dir)
         {
             var navMap = navManager.GetNavMap();
-            NavUtils.GetNeighborXZ(node.x, node.z, dir, out var nx, out var nz);
+            NavUtils.GetNeighborXZ(node.x, node.z, dir, 2, out var nx, out var nz);
             if (nx < 0 || nx >= navMap.XSize || nz < 0 || nz >= navMap.ZSize)
             {
                 return true;
@@ -183,10 +183,10 @@ namespace GridNav
                     speedMult = Mathf.Min(speedMult, agent.moveDef.GetSpeedModMult(NavSpeedModMultType.Blocked));
                 }
             }
-            var speed = NavUtils.GetSquareSpeed(navMap, agent, neighborNode.x, neighborNode.z, dir) * speedMult;
-            float nodeCost = NavUtils.DirDistanceApproximately(dir) * navMap.SquareSize / Mathf.Max(NavMathUtils.EPSILON, speed);
+            var speed = NavUtils.GetSquareSpeed(navMap, agent, neighborNode.x, neighborNode.z) * speedMult;
+            float nodeCost = NavUtils.DirDistanceApproximately(dir) * 2.0f * navMap.SquareSize / Mathf.Max(NavMathUtils.EPSILON, speed);
             float gCost = node.gCost + nodeCost;
-            float hCost = NavUtils.DistanceApproximately(neighborNode.x, neighborNode.z, queryData.ex, queryData.ez) * navMap.SquareSize;
+            float hCost = NavMathUtils.OctileDistance(neighborNode.x, neighborNode.z, queryData.ex, queryData.ez) * navMap.SquareSize;
             float fCost = gCost + hCost;
 
             if ((neighborNode.flags & (int)NavNodeFlags.Open) != 0)

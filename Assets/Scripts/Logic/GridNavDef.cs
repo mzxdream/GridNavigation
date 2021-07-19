@@ -141,21 +141,16 @@ namespace GridNav
         {
             return dirVector3[(int)dir];
         }
-        public static void GetNeighborXZ(int x, int z, NavDirection dir, out int nx, out int nz)
+        public static void GetNeighborXZ(int x, int z, NavDirection dir, int step, out int nx, out int nz)
         {
-            nx = x + dirNeighbor[(int)dir, 0];
-            nz = z + dirNeighbor[(int)dir, 1];
+            nx = x + dirNeighbor[(int)dir, 0] * step;
+            nz = z + dirNeighbor[(int)dir, 1] * step;
         }
         public static float DirDistanceApproximately(NavDirection dir)
         {
             return dirDistance[(int)dir];
         }
-        public static float DistanceApproximately(int sx, int sz, int ex, int ez)
-        {
-            int dx = Mathf.Abs(ex - sx);
-            int dz = Mathf.Abs(ez - sz);
-            return (dx + dz) + (NavMathUtils.SQRT2 - 2.0f) * Mathf.Min(dx, dz);
-        }
+
         public static float CalcMaxInteriorRadius(int unitSize, float squareSize)
         {
             Debug.Assert(unitSize > 0 && squareSize > 0.0f);
@@ -315,9 +310,9 @@ namespace GridNav
             {
                 return false;
             }
-            for (int tz = zmin; tz <= zmax; tz++)
+            for (int tz = zmin; tz <= zmax; tz += 2)
             {
-                for (int tx = xmin; tx <= xmax; tx++)
+                for (int tx = xmin; tx <= xmax; tx += 2)
                 {
                     if (!TestMoveSquareCenter(navMap, agent, tx, tz))
                     {
