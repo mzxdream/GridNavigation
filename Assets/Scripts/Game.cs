@@ -224,7 +224,7 @@ public class Game : MonoBehaviour
                 int unitSize = navAgent.moveDef.GetUnitSize();
                 var pos = navMap.GetSquareCornerPos(navAgent.mapPos.x, navAgent.mapPos.y);
                 pos += new Vector3(unitSize * squareSize * 0.5f, 0, unitSize * squareSize * 0.5f);
-                Gizmos.color = Color.grey;
+                Gizmos.color = GetTeamColor(c.teamID);
                 Gizmos.DrawCube(pos, new Vector3(unitSize * navMap.SquareSize, 0.1f, unitSize * navMap.SquareSize));
             }
             if (showPathCount > 0 && navAgent.path != null && navAgent.path.Count >= 2)
@@ -413,7 +413,7 @@ public class Game : MonoBehaviour
     {
         if (teamID == 2)
         {
-            return Color.blue;
+            return Color.green;
         }
         else if (teamID == 3)
         {
