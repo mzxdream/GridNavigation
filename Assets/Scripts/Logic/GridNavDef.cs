@@ -206,8 +206,8 @@ namespace GridNav
         }
         public static float GetSquareSpeed(NavMap navMap, NavAgent agent, int x, int z)
         {
-            var slope = navMap.GetSquareSlope(x, z);
-            var squareType = navMap.GetSquareType(x, z);
+            var squareType = navMap.GetSquareType(x >> 1, z >> 1);
+            var slope = navMap.GetSquareSlope(x >> 1, z >> 1);
             var speedMod = agent.moveDef.GetSpeedMod(squareType);
             var slopeMod = agent.moveDef.GetSlopeMod();
             return speedMod / (1.0f + slope * slopeMod);
@@ -288,13 +288,13 @@ namespace GridNav
         {
             Debug.Assert(x >= 0 && x < navMap.XSize && z >= 0 && z < navMap.ZSize);
 
-            var squareType = navMap.GetSquareType(x, z);
+            var squareType = navMap.GetSquareType(x >> 1, z >> 1);
             var speedMod = agent.moveDef.GetSpeedMod(squareType);
             if (speedMod <= 0.0f)
             {
                 return false;
             }
-            var slope = navMap.GetSquareSlope(x, z);
+            var slope = navMap.GetSquareSlope(x >> 1, z >> 1);
             var maxSlope = agent.moveDef.GetMaxSlope();
             if (slope > maxSlope)
             {

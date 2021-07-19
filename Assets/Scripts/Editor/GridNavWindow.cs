@@ -5,7 +5,9 @@ using GridNav;
 public class GridNavWindow : EditorWindow
 {
     private static readonly string navDataPath = "Assets/Config/navData.asset";
-    private float squareSize = 0.2f;
+    [SerializeField]
+    private float squareSize = 0.125f;
+    [SerializeField]
     private float showAngle = 60.0f;
 
     [MenuItem("Tools/GridNavigation")]
@@ -67,16 +69,20 @@ public class GridNavWindow : EditorWindow
         // xsize zsize must be even number
         xsize &= ~1;
         zsize &= ~1;
-        var squareTypeMap = new int[xsize * zsize];
-        for (int z = 0; z < zsize; z++)
+
+        var xsizeh = xsize >> 1;
+        var zsizeh = zsize >> 1;
+        var squareTypeMap = new int[xsizeh * zsizeh];
+        for (int z = 0; z < zsizeh; z++)
         {
-            for (int x = 0; x < xsize; x++)
+            for (int x = 0; x < xsizeh; x++)
             {
-                var p = bmin + new Vector3((x + 0.5f) * squareSize, 0, (z + 0.5f) * squareSize);
+                var p = bmin + new Vector3((2 * x + 1) * squareSize, 0, (2 * z + 1) * squareSize);
                 meshObjManager.GetPositionHeightAndType(p, out var h, out var areaType);
-                squareTypeMap[x + z * xsize] = areaType;
+                squareTypeMap[x + z * xsizeh] = areaType;
             }
         }
+
         var cornerHeightMap = new float[(xsize + 1) * (zsize + 1)];
         for (int z = 0; z <= zsize; z++)
         {

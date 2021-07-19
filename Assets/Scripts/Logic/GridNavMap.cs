@@ -7,8 +7,10 @@ namespace GridNav
         private Vector3 bmin;
         private int xsize;
         private int zsize;
+        private int xsizeh;
+        private int zsizeh;
         private float squareSize;
-        private int[] squareTypeMap; // xsize * zsize origin data
+        private int[] squareTypeMap; // (xsize / 2) * (zsize / 2) origin data
         private float[] cornerHeightMap; // (xsize + 1) * (zsize + 1) origin data
         private float[] centerHeightMap; // xsize * zsize
         private Vector3[] faceNormals; // xsize * zsize * 2
@@ -19,27 +21,29 @@ namespace GridNav
         public Vector3 BMin { get => bmin; }
         public int XSize { get => xsize; }
         public int ZSize { get => zsize; }
+        public int XSizeH { get => xsizeh; }
+        public int ZSizeH { get => zsizeh; }
         public float SquareSize { get => squareSize; }
 
         public bool Init(Vector3 bmin, int xsize, int zsize, float squareSize, int[] squareTypeMap, float[] cornerHeightMap)
         {
             Debug.Assert(xsize > 1 && zsize > 1 && squareSize > NavMathUtils.EPSILON);
             Debug.Assert((xsize & 1) == 0 && (zsize & 1) == 0);
-            Debug.Assert(squareTypeMap != null && squareTypeMap.Length == xsize * zsize);
+            Debug.Assert(squareTypeMap != null && squareTypeMap.Length == (xsize >> 1) * (zsize >> 1));
             Debug.Assert(cornerHeightMap != null && cornerHeightMap.Length == (xsize + 1) * (zsize + 1));
             this.bmin = bmin;
             this.xsize = xsize;
             this.zsize = zsize;
+            this.xsizeh = (xsize >> 1);
+            this.zsizeh = (zsize >> 1);
             this.squareSize = squareSize;
-            this.squareTypeMap = new int[xsize * zsize];
-            squareTypeMap.CopyTo(this.squareTypeMap, 0);
-            this.cornerHeightMap = new float[(xsize + 1) * (zsize + 1)];
-            cornerHeightMap.CopyTo(this.cornerHeightMap, 0);
+            this.squareTypeMap = squareTypeMap;
+            this.cornerHeightMap = cornerHeightMap;
             this.centerHeightMap = new float[xsize * zsize];
             this.faceNormals = new Vector3[xsize * zsize * 2];
             this.centerNormals = new Vector3[xsize * zsize];
             this.centerNormals2D = new Vector3[xsize * zsize];
-            this.slopeMap = new float[(xsize / 2) * (zsize / 2)];
+            this.slopeMap = new float[xsizeh * zsizeh];
             UpdateHeightMap(0, xsize - 1, 0, zsize - 1);
             return true;
         }
@@ -48,8 +52,8 @@ namespace GridNav
         }
         public void SetSquareType(int x, int z, int type)
         {
-            Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
-            squareTypeMap[x + z * xsize] = type;
+            Debug.Assert(x >= 0 && x < xsizeh && z >= 0 && z < zsizeh);
+            squareTypeMap[x + z * xsizeh] = type;
         }
         public void SetCornerHeight(int x, int z, float height)
         {
@@ -107,13 +111,13 @@ namespace GridNav
         }
         public int GetSquareType(int x, int z)
         {
-            Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
-            return squareTypeMap[x + z * xsize];
+            Debug.Assert(x >= 0 && x < xsizeh && z >= 0 && z < zsizeh);
+            return squareTypeMap[x + z * xsizeh];
         }
         public float GetSquareSlope(int x, int z)
         {
-            Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
-            return slopeMap[(x >> 1) + (z >> 1) * (xsize >> 1)];
+            Debug.Assert(x >= 0 && x < xsizeh && z >= 0 && z < zsizeh);
+            return slopeMap[x + z * xsizeh];
         }
         public Vector3 GetSquareCenterNormal2D(int x, int z)
         {

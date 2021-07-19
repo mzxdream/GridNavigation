@@ -18,12 +18,12 @@ public class GridNavMapShow
         {
             for (int x = 0; x < navMap.XSize; x++)
             {
-                var squareType = navMap.GetSquareType(x, z);
+                var squareType = navMap.GetSquareType(x >> 1, z >> 1);
                 if (squareType == 1)
                 {
                     continue;
                 }
-                var slope = navMap.GetSquareSlope(x, z);
+                var slope = navMap.GetSquareSlope(x >> 1, z >> 1);
                 if (slope >= maxSlope)
                 {
                     continue;
