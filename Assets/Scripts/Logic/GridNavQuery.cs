@@ -138,6 +138,11 @@ namespace GridNav
                 path.Add(navMap.GetSquarePos(curNode.x, curNode.z));
                 curNode = curNode.parent;
             } while (curNode != null);
+            path[path.Count - 1] = queryData.startPos;
+            if ((queryData.status & NavQueryStatus.Partial) == 0)
+            {
+                path[0] = queryData.goalPos;
+            }
             return queryData.status;
         }
         private bool TestNeighborBlocked(NavQueryNode node, NavDirection dir)
