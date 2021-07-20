@@ -4,7 +4,6 @@ using UnityEngine;
 
 namespace GridNav
 {
-    public enum NavDirection { None = 0, Forward = 1, Back = 2, Left = 3, Right = 4, LeftForward = 5, RightForward = 6, LeftBack = 7, RightBack = 8 }
     public enum NavMoveState { Idle = 0, Requesting = 1, WaitForPath = 2, InProgress = 3 }
     public enum NavBlockType { None = 0, Idle = 1, Busy = 2, Moving = 4, Blocked = 8 };
     public enum NavSpeedModMultType { Idle = 0, Busy = 1, Moving = 2, Blocked = 3, NumTypes = 4 };
@@ -120,9 +119,10 @@ namespace GridNav
         public List<NavRVOObstacle> obstacleNeighbors;
     }
 
+    public enum NavDirection { None = 0, Forward = 1, Back = 2, Left = 3, Right = 4, LeftForward = 5, RightForward = 6, LeftBack = 7, RightBack = 8 }
+
     public static class NavUtils
     {
-        // None, Forward, Back, Left, Right, LeftForward, RightForward, LeftBack, RightBack
         private static readonly int[,] dirNeighbor = { { 0, 0 }, { 0, 1 }, { 0, -1 }, { -1, 0 }, { 1, 0 }, { -1, 1 }, { 1, 1 }, { -1, -1 }, { 1, -1 } };
         private static readonly Vector3[] dirVector3 = {
              new Vector3(0, 0, 0), new Vector3(0, 0, 1), new Vector3(0, 0, -1), new Vector3(-1, 0, 0), new Vector3(1, 0, 0),
@@ -150,7 +150,6 @@ namespace GridNav
         {
             return dirDistance[(int)dir];
         }
-
         public static float CalcMaxInteriorRadius(int unitSize, float squareSize)
         {
             Debug.Assert(unitSize > 0 && squareSize > 0.0f);

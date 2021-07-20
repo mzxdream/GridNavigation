@@ -133,9 +133,14 @@ namespace GridNav
                 return queryData.status;
             }
             var navMap = navManager.GetNavMap();
+            var pprevNode = curNode;
+            var prevNode = curNode;
             do
             {
                 path.Add(navMap.GetSquarePos(curNode.x, curNode.z));
+                AdjustFoundPath(ref path, pprevNode, prevNode, curNode);
+                pprevNode = prevNode;
+                prevNode = curNode;
                 curNode = curNode.parent;
             } while (curNode != null);
             path[path.Count - 1] = queryData.startPos;
@@ -218,6 +223,53 @@ namespace GridNav
                 }
             }
             return false;
+        }
+        private void AdjustFoundPath(ref List<Vector3> path, NavQueryNode pprevNode, NavQueryNode prevNode, NavQueryNode node)
+        {
+            if (pprevNode == prevNode || prevNode == node)
+            {
+                return;
+            }
+            {
+                // check turn left or turn right
+                var prevDirX = prevNode.x - pprevNode.x;
+                var prevDirZ = prevNode.z - pprevNode.z;
+                var dirX = node.x - prevNode.x;
+                var dirZ = node.z - prevNode.z;
+                if (prevDirX == dirX)
+                {
+                    if (Mathf.Abs(prevDirZ + dirZ) != 2)
+                    {
+                        return;
+                    }
+                }
+                else if (prevDirZ == dirZ)
+                {
+                    if (Mathf.Abs(prevDirX + dirX) != 2)
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    return;
+                }
+            }
+            var testNode = nodePool.GetNode(node.x + (pprevNode.x - prevNode.x), node.z + (pprevNode.z - prevNode.z));
+            if (testNode == null)
+            {
+                return;
+            }
+            if ((testNode.flags & (int)NavNodeFlags.Blocked) != 0)
+            {
+                return;
+            }
+            const float CostMod = 1.39f; //(math::sqrt(2) + 1) / math::sqrt(3)
+            if (testNode.fCost > CostMod * prevNode.fCost)
+            {
+                return;
+            }
+            path[path.Count - 2] = navManager.GetNavMap().ClampInBounds((path[path.Count - 1] + path[path.Count - 3]) / 2);
         }
     }
 }

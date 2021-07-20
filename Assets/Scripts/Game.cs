@@ -204,21 +204,6 @@ public class Game : MonoBehaviour
             {
                 continue;
             }
-            {
-                var p1 = c.asset.transform.position + Vector3.up;
-                var velocity = navAgent.velocity;
-                if (velocity.sqrMagnitude >= 1e-5f)
-                {
-                    var p2 = p1 + velocity.normalized * 2.0f;
-                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.black, null, 5);
-                }
-                var prefVelocity = navAgent.prefVelocity;
-                if (prefVelocity.sqrMagnitude >= 1e-5f)
-                {
-                    var p2 = p1 + prefVelocity.normalized * 2.0f;
-                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 5);
-                }
-            }
             if (showSquares)
             {
                 var navMap = navManager.GetNavMap();
@@ -231,12 +216,31 @@ public class Game : MonoBehaviour
             }
             if (showPathCount > 0 && navAgent.path != null && navAgent.path.Count >= 2)
             {
-                var p1 = navAgent.path[navAgent.path.Count - 1] + Vector3.up;
-                for (int i = navAgent.path.Count - 2, j = 0; i >= 0 && j < showPathCount; i--, j++)
+                var path = new Vector3[Mathf.Min(navAgent.path.Count, showPathCount)];
+                for (int i = 0; i < path.Length; i++)
                 {
-                    var p2 = navAgent.path[i] + Vector3.up;
-                    UnityEditor.Handles.DrawBezier(p1, p2, p1, p2, Color.yellow, null, 5);
-                    p1 = p2;
+                    path[i] = navAgent.path[navAgent.path.Count - 1 - i] + Vector3.up;
+                }
+                Handles.color = Color.yellow;
+                Handles.DrawAAPolyLine(4.0f, path);
+            }
+            {
+                var p1 = c.asset.transform.position;
+                var velocity = navAgent.velocity;
+                if (velocity.sqrMagnitude >= 1e-5f)
+                {
+                    var p2 = p1 + velocity.normalized * 3.0f;
+                    Handles.DrawBezier(p1, p2, p1, p2, Color.black, null, 8);
+                    //Handles.color = Color.black;
+                    //Handles.DrawAAPolyLine(8.0f, p1 + Vector3.up * 1.1f, p2 + Vector3.up * 1.1f);
+                }
+                var prefVelocity = navAgent.prefVelocity;
+                if (prefVelocity.sqrMagnitude >= 1e-5f)
+                {
+                    var p2 = p1 + prefVelocity.normalized * 2.0f;
+                    Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 8);
+                    //Handles.color = Color.blue;
+                    //Handles.DrawAAPolyLine(8.0f, p1 + Vector3.up * 1.2f, p2 + Vector3.up * 1.2f);
                 }
             }
         }

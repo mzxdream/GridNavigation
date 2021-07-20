@@ -95,6 +95,13 @@ namespace GridNav
             nearestZ = Mathf.Clamp(nearestZ, 0, zsize - 1);
             nearestPos = GetSquarePos(nearestX, nearestZ);
         }
+        public Vector3 ClampInBounds(Vector3 pos)
+        {
+            float x = Mathf.Clamp(pos.x, bmin.x, bmin.x + squareSize * xsize);
+            float z = Mathf.Clamp(pos.z, bmin.z, bmin.z + squareSize * zsize);
+            float y = GetHeight(x, z);
+            return new Vector3(x, y, z);
+        }
         public Vector3 GetSquarePos(int x, int z)
         {
             Debug.Assert(x >= 0 && x < xsize && z >= 0 && z < zsize);
