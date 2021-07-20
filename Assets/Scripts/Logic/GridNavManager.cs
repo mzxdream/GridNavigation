@@ -5,36 +5,41 @@ namespace GridNav
 {
     public class NavManager
     {
-        private int frameNum;
-        private int framesPerSecond;
-        private float frameTime;
-
         private NavMap navMap;
+        private NavMoveDef[] moveDefs;
+        private Dictionary<int, NavAgent> agents; // TODO 后续做成缓冲池
+        private List<NavAgent>[] suqareAgents;
+        private int lastAgentID;
         private NavQuery navQuery;
         private NavQuery[] workNavQuerys;
         private NavQuery moveRequestNavQuery;
         private List<int> moveRequestQueue;
-        private Dictionary<int, NavAgent> agents; // TODO 后续做成缓冲池
-        private List<NavAgent>[] suqareAgents;
-        private int lastAgentID;
-        private NavMoveDef[] moveDefs;
         private int pathFindingNodesPerFrame;
+        private int frameNum;
+        private int framesPerSecond;
+        private float frameTime;
 
         public int FrameNum { get => frameNum; }
         public int FramesPerSecond { get => framesPerSecond; }
         public float FrameTime { get => frameTime; }
 
-        public bool Init(NavMap navMap, int maxAgents = 1024, int maxMoveDefs = 10, int maxWorkers = 4, int framesPerSecond = 30, int pathFindingNodesPerFrame = 8192)
+        public bool Init(NavMap navMap, NavMoveDef[] moveDefs, int maxAgents = 1024, int maxWorkers = 4, int pathFindingNodesPerFrame = 8192, int framesPerSecond = 30)
         {
-            Debug.Assert(navMap != null && maxAgents > 0 && maxMoveDefs > 0 && maxWorkers > 0 && framesPerSecond > 0);
+            Debug.Assert(navMap != null && moveDefs != null && maxAgents > 0 && maxWorkers > 0 && pathFindingNodesPerFrame > 0 && framesPerSecond > 0);
 
-            this.frameNum = 0;
-            this.framesPerSecond = framesPerSecond;
-            this.frameTime = 1.0f / framesPerSecond;
             this.navMap = navMap;
+            this.moveDefs = moveDefs;
+            this.agents = new Dictionary<int, NavAgent>();
+            this.suqareAgents = new List<NavAgent>[navMap.XSize * navMap.ZSize];
+            for (int i = 0; i < this.suqareAgents.Length; i++)
+            {
+                this.suqareAgents[i] = new List<NavAgent>();
+            }
+            this.lastAgentID = 0;
             this.navQuery = new NavQuery();
             if (!navQuery.Init(this))
             {
+                Debug.LogError("init nav query failed");
                 return false;
             }
             this.workNavQuerys = new NavQuery[maxWorkers];
@@ -43,6 +48,7 @@ namespace GridNav
                 var query = new NavQuery();
                 if (!query.Init(this))
                 {
+                    Debug.LogError("init work nav query:" + i + " failed");
                     return false;
                 }
                 this.workNavQuerys[i] = query;
@@ -50,22 +56,14 @@ namespace GridNav
             this.moveRequestNavQuery = new NavQuery();
             if (!this.moveRequestNavQuery.Init(this))
             {
+                Debug.LogError("init move request nav query failed");
                 return false;
             }
             this.moveRequestQueue = new List<int>();
-            this.agents = new Dictionary<int, NavAgent>();
-            this.suqareAgents = new List<NavAgent>[navMap.XSize * navMap.ZSize];
-            for (int i = 0; i < this.suqareAgents.Length; i++)
-            {
-                this.suqareAgents[i] = new List<NavAgent>();
-            }
-            this.lastAgentID = 0;
-            this.moveDefs = new NavMoveDef[maxMoveDefs];
-            for (int i = 0; i < maxMoveDefs; i++)
-            {
-                this.moveDefs[i] = new NavMoveDef();
-            }
             this.pathFindingNodesPerFrame = pathFindingNodesPerFrame;
+            this.frameNum = 0;
+            this.framesPerSecond = framesPerSecond;
+            this.frameTime = 1.0f / framesPerSecond;
             return true;
         }
         public void Update()
@@ -78,22 +76,27 @@ namespace GridNav
         {
             return navMap;
         }
-        public NavMoveDef GetMoveDef(int type)
-        {
-            if (type < 0 || type >= moveDefs.Length)
-            {
-                return null;
-            }
-            return moveDefs[type];
-        }
         public int AddAgent(Vector3 pos, NavAgentParam param)
         {
-            var moveDef = GetMoveDef(param.moveType);
-            Debug.Assert(moveDef != null);
-            lastAgentID++;
+            if (param.moveType < 0 || param.moveType >= moveDefs.Length)
+            {
+                Debug.LogError("move def:" + param.moveType + " not exists");
+                return 0;
+            }
+            if (param.mass <= NavMathUtils.EPSILON)
+            {
+                Debug.LogError("mass should not be zero");
+                return 0;
+            }
+            if (param.maxSpeed <= NavMathUtils.EPSILON)
+            {
+                Debug.LogError("max speed should not be zero");
+                return 0;
+            }
+            var moveDef = moveDefs[param.moveType];
             var agent = new NavAgent
             {
-                id = lastAgentID,
+                id = ++lastAgentID,
                 param = param,
                 moveDef = moveDef,
                 pos = pos,

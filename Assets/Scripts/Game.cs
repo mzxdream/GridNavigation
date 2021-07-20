@@ -74,17 +74,11 @@ public class Game : MonoBehaviour
             Debug.LogError("Init map failed");
             return;
         }
-        navManager = new NavManager();
-        if (!navManager.Init(navMap, 1024, moveDefDatas.Length))
-        {
-            Debug.LogError("init nav manager failed");
-            navManager = null;
-            return;
-        }
+        var moveDefs = new NavMoveDef[moveDefDatas.Length];
         for (int i = 0; i < moveDefDatas.Length; i++)
         {
             var moveData = moveDefDatas[i];
-            var moveDef = navManager.GetMoveDef(i);
+            var moveDef = new NavMoveDef();
             moveDef.SetUnitSize(moveData.unitSize);
             moveDef.SetMaxSlope(NavUtils.DegreesToSlope(moveData.maxAngle));
             moveDef.SetSlopeMod(moveData.slopeMod);
@@ -95,6 +89,14 @@ public class Game : MonoBehaviour
             moveDef.SetSpeedModMult(NavSpeedModMultType.Busy, moveData.speedModMultBusy);
             moveDef.SetSpeedModMult(NavSpeedModMultType.Moving, moveData.speedModMultMoving);
             moveDef.SetSpeedModMult(NavSpeedModMultType.Blocked, moveData.speedModMultBlocked);
+            moveDefs[i] = moveDef;
+        }
+        navManager = new NavManager();
+        if (!navManager.Init(navMap, moveDefs))
+        {
+            Debug.LogError("init nav manager failed");
+            navManager = null;
+            return;
         }
         lastTime = Time.realtimeSinceStartup;
         InitUI();
@@ -275,12 +277,6 @@ public class Game : MonoBehaviour
         var pushResistant = pushResistantToggle.isOn;
 
         var teamColor = GetTeamColor(teamID);
-        var moveDef = navManager.GetMoveDef(moveType);
-        if (moveDef == null)
-        {
-            Debug.LogError("moveType:" + moveType + " not exists");
-            return;
-        }
         var navParam = new NavAgentParam
         {
             moveType = moveType,
