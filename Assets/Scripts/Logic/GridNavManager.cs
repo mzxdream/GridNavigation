@@ -18,12 +18,13 @@ namespace GridNav
         private List<NavAgent>[] suqareAgents;
         private int lastAgentID;
         private NavMoveDef[] moveDefs;
+        private int pathFindingNodesPerFrame;
 
         public int FrameNum { get => frameNum; }
         public int FramesPerSecond { get => framesPerSecond; }
         public float FrameTime { get => frameTime; }
 
-        public bool Init(NavMap navMap, int maxAgents = 1024, int maxMoveDefs = 10, int maxWorkers = 4, int framesPerSecond = 30)
+        public bool Init(NavMap navMap, int maxAgents = 1024, int maxMoveDefs = 10, int maxWorkers = 4, int framesPerSecond = 30, int pathFindingNodesPerFrame = 8192)
         {
             Debug.Assert(navMap != null && maxAgents > 0 && maxMoveDefs > 0 && maxWorkers > 0 && framesPerSecond > 0);
 
@@ -64,6 +65,7 @@ namespace GridNav
             {
                 this.moveDefs[i] = new NavMoveDef();
             }
+            this.pathFindingNodesPerFrame = pathFindingNodesPerFrame;
             return true;
         }
         public void Update()
@@ -207,8 +209,9 @@ namespace GridNav
             }
             agent.moveState = NavMoveState.Idle;
         }
-        public void UpdateMoveRequest(int maxNodes = 1024)
+        public void UpdateMoveRequest()
         {
+            int maxNodes = pathFindingNodesPerFrame;
             while (moveRequestQueue.Count > 0 && maxNodes > 0) //寻路
             {
                 var agent = agents[moveRequestQueue[0]];
