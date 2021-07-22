@@ -289,6 +289,8 @@ public class Game : MonoBehaviour
             teamID = teamID,
             mass = mass,
             maxSpeed = maxSpeed,
+            acceleration = 8.0f,
+            angularSpeed = 120.0f,
             isPushResistant = pushResistant,
         };
         var navAgentID = navManager.AddAgent(hit.point, navParam);

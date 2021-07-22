@@ -93,6 +93,8 @@ namespace GridNav
         public int teamID;
         public float mass;
         public float maxSpeed;
+        public float acceleration;
+        public float angularSpeed;
         public bool isPushResistant;
     }
 
@@ -238,7 +240,7 @@ namespace GridNav
                 }
                 return 0.0f;
             }
-            else if (pushCollidee)
+            if (pushCollidee)
             {
                 return 1.0f;
             }
@@ -250,11 +252,11 @@ namespace GridNav
                 }
                 return 0.0f;
             }
-            else if (collidee.isMoving)
+            if (collidee.isMoving)
             {
                 return 1.0f;
             }
-            return collider.id < collidee.id ? 1.0f : 0.0f;
+            return (int)collider.moveState < (int)collidee.moveState ? 1.0f : 0.0f;
         }
         public static NavBlockType TestBlockType(NavAgent collider, NavAgent collidee)
         {

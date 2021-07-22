@@ -115,7 +115,7 @@ namespace GridNav
                 agentNeighbors = new List<NavAgent>(),
                 obstacleNeighbors = new List<NavRVOObstacle>(),
             };
-            agent.param.maxSpeed /= framesPerSecond;
+            agent.param.maxSpeed *= frameTime;
             navMap.ClampInBounds(agent.pos, out var x, out var z, out agent.pos);
             if (!NavUtils.TestMoveSquare(navMap, agent, x, z) || !NavUtils.IsNoneBlockTypeSquare(this, agent, x, z))
             {
