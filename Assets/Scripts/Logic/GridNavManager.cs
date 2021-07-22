@@ -238,7 +238,7 @@ namespace GridNav
                         else if ((status & NavQueryStatus.Success) != 0)
                         {
                             agent.moveState = NavMoveState.InProgress;
-                            moveRequestNavQuery.FinalizeSlicedFindPath(out agent.path);
+                            moveRequestNavQuery.FinalizeSlicedFindPathWithSimpleSmooth(out agent.path);
                         }
                         else
                         {

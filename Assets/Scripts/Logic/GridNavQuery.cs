@@ -133,6 +133,34 @@ namespace GridNav
                 return queryData.status;
             }
             var navMap = navManager.GetNavMap();
+            do
+            {
+                path.Add(navMap.GetSquarePos(curNode.x, curNode.z));
+                curNode = curNode.parent;
+            } while (curNode != null);
+            path[path.Count - 1] = queryData.startPos;
+            if ((queryData.status & NavQueryStatus.Partial) == 0)
+            {
+                path[0] = queryData.goalPos;
+            }
+            return queryData.status;
+        }
+        public NavQueryStatus FinalizeSlicedFindPathWithSimpleSmooth(out List<Vector3> path)
+        {
+            Debug.Assert(navManager != null);
+
+            path = new List<Vector3>();
+            if ((queryData.status & NavQueryStatus.Failed) != 0)
+            {
+                return queryData.status;
+            }
+            var curNode = queryData.lastBestNode;
+            if (curNode == null)
+            {
+                queryData.status = NavQueryStatus.Failed;
+                return queryData.status;
+            }
+            var navMap = navManager.GetNavMap();
             var pprevNode = curNode;
             var prevNode = curNode;
             do
@@ -255,7 +283,7 @@ namespace GridNav
                     return;
                 }
             }
-            var testNode = nodePool.GetNode(node.x + (pprevNode.x - prevNode.x), node.z + (pprevNode.z - prevNode.z));
+            var testNode = nodePool.FindNode(node.x + (pprevNode.x - prevNode.x), node.z + (pprevNode.z - prevNode.z));
             if (testNode == null)
             {
                 return;

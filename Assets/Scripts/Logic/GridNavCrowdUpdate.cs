@@ -75,7 +75,7 @@ namespace GridNav
                     ReRequestPath(agent);
                     continue;
                 }
-                navQuery.FinalizeSlicedFindPath(out var path);
+                navQuery.FinalizeSlicedFindPathWithSimpleSmooth(out var path);
                 ReplacePathStart(ref agent.path, index, path);
             }
         }
@@ -151,7 +151,7 @@ namespace GridNav
                     }
                     else
                     {
-                        navQuery.FinalizeSlicedFindPath(out var path);
+                        navQuery.FinalizeSlicedFindPathWithSimpleSmooth(out var path);
                         ReplacePathStart(ref optAgent.path, index, path);
                     }
                 }

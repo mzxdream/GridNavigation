@@ -39,6 +39,7 @@ namespace GridNav
         public NavQueryNode GetNode(int x, int z)
         {
             Debug.Assert(x >= 0 && x < 0xFFFF && z >= 0 && z < 0x7FFF);
+
             var index = x + (z << 16);
             if (!nodeIndexes.TryGetValue(index, out var node))
             {
@@ -56,6 +57,17 @@ namespace GridNav
                 nodeIndexes.Add(index, node);
             }
             return node;
+        }
+        public NavQueryNode FindNode(int x, int z)
+        {
+            Debug.Assert(x >= 0 && x < 0xFFFF && z >= 0 && z < 0x7FFF);
+
+            var index = x + (z << 16);
+            if (nodeIndexes.TryGetValue(index, out var node))
+            {
+                return node;
+            }
+            return null;
         }
     }
 
@@ -124,7 +136,7 @@ namespace GridNav
             while (i > 0)
             {
                 int j = (i - 1) / 2; //parent
-                if (heap[j].fCost <= heap[i].fCost)
+                if (heap[j].fCost < heap[i].fCost)
                 {
                     break;
                 }
