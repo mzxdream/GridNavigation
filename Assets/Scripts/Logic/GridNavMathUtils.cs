@@ -24,7 +24,7 @@ namespace GridNav
             int dz = Mathf.Abs(ez - sz);
             return D * (dx + dz) + (D2 - 2.0f * D) * Mathf.Min(dx, dz);
         }
-        public static int SqrDistance(int sx, int sz, int ex, int ez)
+        public static int SqrDistanceGrid(int sx, int sz, int ex, int ez)
         {
             return (ex - sx) * (ex - sx) + (ez - sz) * (ez - sz);
         }
@@ -64,34 +64,13 @@ namespace GridNav
         }
         public static float Angle2D(Vector3 a, Vector3 b)
         {
-            var x1 = a.x;
-            var z1 = a.z;
-            var d = Mathf.Sqrt(x1 * x1 + z1 * z1);
-            if (d > EPSILON)
+            var mag = (a.x * a.x + a.z * a.z) * (b.x * b.x + b.z * b.z);
+            if (mag < EPSILON)
             {
-                x1 /= d;
-                z1 /= d;
+                return 0.0f;
             }
-            else
-            {
-                x1 = 0;
-                z1 = 0;
-            }
-            var x2 = b.x;
-            var z2 = b.z;
-            d = Mathf.Sqrt(x2 * x2 + z2 * z2);
-            if (d > EPSILON)
-            {
-                x2 /= d;
-                z2 /= d;
-            }
-            else
-            {
-                x2 = 0;
-                z2 = 0;
-            }
-            d = x1 * x2 + z1 * z2;
-            return Mathf.Rad2Deg * Mathf.Acos(Mathf.Clamp(d, -1, 1));
+            var dot = Mathf.Clamp(Dot2D(a, b) / Mathf.Sqrt(mag), -1.0f, 1.0f);
+            return Mathf.Rad2Deg * Mathf.Acos(dot);
         }
         public static float AngleSigned2D(Vector3 from, Vector3 to)
         {

@@ -151,10 +151,12 @@ public class Game : MonoBehaviour
                 continue;
             }
             c.asset.transform.position = navAgent.pos;
-            var forward = NavMathUtils.Normalized2D(navAgent.velocity);
-            if (forward != Vector3.zero)
+            var velocity = navAgent.velocity;
+            var sqrMagnitude = velocity.x * velocity.x + velocity.z * velocity.z;
+            if (sqrMagnitude > NavMathUtils.EPSILON)
             {
-                c.asset.transform.forward = forward;
+                var angle = Mathf.Clamp(NavMathUtils.AngleSigned2D(c.asset.transform.forward, velocity), -120.0f, 120.0f);
+                c.asset.transform.forward = NavMathUtils.Rotate2D(c.asset.transform.forward, angle * Time.deltaTime);
             }
         }
         var nowTime = Time.realtimeSinceStartup;

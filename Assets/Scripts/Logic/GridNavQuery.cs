@@ -86,7 +86,7 @@ namespace GridNav
                 bestNode.flags &= ~(int)NavNodeFlags.Open;
                 bestNode.flags |= (int)NavNodeFlags.Closed;
 
-                if (NavMathUtils.SqrDistance(bestNode.x, bestNode.z, queryData.ex, queryData.ez) <= queryData.goalRadiusSqr)
+                if (NavMathUtils.SqrDistanceGrid(bestNode.x, bestNode.z, queryData.ex, queryData.ez) <= queryData.goalRadiusSqr)
                 {
                     queryData.lastBestNode = bestNode;
                     queryData.status = NavQueryStatus.Success;
