@@ -48,7 +48,7 @@ public class Game : MonoBehaviour
     InputField showPathCountInputField;
     int createType = 0;
     List<Toggle> createToggles;
-    InputField moveTypeInputField, massInputField, maxSpeedInputField;
+    InputField moveTypeInputField, massInputField, maxSpeedInputField, accelerationInputField, angularSpeedInputField;
     Toggle pushResistantToggle;
     //
     List<Destination> destinations;
@@ -280,6 +280,16 @@ public class Game : MonoBehaviour
             Debug.LogError("parse max speed failed");
             return;
         }
+        if (!float.TryParse(accelerationInputField.text, out var acceleration))
+        {
+            Debug.LogError("parse acceleration failed");
+            return;
+        }
+        if (!float.TryParse(angularSpeedInputField.text, out var angularSpeed))
+        {
+            Debug.LogError("parse angularSpeed failed");
+            return;
+        }
         var pushResistant = pushResistantToggle.isOn;
 
         var teamColor = GetTeamColor(teamID);
@@ -289,8 +299,8 @@ public class Game : MonoBehaviour
             teamID = teamID,
             mass = mass,
             maxSpeed = maxSpeed,
-            acceleration = 8.0f,
-            angularSpeed = 120.0f,
+            acceleration = acceleration,
+            angularSpeed = angularSpeed,
             isPushResistant = pushResistant,
         };
         var navAgentID = navManager.AddAgent(hit.point, navParam);
@@ -396,6 +406,8 @@ public class Game : MonoBehaviour
         moveTypeInputField = transform.Find("Canvas/GridNavigation/MoveTypeInputField").GetComponent<InputField>();
         massInputField = transform.Find("Canvas/GridNavigation/MassInputField").GetComponent<InputField>();
         maxSpeedInputField = transform.Find("Canvas/GridNavigation/MaxSpeedInputField").GetComponent<InputField>();
+        accelerationInputField = transform.Find("Canvas/GridNavigation/AccelerationInputField").GetComponent<InputField>();
+        angularSpeedInputField = transform.Find("Canvas/GridNavigation/AngularSpeedInputField").GetComponent<InputField>();
         pushResistantToggle = transform.Find("Canvas/GridNavigation/PushResistantToggle").GetComponent<Toggle>();
     }
     private static int Bit(int a, int b)
