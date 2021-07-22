@@ -22,6 +22,7 @@ namespace GridNav
             public float lastBestNodeCost;
         }
 
+        const float H_SCALE = 0.999f;
         private NavManager navManager;
         private NavQueryNodePool nodePool;
         private NavQueryPriorityQueue openQueue;
@@ -57,14 +58,15 @@ namespace GridNav
             {
                 return queryData.status;
             }
+            var hCost = NavMathUtils.OctileDistance(queryData.sx, queryData.sz, queryData.ex, queryData.ez) * navMap.SquareSize * H_SCALE;
             snode.gCost = 0;
-            snode.fCost = NavMathUtils.OctileDistance(queryData.sx, queryData.sz, queryData.ex, queryData.ez) * navMap.SquareSize;
+            snode.fCost = hCost;
             snode.parent = null;
             snode.flags |= (int)NavNodeFlags.Open;
             openQueue.Push(snode);
 
             queryData.lastBestNode = snode;
-            queryData.lastBestNodeCost = snode.fCost;
+            queryData.lastBestNodeCost = hCost;
             queryData.status = NavQueryStatus.InProgress;
             return queryData.status;
         }
@@ -224,7 +226,7 @@ namespace GridNav
             var speed = NavUtils.GetSquareSpeed(navMap, agent, neighborNode.x, neighborNode.z) * speedMult;
             float nodeCost = NavUtils.DirDistanceApproximately(dir) * 2.0f * navMap.SquareSize / Mathf.Max(NavMathUtils.EPSILON, speed);
             float gCost = node.gCost + nodeCost;
-            float hCost = NavMathUtils.OctileDistance(neighborNode.x, neighborNode.z, queryData.ex, queryData.ez) * navMap.SquareSize;
+            float hCost = NavMathUtils.OctileDistance(neighborNode.x, neighborNode.z, queryData.ex, queryData.ez) * navMap.SquareSize * H_SCALE;
             float fCost = gCost + hCost;
 
             if ((neighborNode.flags & (int)NavNodeFlags.Open) != 0)
