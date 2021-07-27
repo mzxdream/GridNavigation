@@ -139,6 +139,10 @@ namespace GridNav
         {
             return 1.0f - Mathf.Cos(degrees * Mathf.Deg2Rad);
         }
+        public static float CalcDefaultSlopeMod(float maxSlope) // [4000.0f, 3.996]
+        {
+            return 4.0f / (maxSlope + 0.001f);
+        }
         public static Vector3 DirToVector3(NavDirection dir)
         {
             return dirVector3[(int)dir];
@@ -202,23 +206,31 @@ namespace GridNav
         }
         public static float GetSquareSpeed(NavMap navMap, NavAgent agent, int x, int z)
         {
-            var squareType = navMap.GetSquareType(x >> 1, z >> 1);
             var slope = navMap.GetSquareSlope(x >> 1, z >> 1);
+            if (slope > agent.moveDef.GetMaxSlope())
+            {
+                return 0.0f;
+            }
+            var squareType = navMap.GetSquareType(x >> 1, z >> 1);
             var speedMod = agent.moveDef.GetSpeedMod(squareType);
             var slopeMod = agent.moveDef.GetSlopeMod();
             return speedMod / (1.0f + slope * slopeMod);
         }
-        public static float GetSquareSpeed(NavMap navMap, NavAgent agent, int x, int z, NavDirection dir)
+        public static float GetSquareSpeed(NavMap navMap, NavAgent agent, int x, int z, Vector3 moveDir)
         {
-            return GetSquareSpeed(navMap, agent, x, z);
-            //var slope = navMap.GetSquareSlope(x, z);
-            //var squareType = navMap.GetSquareType(x, z);
-            //var centerNormal2D = navMap.GetSquareCenterNormal2D(x, z);
-            //var moveDir = DirToVector3(dir);
-            //var dirSlopeMod = -NavMathUtils.Dot2D(moveDir, centerNormal2D);
-            //var speedMod = agent.moveDef.GetSpeedMod(squareType);
-            //var slopeMod = agent.moveDef.GetSlopeMod();
-            //return speedMod / (1.0f + Mathf.Max(0.0f, slope * dirSlopeMod) * slopeMod);
+            Debug.Assert(moveDir.y == 0.0f);
+
+            var slope = navMap.GetSquareSlope(x >> 1, z >> 1);
+            if (slope > agent.moveDef.GetMaxSlope())
+            {
+                return 0.0f;
+            }
+            var squareType = navMap.GetSquareType(x >> 1, z >> 1);
+            var centerNormal2D = navMap.GetSquareCenterNormal2D(x, z);
+            var dirSlopeMod = -NavMathUtils.Dot2D(moveDir, centerNormal2D);
+            var speedMod = agent.moveDef.GetSpeedMod(squareType);
+            var slopeMod = agent.moveDef.GetSlopeMod();
+            return speedMod / (1.0f + Mathf.Max(0.0f, slope * dirSlopeMod) * slopeMod);
         }
         public static bool IsPushResistant(NavAgent collider, NavAgent collidee)
         {

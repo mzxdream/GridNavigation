@@ -23,8 +23,8 @@ class Character
 public class MoveDefData
 {
     public int unitSize = 4;
-    public float maxAngle = 60.0f;
-    public float slopeMod = 0.0f;
+    public float maxAngle = 60.0f; // maxSlope = 1 - cos(maxAngle)
+    public float slopeMod = 7.984f; // 4.0f / ((1 - cos(maxAngle)) + 0.001f)
     public float speedModWalkable = 1.0f;
     [ReadOnly]
     public float speedModUnwalkable = 0.0f;

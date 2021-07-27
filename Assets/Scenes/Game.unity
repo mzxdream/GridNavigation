@@ -1618,7 +1618,7 @@ MonoBehaviour:
   moveDefDatas:
   - unitSize: 4
     maxAngle: 60
-    slopeMod: 0
+    slopeMod: 7.984
     speedModWalkable: 1
     speedModUnwalkable: 0
     speedModJump: 2
@@ -1628,7 +1628,7 @@ MonoBehaviour:
     speedModMultBlocked: 0.01
   - unitSize: 6
     maxAngle: 60
-    slopeMod: 0
+    slopeMod: 7.984
     speedModWalkable: 1
     speedModUnwalkable: 0
     speedModJump: 2
