@@ -166,27 +166,34 @@ namespace GridNav
                 if (agent.moveState != NavMoveState.InProgress)
                 {
                     agent.desiredVelocity = Vector3.zero;
-                    continue;
                 }
-                Debug.Assert(agent.path != null && agent.path.Count > 0);
-                if (NavMathUtils.SqrDistance2D(agent.pos, agent.path[0]) <= agent.goalRadius * agent.goalRadius)
+                else
                 {
-                    agent.desiredVelocity = Vector3.zero;
-                    agent.moveState = NavMoveState.Idle;
-                    if (NavMathUtils.SqrDistance2D(agent.pos, agent.goalPos) > agent.goalRadius * agent.goalRadius)
+                    Debug.Assert(agent.path != null && agent.path.Count > 0);
+
+                    if (NavMathUtils.SqrDistance2D(agent.pos, agent.path[0]) <= agent.goalRadius * agent.goalRadius)
                     {
-                        ReRequestPath(agent);
+                        agent.desiredVelocity = Vector3.zero;
+                        agent.moveState = NavMoveState.Idle;
+                        if (NavMathUtils.SqrDistance2D(agent.pos, agent.goalPos) > agent.goalRadius * agent.goalRadius)
+                        {
+                            ReRequestPath(agent);
+                        }
                     }
-                    continue;
+                    else
+                    {
+                        var wayPointDistSqr = NavMathUtils.Square(Mathf.Max(agent.param.maxSpeed * 1.05f, 1.25f * navMap.SquareSize));
+                        var nextWayPoint = agent.path[agent.path.Count - 1];
+                        while (agent.path.Count > 1 && NavMathUtils.SqrDistance2D(agent.pos, nextWayPoint) < wayPointDistSqr)
+                        {
+                            agent.path.RemoveAt(agent.path.Count - 1);
+                            nextWayPoint = agent.path[agent.path.Count - 1];
+                        }
+                        var waypointDir = NavMathUtils.Normalized2D(nextWayPoint - agent.pos);
+                        
+                        //agent.desiredVelocity = NavMathUtils.Normalized2D(nextWayPoint - agent.pos) * agent.param.maxSpeed;
+                    }
                 }
-                var wayPointDistSqr = NavMathUtils.Square(Mathf.Max(agent.param.maxSpeed * 1.05f, 1.25f * navMap.SquareSize));
-                var nextWayPoint = agent.path[agent.path.Count - 1];
-                while (agent.path.Count > 1 && NavMathUtils.SqrDistance2D(agent.pos, nextWayPoint) < wayPointDistSqr)
-                {
-                    agent.path.RemoveAt(agent.path.Count - 1);
-                    nextWayPoint = agent.path[agent.path.Count - 1];
-                }
-                agent.desiredVelocity = NavMathUtils.Normalized2D(nextWayPoint - agent.pos) * agent.param.maxSpeed;
             }
         }
         private static void UpdateNewVelocity(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)

@@ -100,13 +100,16 @@ namespace GridNav
                 param = param,
                 moveDef = moveDef,
                 pos = pos,
+                flatFrontDir = Vector3.forward,
                 radius = NavUtils.CalcMaxInteriorRadius(moveDef.GetUnitSize(), navMap.SquareSize),
                 mapPos = new Vector2Int(-1, -1),
                 moveState = NavMoveState.Idle,
                 goalPos = Vector3.zero,
                 goalRadius = 0.0f,
+                topologyOptTime = 0,
                 path = null,
                 velocity = Vector3.zero,
+                speed = 0.0f,
                 desiredVelocity = Vector3.zero,
                 newVelocity = Vector3.zero,
                 isMoving = false,
@@ -115,6 +118,8 @@ namespace GridNav
                 obstacleNeighbors = new List<NavRVOObstacle>(),
             };
             agent.param.maxSpeed *= frameTime;
+            agent.param.acceleration *= frameTime;
+            agent.param.angularSpeed *= frameTime;
             navMap.ClampInBounds(agent.pos, out var x, out var z, out agent.pos);
             if (!NavUtils.TestMoveSquare(navMap, agent, x, z) || !NavUtils.IsNoneBlockTypeSquare(this, agent, x, z))
             {

@@ -104,6 +104,7 @@ namespace GridNav
         public NavAgentParam param;
         public NavMoveDef moveDef;
         public Vector3 pos;
+        public Vector3 flatFrontDir;
         public float radius;
         public Vector2Int mapPos;
         public NavMoveState moveState;
@@ -112,6 +113,7 @@ namespace GridNav
         public int topologyOptTime;
         public List<Vector3> path;
         public Vector3 velocity;
+        public float speed;
         public Vector3 desiredVelocity;
         public Vector3 newVelocity;
         public bool isMoving;
