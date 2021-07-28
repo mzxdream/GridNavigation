@@ -113,6 +113,7 @@ namespace GridNav
         public int topologyOptTime;
         public List<Vector3> path;
         public Vector3 velocity;
+        public Vector3 actualVelocity;
         public float speed;
         public Vector3 desiredVelocity;
         public Vector3 newVelocity;

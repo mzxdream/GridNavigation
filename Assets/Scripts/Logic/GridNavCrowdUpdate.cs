@@ -13,11 +13,11 @@ namespace GridNav
             UpdateMoveRequest(navManager, navQueries, agents); // 单线程
             UpdateTopologyOptimization(navManager, navQueries, agents); //多线程
             //var t3 = Time.realtimeSinceStartup;
-            UpdateVelocityAndRotation(navManager, navQueries, agents); // 多线程
+            UpdateDesiredVelocity(navManager, navQueries, agents); // 多线程
             //var t4 = Time.realtimeSinceStartup;
             UpdateNewVelocity(navManager, navQueries, agents); // 多线程
             //var t5 = Time.realtimeSinceStartup;
-            UpdatePos(navManager, navQueries, agents); // 单线程
+            UpdatePos(navManager, navQueries, agents); // 多线程
             //var t6 = Time.realtimeSinceStartup;
             //if (t6 - t1 > 0.001f)
             //{
@@ -157,7 +157,7 @@ namespace GridNav
                 }
             }
         }
-        private static void UpdateVelocityAndRotation(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
+        private static void UpdateDesiredVelocity(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
         {
             var navQuery = navQueries[0];
             var navMap = navManager.GetNavMap();
@@ -189,9 +189,7 @@ namespace GridNav
                             agent.path.RemoveAt(agent.path.Count - 1);
                             nextWayPoint = agent.path[agent.path.Count - 1];
                         }
-                        var waypointDir = NavMathUtils.Normalized2D(nextWayPoint - agent.pos);
-                        
-                        //agent.desiredVelocity = NavMathUtils.Normalized2D(nextWayPoint - agent.pos) * agent.param.maxSpeed;
+                        agent.desiredVelocity = NavMathUtils.Normalized2D(nextWayPoint - agent.pos) * agent.param.maxSpeed;
                     }
                 }
             }
@@ -244,28 +242,38 @@ namespace GridNav
             var navMap = navManager.GetNavMap();
             foreach (var agent in agents)
             {
-                var newPos = agent.pos + agent.newVelocity;
-                newPos.y = navMap.GetHeight(newPos);
-                //navMap.ClampInBounds(newPos, out var x, out var z, out newPos);
-                //if (!NavUtils.TestMoveSquare(navMap, agent, x, z))
-                //{
-                //    NavUtils.ForeachNearestSquare(x, z, 20, (int tx, int tz) =>
-                //    {
-                //        if (tx < 0 || tx >= navMap.XSize || tz < 0 || tz >= navMap.ZSize)
-                //        {
-                //            return true;
-                //        }
-                //        if (NavUtils.TestMoveSquare(navMap, agent, tx, tz))
-                //        {
-                //            newPos = navMap.GetSquarePos(tx, tz);
-                //            //ReRequestPath(agent);
-                //            return false;
-                //        }
-                //        return true;
-                //    });
-                //}
-                agent.pos = newPos;
-                agent.isMoving = (agent.newVelocity.sqrMagnitude >= 1e-4f);
+                agent.actualVelocity = agent.pos;
+                agent.pos = agent.pos + agent.velocity;
+
+                float speed = agent.newVelocity.magnitude;
+                if (speed > 0.0f)
+                {
+                    var dir = agent.newVelocity.normalized;
+                    var angle = Mathf.Clamp(NavMathUtils.AngleSigned2D(agent.flatFrontDir, dir), -agent.param.angularSpeed, agent.param.angularSpeed);
+                    agent.flatFrontDir = NavMathUtils.Rotate2D(agent.flatFrontDir, angle);
+                }
+                if (speed > agent.speed)
+                {
+                    var deltaSpeed = Mathf.Min(agent.param.acceleration, speed - agent.speed);
+                    agent.speed = Mathf.Max(agent.param.maxSpeed, agent.speed + deltaSpeed);
+                }
+                else
+                {
+                    var deltaSpeed = Mathf.Max(agent.param.acceleration, agent.speed - speed);
+                    agent.speed = Mathf.Max(0, agent.speed - deltaSpeed);
+                }
+            }
+        }
+        private static void UpdateCollision(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
+        {
+        }
+        private static void UpdateMove(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
+        {
+            var navQuery = navQueries[0];
+            var navMap = navManager.GetNavMap();
+            foreach (var agent in agents)
+            {
+                agent.isMoving = ((agent.pos - agent.actualVelocity).sqrMagnitude >= 1e-4f);
                 // 更新索引
                 var mapPos = NavUtils.CalcMapPos(navMap, agent.moveDef.GetUnitSize(), agent.pos);
                 if (mapPos != agent.mapPos)
