@@ -103,12 +103,11 @@ namespace GridNav
                 radius = NavUtils.CalcMaxInteriorRadius(moveDef.GetUnitSize(), navMap.SquareSize),
                 mapPos = new Vector2Int(-1, -1),
                 moveState = NavMoveState.Idle,
-                lastPos = pos,
                 goalPos = Vector3.zero,
                 goalRadius = 0.0f,
                 path = null,
                 velocity = Vector3.zero,
-                prefVelocity = Vector3.zero,
+                desiredVelocity = Vector3.zero,
                 newVelocity = Vector3.zero,
                 isMoving = false,
                 isRepath = false,
@@ -191,7 +190,7 @@ namespace GridNav
             agent.moveState = NavMoveState.Requesting;
             agent.goalPos = nearestPos;
             agent.goalRadius = goalRadius;
-            agent.prefVelocity = Vector3.zero;
+            agent.desiredVelocity = Vector3.zero;
             moveRequestQueue.Add(agent.id);
             return true;
         }

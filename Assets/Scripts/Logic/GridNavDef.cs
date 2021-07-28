@@ -107,13 +107,12 @@ namespace GridNav
         public float radius;
         public Vector2Int mapPos;
         public NavMoveState moveState;
-        public Vector3 lastPos;
         public Vector3 goalPos;
         public float goalRadius;
         public int topologyOptTime;
         public List<Vector3> path;
         public Vector3 velocity;
-        public Vector3 prefVelocity;
+        public Vector3 desiredVelocity;
         public Vector3 newVelocity;
         public bool isMoving;
         public bool isRepath;

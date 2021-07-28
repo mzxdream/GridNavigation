@@ -13,7 +13,7 @@ namespace GridNav
             UpdateMoveRequest(navManager, navQueries, agents); // 单线程
             UpdateTopologyOptimization(navManager, navQueries, agents); //多线程
             //var t3 = Time.realtimeSinceStartup;
-            UpdatePrefVelocity(navManager, navQueries, agents); // 多线程
+            UpdateVelocityAndRotation(navManager, navQueries, agents); // 多线程
             //var t4 = Time.realtimeSinceStartup;
             UpdateNewVelocity(navManager, navQueries, agents); // 多线程
             //var t5 = Time.realtimeSinceStartup;
@@ -157,7 +157,7 @@ namespace GridNav
                 }
             }
         }
-        private static void UpdatePrefVelocity(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
+        private static void UpdateVelocityAndRotation(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
         {
             var navQuery = navQueries[0];
             var navMap = navManager.GetNavMap();
@@ -165,13 +165,13 @@ namespace GridNav
             {
                 if (agent.moveState != NavMoveState.InProgress)
                 {
-                    agent.prefVelocity = Vector3.zero;
+                    agent.desiredVelocity = Vector3.zero;
                     continue;
                 }
                 Debug.Assert(agent.path != null && agent.path.Count > 0);
                 if (NavMathUtils.SqrDistance2D(agent.pos, agent.path[0]) <= agent.goalRadius * agent.goalRadius)
                 {
-                    agent.prefVelocity = Vector3.zero;
+                    agent.desiredVelocity = Vector3.zero;
                     agent.moveState = NavMoveState.Idle;
                     if (NavMathUtils.SqrDistance2D(agent.pos, agent.goalPos) > agent.goalRadius * agent.goalRadius)
                     {
@@ -186,7 +186,7 @@ namespace GridNav
                     agent.path.RemoveAt(agent.path.Count - 1);
                     nextWayPoint = agent.path[agent.path.Count - 1];
                 }
-                agent.prefVelocity = NavMathUtils.Normalized2D(nextWayPoint - agent.pos) * agent.param.maxSpeed;
+                agent.desiredVelocity = NavMathUtils.Normalized2D(nextWayPoint - agent.pos) * agent.param.maxSpeed;
             }
         }
         private static void UpdateNewVelocity(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
@@ -228,7 +228,7 @@ namespace GridNav
                         }
                     }
                 }
-                NavRVO.ComputeNewVelocity(agent, agent.obstacleNeighbors, agent.agentNeighbors);
+                NavRVO.ComputeNewVelocity(agent);
             }
         }
         private static void UpdatePos(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
@@ -239,28 +239,26 @@ namespace GridNav
             {
                 var newPos = agent.pos + agent.newVelocity;
                 newPos.y = navMap.GetHeight(newPos);
-                navMap.ClampInBounds(newPos, out var x, out var z, out newPos);
-                if (!NavUtils.TestMoveSquare(navMap, agent, x, z))
-                {
-                    NavUtils.ForeachNearestSquare(x, z, 20, (int tx, int tz) =>
-                    {
-                        if (tx < 0 || tx >= navMap.XSize || tz < 0 || tz >= navMap.ZSize)
-                        {
-                            return true;
-                        }
-                        if (NavUtils.TestMoveSquare(navMap, agent, tx, tz))
-                        {
-                            newPos = navMap.GetSquarePos(tx, tz);
-                            //ReRequestPath(agent);
-                            return false;
-                        }
-                        return true;
-                    });
-                }
-                agent.lastPos = agent.pos;
+                //navMap.ClampInBounds(newPos, out var x, out var z, out newPos);
+                //if (!NavUtils.TestMoveSquare(navMap, agent, x, z))
+                //{
+                //    NavUtils.ForeachNearestSquare(x, z, 20, (int tx, int tz) =>
+                //    {
+                //        if (tx < 0 || tx >= navMap.XSize || tz < 0 || tz >= navMap.ZSize)
+                //        {
+                //            return true;
+                //        }
+                //        if (NavUtils.TestMoveSquare(navMap, agent, tx, tz))
+                //        {
+                //            newPos = navMap.GetSquarePos(tx, tz);
+                //            //ReRequestPath(agent);
+                //            return false;
+                //        }
+                //        return true;
+                //    });
+                //}
                 agent.pos = newPos;
-                agent.velocity = newPos - agent.lastPos;
-                agent.isMoving = (agent.velocity.sqrMagnitude >= 1e-4f);
+                agent.isMoving = (agent.newVelocity.sqrMagnitude >= 1e-4f);
                 // 更新索引
                 var mapPos = NavUtils.CalcMapPos(navMap, agent.moveDef.GetUnitSize(), agent.pos);
                 if (mapPos != agent.mapPos)

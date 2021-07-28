@@ -233,16 +233,12 @@ public class Game : MonoBehaviour
                 {
                     var p2 = p1 + velocity.normalized * 3.0f;
                     Handles.DrawBezier(p1, p2, p1, p2, Color.black, null, 8);
-                    //Handles.color = Color.black;
-                    //Handles.DrawAAPolyLine(8.0f, p1 + Vector3.up * 1.1f, p2 + Vector3.up * 1.1f);
                 }
-                var prefVelocity = navAgent.prefVelocity;
-                if (prefVelocity.sqrMagnitude >= 1e-5f)
+                var desiredVelocity = navAgent.desiredVelocity;
+                if (desiredVelocity.sqrMagnitude >= 1e-5f)
                 {
-                    var p2 = p1 + prefVelocity.normalized * 2.0f;
+                    var p2 = p1 + desiredVelocity.normalized * 2.0f;
                     Handles.DrawBezier(p1, p2, p1, p2, Color.blue, null, 8);
-                    //Handles.color = Color.blue;
-                    //Handles.DrawAAPolyLine(8.0f, p1 + Vector3.up * 1.2f, p2 + Vector3.up * 1.2f);
                 }
             }
         }

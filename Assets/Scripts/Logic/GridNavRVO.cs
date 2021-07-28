@@ -21,37 +21,34 @@ namespace GridNav
 
     public static class NavRVO
     {
-        public static void ComputeNewVelocity(NavAgent agent, List<NavRVOObstacle> obstacles, List<NavAgent> neighbors)
+        private const float deltaTime = 1.0f; // 1 frame
+        private const float timeHorizonObst = 1.0f;
+        private const float timeHorizon = 1.0f;
+        private const float invTimeHorizonObst = 1.0f / timeHorizonObst;
+        private const float invTimeHorizon = 1.0f / timeHorizon;
+
+        public static void ComputeNewVelocity(NavAgent agent)
         {
             var orcaLines = new List<NavRVOLine>();
-
-            float invTimeHorizonObst = 1.0f;
             /* Create obstacle ORCA lines. */
-            for (int i = 0; i < obstacles.Count; ++i)
+            foreach (var obstacle in agent.obstacleNeighbors)
             {
-                ComputeObstacleLine(agent.pos, agent.radius, agent.velocity, obstacles[i], invTimeHorizonObst, ref orcaLines);
+                ComputeObstacleLine(agent.pos, agent.radius, agent.velocity, obstacle, invTimeHorizonObst, ref orcaLines);
             }
-
             int numObstLines = orcaLines.Count;
-
-            float invTimeHorizon = 1.0f;
             /* Create agent ORCA lines. */
-            for (int i = 0; i < neighbors.Count; ++i)
+            foreach (var other in agent.agentNeighbors)
             {
-                var other = neighbors[i];
                 var weight = NavUtils.CalcAvoidanceWeight(agent, other);
-                ComputeAgentLine(agent.pos, agent.radius, agent.prefVelocity
-                    , other.pos, other.radius, other.prefVelocity, weight, invTimeHorizon, 1.0f, ref orcaLines);
+                ComputeAgentLine(agent.pos, agent.radius, agent.velocity, other.pos, other.radius, other.velocity, weight, invTimeHorizon, deltaTime, ref orcaLines);
             }
-
-            int lineFail = LinearProgram2(orcaLines, agent.param.maxSpeed, agent.prefVelocity, false, ref agent.newVelocity);
-
+            var lineFail = LinearProgram2(orcaLines, agent.param.maxSpeed, agent.desiredVelocity, false, ref agent.newVelocity);
             if (lineFail < orcaLines.Count)
             {
                 LinearProgram3(orcaLines, numObstLines, lineFail, agent.param.maxSpeed, ref agent.newVelocity);
             }
         }
-        private static void ComputeObstacleLine(Vector3 position, float radius, Vector3 velocity, NavRVOObstacle obstacle1, float invTimeHorizonObst, ref List<NavRVOLine> orcaLines)
+        private static void ComputeObstacleLine(Vector3 position, float radius, Vector3 velocityOpt, NavRVOObstacle obstacle1, float invTimeHorizonObst, ref List<NavRVOLine> orcaLines)
         {
             var obstacle2 = obstacle1.next;
 
@@ -70,7 +67,6 @@ namespace GridNav
                      && NavMathUtils.Det2D(invTimeHorizonObst * relativePosition2 - orcaLines[j].point, orcaLines[j].direction) - invTimeHorizonObst * radius >= -NavMathUtils.EPSILON)
                 {
                     alreadyCovered = true;
-
                     break;
                 }
             }
@@ -227,30 +223,28 @@ namespace GridNav
             /* Project current velocity on velocity obstacle. */
 
             /* Check if current velocity is projected on cutoff circles. */
-            float t = obstacle1 == obstacle2 ? 0.5f : NavMathUtils.Dot2D(velocity - leftCutOff, cutOffVector) / NavMathUtils.SqrMagnitude2D(cutOffVector);
-            float tLeft = NavMathUtils.Dot2D(velocity - leftCutOff, leftLegDirection);
-            float tRight = NavMathUtils.Dot2D(velocity - rightCutOff, rightLegDirection);
+            float t = (obstacle1 == obstacle2 ? 0.5f : NavMathUtils.Dot2D(velocityOpt - leftCutOff, cutOffVector) / NavMathUtils.SqrMagnitude2D(cutOffVector));
+            float tLeft = NavMathUtils.Dot2D(velocityOpt - leftCutOff, leftLegDirection);
+            float tRight = NavMathUtils.Dot2D(velocityOpt - rightCutOff, rightLegDirection);
 
             if ((t < 0.0f && tLeft < 0.0f) || (obstacle1 == obstacle2 && tLeft < 0.0f && tRight < 0.0f))
             {
                 /* Project on left cut-off circle. */
-                Vector3 unitW = NavMathUtils.Normalized2D(velocity - leftCutOff);
+                Vector3 unitW = NavMathUtils.Normalized2D(velocityOpt - leftCutOff);
 
                 line.direction = new Vector3(unitW.z, 0, -unitW.x);
                 line.point = leftCutOff + radius * invTimeHorizonObst * unitW;
                 orcaLines.Add(line);
-
                 return;
             }
             else if (t > 1.0f && tRight < 0.0f)
             {
                 /* Project on right cut-off circle. */
-                Vector3 unitW = NavMathUtils.Normalized2D(velocity - rightCutOff);
+                Vector3 unitW = NavMathUtils.Normalized2D(velocityOpt - rightCutOff);
 
                 line.direction = new Vector3(unitW.z, 0, -unitW.x);
                 line.point = rightCutOff + radius * invTimeHorizonObst * unitW;
                 orcaLines.Add(line);
-
                 return;
             }
 
@@ -258,9 +252,9 @@ namespace GridNav
              * Project on left leg, right leg, or cut-off line, whichever is
              * closest to velocity.
              */
-            float distSqCutoff = (t < 0.0f || t > 1.0f || obstacle1 == obstacle2) ? float.PositiveInfinity : NavMathUtils.SqrMagnitude2D(velocity - (leftCutOff + t * cutOffVector));
-            float distSqLeft = tLeft < 0.0f ? float.PositiveInfinity : NavMathUtils.SqrMagnitude2D(velocity - (leftCutOff + tLeft * leftLegDirection));
-            float distSqRight = tRight < 0.0f ? float.PositiveInfinity : NavMathUtils.SqrMagnitude2D(velocity - (rightCutOff + tRight * rightLegDirection));
+            float distSqCutoff = ((t < 0.0f || t > 1.0f || obstacle1 == obstacle2) ? float.PositiveInfinity : NavMathUtils.SqrMagnitude2D(velocityOpt - (leftCutOff + t * cutOffVector)));
+            float distSqLeft = (tLeft < 0.0f ? float.PositiveInfinity : NavMathUtils.SqrMagnitude2D(velocityOpt - (leftCutOff + tLeft * leftLegDirection)));
+            float distSqRight = (tRight < 0.0f ? float.PositiveInfinity : NavMathUtils.SqrMagnitude2D(velocityOpt - (rightCutOff + tRight * rightLegDirection)));
 
             if (distSqCutoff <= distSqLeft && distSqCutoff <= distSqRight)
             {
@@ -268,11 +262,9 @@ namespace GridNav
                 line.direction = -obstacle1.direction;
                 line.point = leftCutOff + radius * invTimeHorizonObst * new Vector3(-line.direction.z, 0, line.direction.x);
                 orcaLines.Add(line);
-
                 return;
             }
-
-            if (distSqLeft <= distSqRight)
+            else if (distSqLeft <= distSqRight)
             {
                 /* Project on left leg. */
                 if (isLeftLegForeign)
@@ -283,26 +275,25 @@ namespace GridNav
                 line.direction = leftLegDirection;
                 line.point = leftCutOff + radius * invTimeHorizonObst * new Vector3(-line.direction.z, 0, line.direction.x);
                 orcaLines.Add(line);
-
                 return;
             }
-
-            /* Project on right leg. */
-            if (isRightLegForeign)
+            else
             {
-                return;
-            }
+                /* Project on right leg. */
+                if (isRightLegForeign)
+                {
+                    return;
+                }
 
-            line.direction = -rightLegDirection;
-            line.point = rightCutOff + radius * invTimeHorizonObst * new Vector3(-line.direction.z, 0, line.direction.x);
-            orcaLines.Add(line);
+                line.direction = -rightLegDirection;
+                line.point = rightCutOff + radius * invTimeHorizonObst * new Vector3(-line.direction.z, 0, line.direction.x);
+                orcaLines.Add(line);
+            }
         }
-        private static void ComputeAgentLine(Vector3 pos, float radius, Vector3 prefVelocity, Vector3 otherPos, float otherRadius, Vector3 otherPrefVelocity, float weight, float invTimeHorizon, float deltaTime, ref List<NavRVOLine> orcaLines)
+        private static void ComputeAgentLine(Vector3 pos, float radius, Vector3 velocityOpt, Vector3 otherPos, float otherRadius, Vector3 otherVelocityOpt, float weight, float invTimeHorizon, float deltaTime, ref List<NavRVOLine> orcaLines)
         {
-            Vector3 velocityOpt = prefVelocity;
-            Vector3 neighborVelocityOpt = otherPrefVelocity;
             Vector3 relativePosition = otherPos - pos;
-            Vector3 relativeVelocity = velocityOpt - neighborVelocityOpt;
+            Vector3 relativeVelocity = velocityOpt - otherVelocityOpt;
             float distSq = NavMathUtils.SqrMagnitude2D(relativePosition);
             float combinedRadius = radius + otherRadius;
             float combinedRadiusSq = combinedRadius * combinedRadius;
@@ -393,7 +384,6 @@ namespace GridNav
                     {
                         return false;
                     }
-
                     continue;
                 }
 
@@ -493,7 +483,6 @@ namespace GridNav
 
         private static void LinearProgram3(List<NavRVOLine> lines, int numObstLines, int beginLine, float radius, ref Vector3 result)
         {
-
             float distance = 0.0f;
 
             for (int i = beginLine; i < lines.Count; ++i)
@@ -501,11 +490,7 @@ namespace GridNav
                 if (NavMathUtils.Det2D(lines[i].direction, lines[i].point - result) > distance)
                 {
                     /* Result does not satisfy constraint of line i. */
-                    var projLines = new List<NavRVOLine>();
-                    for (int ii = 0; ii < numObstLines; ++ii)
-                    {
-                        projLines.Add(lines[ii]);
-                    }
+                    var projLines = lines.GetRange(0, numObstLines);
 
                     for (int j = numObstLines; j < i; ++j)
                     {
