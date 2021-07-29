@@ -8,6 +8,10 @@ namespace GridNav
         public const float SQRT2 = 1.41421356237f;
         public const float HALF_SQRT2 = 0.70710678118f;
 
+        public static float Sign(float f)
+        {
+            return f >= 0f ? 1f : -1f;
+        }
         public static int Square(int a)
         {
             return a * a;
@@ -54,7 +58,7 @@ namespace GridNav
         {
             return a.x * b.x + a.z * b.z;
         }
-        public static float Det2D(Vector3 a, Vector3 b)
+        public static float Det2D(Vector3 a, Vector3 b) // 如果结果大于0表示b在a的逆时针方向，小于0表示b在a的顺时针方向，等于0表示相等
         {
             return a.x * b.z - a.z * b.x;
         }
