@@ -83,6 +83,7 @@ namespace GridNav
             // s实际上是求点p到线段(a,b)最近的点，当s < 0 时，p到线段最近的点是a，s > 1时最近的点是b，s在0-1之间，表示最近的点在[a,b]内
             Vector3 obstacleVector = obstacle2.point - obstacle1.point;
             float s = NavMathUtils.Dot2D(-relativePosition1, obstacleVector) / NavMathUtils.SqrMagnitude2D(obstacleVector);
+            // (s * obstacleVector)是obstacle1.point 到垂足的射线 distSqLine就是点到线段垂足的距离的平方
             float distSqLine = NavMathUtils.SqrMagnitude2D(-relativePosition1 - s * obstacleVector);
 
             NavRVOLine line;
