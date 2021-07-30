@@ -93,8 +93,8 @@ namespace GridNav
         public int teamID;
         public float mass;
         public float maxSpeed;
-        public float acceleration;
-        public float angularSpeed;
+        public float maxAcc;
+        public float maxTurnSpeed;
         public bool isPushResistant;
     }
 
@@ -104,17 +104,16 @@ namespace GridNav
         public NavAgentParam param;
         public NavMoveDef moveDef;
         public Vector3 pos;
-        public Vector3 flatFrontDir;
         public float radius;
         public Vector2Int mapPos;
         public NavMoveState moveState;
+        public Vector3 lastPos;
+        public Vector3 flatFrontDir;
+        public float speed;
         public Vector3 goalPos;
         public float goalRadius;
         public int topologyOptTime;
         public List<Vector3> path;
-        public Vector3 velocity;
-        public Vector3 actualVelocity;
-        public float speed;
         public Vector3 desiredVelocity;
         public Vector3 newVelocity;
         public bool isMoving;
@@ -206,7 +205,7 @@ namespace GridNav
                 }
             }
         }
-        public static float GetSquareSpeed(NavMap navMap, NavAgent agent, int x, int z)
+        public static float GetSquareSpeedMod(NavMap navMap, NavAgent agent, int x, int z)
         {
             var slope = navMap.GetSquareSlope(x >> 1, z >> 1);
             if (slope > agent.moveDef.GetMaxSlope())
@@ -218,9 +217,14 @@ namespace GridNav
             var slopeMod = agent.moveDef.GetSlopeMod();
             return speedMod / (1.0f + slope * slopeMod);
         }
-        public static float GetSquareSpeed(NavMap navMap, NavAgent agent, int x, int z, Vector3 moveDir)
+        public static float GetSquareSpeedMod(NavMap navMap, NavAgent agent, Vector3 pos)
         {
-            Debug.Assert(moveDir.y == 0.0f);
+            navMap.GetSquareXZ(pos, out var x, out var z);
+            return GetSquareSpeedMod(navMap, agent, x, z);
+        }
+        public static float GetSquareSpeedMod(NavMap navMap, NavAgent agent, int x, int z, Vector3 moveDir)
+        {
+            Debug.Assert(moveDir.y == 0.0f && Mathf.Abs(moveDir.magnitude - 1.0f) <= NavMathUtils.EPSILON);
 
             var slope = navMap.GetSquareSlope(x >> 1, z >> 1);
             if (slope > agent.moveDef.GetMaxSlope())
@@ -233,6 +237,11 @@ namespace GridNav
             var speedMod = agent.moveDef.GetSpeedMod(squareType);
             var slopeMod = agent.moveDef.GetSlopeMod();
             return speedMod / (1.0f + Mathf.Max(0.0f, slope * dirSlopeMod) * slopeMod);
+        }
+        public static float GetSquareSpeedMod(NavMap navMap, NavAgent agent, Vector3 pos, Vector3 moveDir)
+        {
+            navMap.GetSquareXZ(pos, out var x, out var z);
+            return GetSquareSpeedMod(navMap, agent, x, z, moveDir);
         }
         public static bool IsPushResistant(NavAgent collider, NavAgent collidee)
         {

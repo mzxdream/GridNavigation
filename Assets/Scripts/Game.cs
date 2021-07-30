@@ -151,13 +151,14 @@ public class Game : MonoBehaviour
                 continue;
             }
             c.asset.transform.position = navAgent.pos;
-            var velocity = navAgent.velocity;
-            var sqrMagnitude = velocity.x * velocity.x + velocity.z * velocity.z;
-            if (sqrMagnitude > NavMathUtils.EPSILON)
-            {
-                var angle = Mathf.Clamp(NavMathUtils.AngleSigned2D(c.asset.transform.forward, velocity), -120.0f, 120.0f);
-                c.asset.transform.forward = NavMathUtils.Rotate2D(c.asset.transform.forward, angle * Time.deltaTime);
-            }
+            c.asset.transform.forward = navAgent.flatFrontDir;
+            //var velocity = navAgent.velocity;
+            //var sqrMagnitude = velocity.x * velocity.x + velocity.z * velocity.z;
+            //if (sqrMagnitude > NavMathUtils.EPSILON)
+            //{
+            //    var angle = Mathf.Clamp(NavMathUtils.AngleSigned2D(c.asset.transform.forward, velocity), -120.0f, 120.0f);
+            //    c.asset.transform.forward = NavMathUtils.Rotate2D(c.asset.transform.forward, angle * Time.deltaTime);
+            //}
         }
         var nowTime = Time.realtimeSinceStartup;
         if (nowTime - lastTime > 0.0333f)
@@ -228,7 +229,7 @@ public class Game : MonoBehaviour
             }
             {
                 var p1 = c.asset.transform.position;
-                var velocity = navAgent.velocity;
+                var velocity = navAgent.newVelocity;
                 if (velocity.sqrMagnitude >= 1e-5f)
                 {
                     var p2 = p1 + velocity.normalized * 3.0f;
@@ -295,11 +296,11 @@ public class Game : MonoBehaviour
             teamID = teamID,
             mass = mass,
             maxSpeed = maxSpeed,
-            acceleration = acceleration,
-            angularSpeed = angularSpeed,
+            maxAcc = acceleration,
+            maxTurnSpeed = angularSpeed,
             isPushResistant = pushResistant,
         };
-        var navAgentID = navManager.AddAgent(hit.point, navParam);
+        var navAgentID = navManager.AddAgent(hit.point, Vector3.forward, navParam);
         if (navAgentID == 0)
         {
             Debug.LogError("add agent failed");

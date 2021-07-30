@@ -88,7 +88,7 @@ namespace GridNav
             var cosb = Mathf.Cos(b);
             var x = a.x * cosb + a.z * sinb;
             var z = -a.x * sinb + a.z * cosb;
-            return new Vector3(x, a.y, z);
+            return new Vector3(x, 0.0f, z).normalized;
         }
         public static Vector3 Rotate2D(Vector3 from, Vector3 to, float maxAngle)
         {
@@ -97,7 +97,7 @@ namespace GridNav
             {
                 return to;
             }
-            return from.x * to.z - from.z * to.x > 0 ? Rotate2D(from, -angle) : Rotate2D(from, angle);
+            return from.x * to.z - from.z * to.x > 0 ? Rotate2D(from, -maxAngle) : Rotate2D(from, maxAngle);
         }
         public static float SqrPointToSegmentDistance2D(Vector3 p, Vector3 a, Vector3 b)
         {

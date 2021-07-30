@@ -223,7 +223,7 @@ namespace GridNav
                     speedMult = Mathf.Min(speedMult, agent.moveDef.GetSpeedModMult(NavSpeedModMultType.Blocked));
                 }
             }
-            var speed = NavUtils.GetSquareSpeed(navMap, agent, neighborNode.x, neighborNode.z) * speedMult;
+            var speed = NavUtils.GetSquareSpeedMod(navMap, agent, neighborNode.x, neighborNode.z) * speedMult;
             float nodeCost = NavUtils.DirDistanceApproximately(dir) * 2.0f * navMap.SquareSize / Mathf.Max(NavMathUtils.EPSILON, speed);
             float gCost = node.gCost + nodeCost;
             float hCost = NavMathUtils.OctileDistance(neighborNode.x, neighborNode.z, queryData.ex, queryData.ez) * navMap.SquareSize * H_SCALE;

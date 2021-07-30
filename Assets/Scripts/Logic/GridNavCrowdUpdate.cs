@@ -18,6 +18,8 @@ namespace GridNav
             UpdateNewVelocity(navManager, navQueries, agents); // 多线程
             //var t5 = Time.realtimeSinceStartup;
             UpdatePos(navManager, navQueries, agents); // 多线程
+            UpdateCollision(navManager, navQueries, agents); // 多线程
+            UpdateMove(navManager, navQueries, agents);
             //var t6 = Time.realtimeSinceStartup;
             //if (t6 - t1 > 0.001f)
             //{
@@ -163,17 +165,14 @@ namespace GridNav
             var navMap = navManager.GetNavMap();
             foreach (var agent in agents)
             {
-                if (agent.moveState != NavMoveState.InProgress)
-                {
-                    agent.desiredVelocity = Vector3.zero;
-                }
-                else
+                var wantedDir = agent.flatFrontDir;
+                var wantedSpeed = 0.0f;
+                if (agent.moveState == NavMoveState.InProgress)
                 {
                     Debug.Assert(agent.path != null && agent.path.Count > 0);
 
                     if (NavMathUtils.SqrDistance2D(agent.pos, agent.path[0]) <= agent.goalRadius * agent.goalRadius)
                     {
-                        agent.desiredVelocity = Vector3.zero;
                         agent.moveState = NavMoveState.Idle;
                         if (NavMathUtils.SqrDistance2D(agent.pos, agent.goalPos) > agent.goalRadius * agent.goalRadius)
                         {
@@ -189,9 +188,24 @@ namespace GridNav
                             agent.path.RemoveAt(agent.path.Count - 1);
                             nextWayPoint = agent.path[agent.path.Count - 1];
                         }
-                        agent.desiredVelocity = NavMathUtils.Normalized2D(nextWayPoint - agent.pos) * agent.param.maxSpeed;
+                        wantedDir = NavMathUtils.Normalized2D(nextWayPoint - agent.pos);
+                        wantedSpeed = agent.param.maxSpeed;
                     }
                 }
+                if (wantedDir != agent.flatFrontDir)
+                {
+                    agent.flatFrontDir = NavMathUtils.Rotate2D(agent.flatFrontDir, wantedDir, agent.param.maxTurnSpeed);
+                }
+                var deltaAngle = NavMathUtils.Angle2D(agent.flatFrontDir, wantedDir);
+                if (deltaAngle > 0)
+                {
+                    wantedSpeed *= Mathf.Clamp(agent.param.maxTurnSpeed / deltaAngle, 0.1f, 1.0f);
+                }
+                var speedMod = NavUtils.GetSquareSpeedMod(navMap, agent, agent.pos, agent.flatFrontDir);
+                wantedSpeed *= speedMod;
+                var deltaSpeed = Mathf.Clamp(wantedSpeed - agent.speed, -agent.param.maxAcc, agent.param.maxAcc);
+                agent.speed += deltaSpeed;
+                agent.desiredVelocity = agent.flatFrontDir * agent.speed;
             }
         }
         private static void UpdateNewVelocity(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
@@ -242,30 +256,18 @@ namespace GridNav
             var navMap = navManager.GetNavMap();
             foreach (var agent in agents)
             {
-                agent.actualVelocity = agent.pos;
-                agent.pos = agent.pos + agent.velocity;
-
-                float speed = agent.newVelocity.magnitude;
-                if (speed > 0.0f)
-                {
-                    var dir = agent.newVelocity.normalized;
-                    var angle = Mathf.Clamp(NavMathUtils.AngleSigned2D(agent.flatFrontDir, dir), -agent.param.angularSpeed, agent.param.angularSpeed);
-                    agent.flatFrontDir = NavMathUtils.Rotate2D(agent.flatFrontDir, angle);
-                }
-                if (speed > agent.speed)
-                {
-                    var deltaSpeed = Mathf.Min(agent.param.acceleration, speed - agent.speed);
-                    agent.speed = Mathf.Max(agent.param.maxSpeed, agent.speed + deltaSpeed);
-                }
-                else
-                {
-                    var deltaSpeed = Mathf.Max(agent.param.acceleration, agent.speed - speed);
-                    agent.speed = Mathf.Max(0, agent.speed - deltaSpeed);
-                }
+                agent.lastPos = agent.pos;
+                agent.pos = navMap.ClampInBounds(agent.pos + agent.newVelocity);
             }
         }
         private static void UpdateCollision(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
         {
+            var navQuery = navQueries[0];
+            var navMap = navManager.GetNavMap();
+            foreach (var agent in agents)
+            {
+                // TODO
+            }
         }
         private static void UpdateMove(NavManager navManager, NavQuery[] navQueries, List<NavAgent> agents)
         {
@@ -273,7 +275,7 @@ namespace GridNav
             var navMap = navManager.GetNavMap();
             foreach (var agent in agents)
             {
-                agent.isMoving = ((agent.pos - agent.actualVelocity).sqrMagnitude >= 1e-4f);
+                agent.isMoving = ((agent.pos - agent.lastPos).sqrMagnitude >= 1e-4f);
                 // 更新索引
                 var mapPos = NavUtils.CalcMapPos(navMap, agent.moveDef.GetUnitSize(), agent.pos);
                 if (mapPos != agent.mapPos)

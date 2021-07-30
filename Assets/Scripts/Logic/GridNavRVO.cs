@@ -33,14 +33,14 @@ namespace GridNav
             /* Create obstacle ORCA lines. */
             foreach (var obstacle in agent.obstacleNeighbors)
             {
-                ComputeObstacleLine(agent.pos, agent.radius, agent.velocity, obstacle, invTimeHorizonObst, ref orcaLines);
+                ComputeObstacleLine(agent.pos, agent.radius, agent.desiredVelocity, obstacle, invTimeHorizonObst, ref orcaLines);
             }
             int numObstLines = orcaLines.Count;
             /* Create agent ORCA lines. */
             foreach (var other in agent.agentNeighbors)
             {
                 var weight = NavUtils.CalcAvoidanceWeight(agent, other);
-                ComputeAgentLine(agent.pos, agent.radius, agent.velocity, other.pos, other.radius, other.velocity, weight, invTimeHorizon, deltaTime, ref orcaLines);
+                ComputeAgentLine(agent.pos, agent.radius, agent.desiredVelocity, other.pos, other.radius, other.desiredVelocity, weight, invTimeHorizon, deltaTime, ref orcaLines);
             }
             var lineFail = LinearProgram2(orcaLines, agent.param.maxSpeed, agent.desiredVelocity, false, ref agent.newVelocity);
             if (lineFail < orcaLines.Count)
