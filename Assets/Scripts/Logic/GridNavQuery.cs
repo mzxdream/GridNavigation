@@ -198,12 +198,17 @@ namespace GridNav
             {
                 return (neighborNode.flags & (int)NavNodeFlags.Blocked) != 0;
             }
-            if (!NavUtils.TestMoveSquare(navMap, agent, neighborNode.x, neighborNode.z))
+            if (!NavUtils.TestSpeedModSquare(navMap, agent, neighborNode.x, neighborNode.z))
             {
                 neighborNode.flags |= (int)(NavNodeFlags.Closed | NavNodeFlags.Blocked);
                 return true;
             }
             var blockTypes = NavUtils.TestBlockTypesSquare(navManager, agent, neighborNode.x, neighborNode.z);
+            if ((blockTypes & NavBlockType.Blocked) != 0)
+            {
+                neighborNode.flags |= (int)(NavNodeFlags.Closed | NavNodeFlags.Blocked);
+                return true;
+            }
             var speedMult = 1.0f;
             {
                 if ((blockTypes & NavBlockType.Idle) != 0)
@@ -217,10 +222,6 @@ namespace GridNav
                 if ((blockTypes & NavBlockType.Moving) != 0)
                 {
                     speedMult = Mathf.Min(speedMult, agent.moveDef.GetSpeedModMult(NavSpeedModMultType.Moving));
-                }
-                if ((blockTypes & NavBlockType.Blocked) != 0)
-                {
-                    speedMult = Mathf.Min(speedMult, agent.moveDef.GetSpeedModMult(NavSpeedModMultType.Blocked));
                 }
             }
             var speed = NavUtils.GetSquareSpeedMod(navMap, agent, neighborNode.x, neighborNode.z) * speedMult;

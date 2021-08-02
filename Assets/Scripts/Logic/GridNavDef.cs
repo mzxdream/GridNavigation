@@ -6,7 +6,7 @@ namespace GridNav
 {
     public enum NavMoveState { Idle = 0, Requesting = 1, WaitForPath = 2, InProgress = 3 }
     public enum NavBlockType { None = 0, Idle = 1, Busy = 2, Moving = 4, Blocked = 8 };
-    public enum NavSpeedModMultType { Idle = 0, Busy = 1, Moving = 2, Blocked = 3, NumTypes = 4 };
+    public enum NavSpeedModMultType { Idle = 0, Busy = 1, Moving = 2, Blocked = 3, NumTypes = 3 };
 
     public class NavDef
     {
@@ -31,7 +31,6 @@ namespace GridNav
             speedModMults[(int)NavSpeedModMultType.Idle] = 0.35f;
             speedModMults[(int)NavSpeedModMultType.Busy] = 0.10f;
             speedModMults[(int)NavSpeedModMultType.Moving] = 0.65f;
-            speedModMults[(int)NavSpeedModMultType.Blocked] = 0.01f;
         }
         public void SetUnitSize(int unitSize)
         {
@@ -303,7 +302,7 @@ namespace GridNav
             }
             return NavBlockType.Idle;
         }
-        public static bool TestMoveSquareCenter(NavMap navMap, NavAgent agent, int x, int z)
+        public static bool TestSpeedModSquareCenter(NavMap navMap, NavAgent agent, int x, int z)
         {
             Debug.Assert(x >= 0 && x < navMap.XSize && z >= 0 && z < navMap.ZSize);
 
@@ -321,7 +320,7 @@ namespace GridNav
             }
             return true;
         }
-        public static bool TestMoveSquare(NavMap navMap, NavAgent agent, int x, int z)
+        public static bool TestSpeedModSquare(NavMap navMap, NavAgent agent, int x, int z)
         {
             Debug.Assert(x >= 0 && x < navMap.XSize && z >= 0 && z < navMap.ZSize);
 
@@ -338,7 +337,7 @@ namespace GridNav
             {
                 for (int tx = xmin; tx <= xmax; tx += 2)
                 {
-                    if (!TestMoveSquareCenter(navMap, agent, tx, tz))
+                    if (!TestSpeedModSquareCenter(navMap, agent, tx, tz))
                     {
                         return false;
                     }
@@ -350,9 +349,19 @@ namespace GridNav
         {
             Debug.Assert(navManager != null && agent != null);
 
+            var navMap = navManager.GetNavMap();
+            if (x < 0 || x >= navMap.XSize || z < 0 || z >= navMap.ZSize)
+            {
+                return NavBlockType.None;
+            }
+            var squarePos = navMap.GetSquarePos(x, z);
             var blockTypes = NavBlockType.None;
             foreach (var other in navManager.GetSquareAgents(x, z))
             {
+                if (NavMathUtils.SqrDistance2D(squarePos, other.pos) > NavMathUtils.Square(agent.radius + other.radius))
+                {
+                    continue;
+                }
                 blockTypes |= TestBlockType(agent, other);
                 if ((blockTypes & NavBlockType.Blocked) != 0)
                 {

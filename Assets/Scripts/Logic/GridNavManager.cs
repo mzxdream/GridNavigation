@@ -121,7 +121,7 @@ namespace GridNav
             agent.param.maxAcc *= frameTime;
             agent.param.maxTurnSpeed *= frameTime;
             navMap.ClampInBounds(agent.pos, out var x, out var z, out agent.pos);
-            if (!NavUtils.TestMoveSquare(navMap, agent, x, z) || !NavUtils.IsNoneBlockTypeSquare(this, agent, x, z))
+            if (!NavUtils.TestSpeedModSquare(navMap, agent, x, z) || !NavUtils.IsNoneBlockTypeSquare(this, agent, x, z))
             {
                 NavUtils.ForeachNearestSquare(x, z, 20, (int tx, int tz) =>
                 {
@@ -129,7 +129,7 @@ namespace GridNav
                     {
                         return true;
                     }
-                    if (!NavUtils.TestMoveSquare(navMap, agent, tx, tz) || !NavUtils.IsNoneBlockTypeSquare(this, agent, tx, tz))
+                    if (!NavUtils.TestSpeedModSquare(navMap, agent, tx, tz) || !NavUtils.IsNoneBlockTypeSquare(this, agent, tx, tz))
                     {
                         return true;
                     }

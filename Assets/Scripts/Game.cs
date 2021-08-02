@@ -32,7 +32,6 @@ public class MoveDefData
     public float speedModMultIdle = 0.35f;
     public float speedModMultBusy = 0.10f;
     public float speedModMultMoving = 0.65f;
-    public float speedModMultBlocked = 0.01f;
 }
 
 public class Game : MonoBehaviour
@@ -88,7 +87,6 @@ public class Game : MonoBehaviour
             moveDef.SetSpeedModMult(NavSpeedModMultType.Idle, moveData.speedModMultIdle);
             moveDef.SetSpeedModMult(NavSpeedModMultType.Busy, moveData.speedModMultBusy);
             moveDef.SetSpeedModMult(NavSpeedModMultType.Moving, moveData.speedModMultMoving);
-            moveDef.SetSpeedModMult(NavSpeedModMultType.Blocked, moveData.speedModMultBlocked);
             moveDefs[i] = moveDef;
         }
         navManager = new NavManager();

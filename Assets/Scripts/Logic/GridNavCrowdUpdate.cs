@@ -42,7 +42,7 @@ namespace GridNav
                 {
                     var pos = agent.path[agent.path.Count - checkStartIndex];
                     navMap.GetSquareXZ(pos, out var tx, out var tz);
-                    if (!NavUtils.TestMoveSquare(navMap, agent, tx, tz))
+                    if (!NavUtils.TestSpeedModSquare(navMap, agent, tx, tz))
                     {
                         break;
                     }
@@ -58,7 +58,7 @@ namespace GridNav
                 {
                     var pos = agent.path[agent.path.Count - checkStartIndex];
                     navMap.GetSquareXZ(pos, out var tx, out var tz);
-                    if (NavUtils.TestMoveSquare(navMap, agent, tx, tz))
+                    if (NavUtils.TestSpeedModSquare(navMap, agent, tx, tz))
                     {
                         break;
                     }
@@ -132,7 +132,7 @@ namespace GridNav
                         break;
                     }
                     navMap.GetSquareXZ(pos, out var x, out var z);
-                    if (NavUtils.TestMoveSquare(navMap, optAgent, x, z))
+                    if (NavUtils.TestSpeedModSquare(navMap, optAgent, x, z))
                     {
                         break;
                     }
@@ -234,7 +234,7 @@ namespace GridNav
                                 agent.agentNeighbors.Add(other);
                             }
                         }
-                        if (!NavUtils.TestMoveSquareCenter(navMap, agent, x, z))
+                        if (!NavUtils.TestSpeedModSquareCenter(navMap, agent, x, z))
                         {
                             List<Vector3> vertices = new List<Vector3>();
 
